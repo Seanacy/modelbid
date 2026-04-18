@@ -1888,6 +1888,253 @@
       color: var(--text-primary);
     }
 
+    /* ===== TOP CLIENTS WALL ===== */
+    .top-clients-header {
+      text-align: center;
+      padding: 2rem 0;
+      margin-bottom: 2rem;
+    }
+
+    .top-clients-header h2 {
+      font-size: 2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent-teal), var(--accent-gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+
+    .top-clients-header p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+
+    .top-clients-requirement {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      padding: 0.4rem 1rem;
+      border-radius: 2rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: rgba(0,217,255,0.1);
+      color: var(--accent-teal);
+      border: 1px solid rgba(0,217,255,0.25);
+    }
+
+    .top-client-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      overflow: hidden;
+      transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+      cursor: pointer;
+    }
+
+    .top-client-card:hover {
+      transform: translateY(-6px);
+      border-color: var(--accent-teal);
+      box-shadow: 0 12px 32px rgba(0, 217, 255, 0.15);
+    }
+
+    .top-client-card.rank-1 {
+      border-color: var(--accent-gold);
+    }
+
+    .top-client-card.rank-1:hover {
+      box-shadow: 0 12px 32px rgba(255, 215, 0, 0.2);
+    }
+
+    .top-client-card.rank-2 {
+      border-color: #c0c0c0;
+    }
+
+    .top-client-card.rank-3 {
+      border-color: #cd7f32;
+    }
+
+    .top-client-rank {
+      position: absolute;
+      top: 0.75rem;
+      left: 0.75rem;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.85rem;
+      z-index: 2;
+    }
+
+    .top-client-rank.gold {
+      background: linear-gradient(135deg, #ffd700, #ffaa00);
+      color: #1a0a00;
+    }
+
+    .top-client-rank.silver {
+      background: linear-gradient(135deg, #c0c0c0, #e8e8e8);
+      color: #333;
+    }
+
+    .top-client-rank.bronze {
+      background: linear-gradient(135deg, #cd7f32, #e8a860);
+      color: #1a0a00;
+    }
+
+    .top-client-rank.default {
+      background: var(--bg-card-light);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+    }
+
+    .top-client-banner {
+      height: 100px;
+      background: linear-gradient(135deg, #0a1628, #162447, #1f4068);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .top-client-banner-emoji {
+      font-size: 2.5rem;
+      opacity: 0.15;
+    }
+
+    .top-client-avatar-wrap {
+      display: flex;
+      justify-content: center;
+      margin-top: -35px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .top-client-avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-teal), #0066ff);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      border: 4px solid var(--bg-card);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .top-client-body {
+      padding: 0.75rem 1.25rem 1.25rem;
+      text-align: center;
+    }
+
+    .top-client-name {
+      font-weight: 700;
+      font-size: 1.05rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .top-client-location {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.75rem;
+    }
+
+    .top-client-stats {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .top-client-stat {
+      text-align: center;
+    }
+
+    .top-client-stat-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent-teal);
+    }
+
+    .top-client-stat-label {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .top-client-tags {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.4rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .top-client-tag {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 1rem;
+      background: rgba(0,217,255,0.1);
+      color: var(--accent-teal);
+      border: 1px solid rgba(0,217,255,0.2);
+      font-weight: 500;
+    }
+
+    .top-client-latest {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      font-style: italic;
+      padding-top: 0.5rem;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .top-client-latest span {
+      color: var(--accent-gold);
+      font-style: normal;
+      font-weight: 600;
+    }
+
+    .top-clients-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .top-clients-podium {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .top-clients-cta {
+      text-align: center;
+      padding: 2.5rem;
+      background: linear-gradient(135deg, rgba(0,217,255,0.05), rgba(255,215,0,0.05));
+      border: 1px dashed var(--border-color);
+      border-radius: 1rem;
+      margin-top: 2rem;
+    }
+
+    .top-clients-cta h3 {
+      margin-bottom: 0.5rem;
+    }
+
+    .top-clients-cta p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
     /* ===== BOOKING MODAL ===== */
     .booking-form {
       display: flex;
@@ -3462,6 +3709,277 @@
       );
     }
 
+    function TopClientsPage() {
+      const auth = useContext(AuthContext);
+      const [sortBy, setSortBy] = useState('sessions');
+      const [expandedClient, setExpandedClient] = useState(null);
+
+      const topClients = [
+        {
+          id: 'tc1', name: 'Marcus Thompson', emoji: '📷', verified: true,
+          location: 'Atlanta, GA', sessions: 28, rating: 4.9, reviews: 22,
+          trustScore: 95, repeatRate: '82%', memberSince: '2023', totalSpent: 7200,
+          tags: ['Respectful', 'Professional', 'Creative', 'Punctual'],
+          recentModels: ['Aria V.', 'Jade M.', 'Sophie L.'],
+          latestSession: 'Boudoir Editorial with Aria V.',
+          quote: '"Every session is a collaboration. I\'m here to make art, not just take photos."',
+          photos: ['📸', '🎭', '✨', '🌹'],
+        },
+        {
+          id: 'tc2', name: 'David Rodriguez', emoji: '🎬', verified: true,
+          location: 'Los Angeles, CA', sessions: 19, rating: 4.8, reviews: 16,
+          trustScore: 91, repeatRate: '75%', memberSince: '2023', totalSpent: 5400,
+          tags: ['Professional', 'Fair Pay', 'Great Vision', 'Repeat Client'],
+          recentModels: ['Raven K.', 'Sophie L.'],
+          latestSession: 'Luxury Editorial with Raven K.',
+          quote: '"I look for models who bring their own creative energy to the shoot."',
+          photos: ['💎', '🌙', '🔥'],
+        },
+        {
+          id: 'tc3', name: 'James Kim', emoji: '🖤', verified: true,
+          location: 'New York, NY', sessions: 14, rating: 4.7, reviews: 11,
+          trustScore: 88, repeatRate: '70%', memberSince: '2024', totalSpent: 4100,
+          tags: ['Respectful', 'Punctual', 'Great Communicator'],
+          recentModels: ['Aria V.', 'Jade M.'],
+          latestSession: 'Glamour Session with Jade M.',
+          quote: '"ModelBid made it easy to find exactly the right talent for my projects."',
+          photos: ['✨', '🎀', '💫'],
+        },
+        {
+          id: 'tc4', name: 'Alex Chen', emoji: '📱', verified: false,
+          location: 'San Francisco, CA', sessions: 9, rating: 4.6, reviews: 7,
+          trustScore: 82, repeatRate: '65%', memberSince: '2024', totalSpent: 2700,
+          tags: ['Professional', 'Creative', 'Repeat Client'],
+          recentModels: ['Sophie L.'],
+          latestSession: 'Spring Collection with Sophie L.',
+          quote: '"Content creation needs real talent. ModelBid delivers."',
+          photos: ['🌸', '📷'],
+        },
+        {
+          id: 'tc5', name: 'Brandon Williams', emoji: '🎯', verified: true,
+          location: 'Chicago, IL', sessions: 7, rating: 4.8, reviews: 6,
+          trustScore: 85, repeatRate: '72%', memberSince: '2024', totalSpent: 2100,
+          tags: ['Respectful', 'Fair Pay', 'Punctual'],
+          recentModels: ['Aria V.', 'Raven K.'],
+          latestSession: 'Fantasy Theme with Raven K.',
+          quote: '"Great platform, great models, great results."',
+          photos: ['🦋', '🔥'],
+        },
+        {
+          id: 'tc6', name: 'Ryan Martinez', emoji: '🌟', verified: false,
+          location: 'Miami, FL', sessions: 5, rating: 4.5, reviews: 4,
+          trustScore: 78, repeatRate: '60%', memberSince: '2025', totalSpent: 1500,
+          tags: ['Professional', 'Great Communicator'],
+          recentModels: ['Jade M.'],
+          latestSession: 'Cosplay Session with Jade M.',
+          quote: '"Started booking 3 months ago and I\'m already hooked."',
+          photos: ['🎭'],
+        },
+        {
+          id: 'tc7', name: 'Tyler Jackson', emoji: '💼', verified: false,
+          location: 'Houston, TX', sessions: 4, rating: 4.6, reviews: 3,
+          trustScore: 75, repeatRate: '50%', memberSince: '2025', totalSpent: 1200,
+          tags: ['Respectful', 'Punctual'],
+          recentModels: ['Sophie L.', 'Aria V.'],
+          latestSession: 'Retro Pin-Up with Aria V.',
+          quote: '"The trust scores give you confidence before you even book."',
+          photos: ['🎀', '📸'],
+        },
+        {
+          id: 'tc8', name: 'Chris Moore', emoji: '⚡', verified: false,
+          location: 'Denver, CO', sessions: 3, rating: 4.4, reviews: 3,
+          trustScore: 72, repeatRate: '33%', memberSince: '2025', totalSpent: 900,
+          tags: ['Professional'],
+          recentModels: ['Jade M.'],
+          latestSession: 'Casual Glamour with Jade M.',
+          quote: '"Just hit 3 sessions and made the wall. Let\'s go!"',
+          photos: ['✨'],
+        },
+      ];
+
+      const sorted = [...topClients].sort((a, b) => {
+        if (sortBy === 'sessions') return b.sessions - a.sessions;
+        if (sortBy === 'rating') return b.rating - a.rating;
+        if (sortBy === 'trust') return b.trustScore - a.trustScore;
+        if (sortBy === 'spent') return b.totalSpent - a.totalSpent;
+        return 0;
+      });
+
+      const getRankStyle = (index) => {
+        if (index === 0) return { rank: 'gold', card: 'rank-1' };
+        if (index === 1) return { rank: 'silver', card: 'rank-2' };
+        if (index === 2) return { rank: 'bronze', card: 'rank-3' };
+        return { rank: 'default', card: '' };
+      };
+
+      return (
+        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+          {/* Header */}
+          <div className="top-clients-header">
+            <h2>🏆 The Wall</h2>
+            <p>Top clients who bring the vision. Verified by the models who work with them.</p>
+            <div className="top-clients-requirement">
+              ✅ 3+ confirmed sessions required to earn a spot
+            </div>
+          </div>
+
+          {/* Sort Controls */}
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+            {[
+              { key: 'sessions', label: '📸 Most Sessions' },
+              { key: 'rating', label: '⭐ Highest Rated' },
+              { key: 'trust', label: '🛡️ Trust Score' },
+              { key: 'spent', label: '💰 Top Spenders' },
+            ].map(s => (
+              <button
+                key={s.key}
+                className={sortBy === s.key ? 'btn glow-btn' : 'btn btn-secondary'}
+                style={{ fontSize: '0.8rem' }}
+                onClick={() => setSortBy(s.key)}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Stats Summary */}
+          <div className="profile-stats-bar" style={{ marginBottom: '2rem' }}>
+            <div className="profile-stat">
+              <div className="profile-stat-value">{topClients.length}</div>
+              <div className="profile-stat-label">Wall Members</div>
+            </div>
+            <div className="profile-stat">
+              <div className="profile-stat-value">{topClients.reduce((sum, c) => sum + c.sessions, 0)}</div>
+              <div className="profile-stat-label">Total Sessions</div>
+            </div>
+            <div className="profile-stat">
+              <div className="profile-stat-value">{(topClients.reduce((sum, c) => sum + c.rating, 0) / topClients.length).toFixed(1)} ★</div>
+              <div className="profile-stat-label">Avg Rating</div>
+            </div>
+            <div className="profile-stat">
+              <div className="profile-stat-value">${(topClients.reduce((sum, c) => sum + c.totalSpent, 0) / 1000).toFixed(1)}k</div>
+              <div className="profile-stat-label">Total Booked</div>
+            </div>
+          </div>
+
+          {/* Client Cards Grid */}
+          <div className="top-clients-grid">
+            {sorted.map((client, index) => {
+              const rs = getRankStyle(index);
+              const isExpanded = expandedClient === client.id;
+
+              return (
+                <div key={client.id} className={`top-client-card ${rs.card}`} onClick={() => setExpandedClient(isExpanded ? null : client.id)}>
+                  {/* Rank Badge */}
+                  <div className="top-client-banner" style={{ position: 'relative' }}>
+                    <div className={`top-client-rank ${rs.rank}`}>
+                      {index === 0 ? '👑' : index + 1}
+                    </div>
+                    <div className="top-client-banner-emoji">
+                      {client.photos.map((p, i) => <span key={i}>{p}</span>)}
+                    </div>
+                  </div>
+
+                  {/* Avatar */}
+                  <div className="top-client-avatar-wrap">
+                    <div className="top-client-avatar">{client.emoji}</div>
+                  </div>
+
+                  {/* Body */}
+                  <div className="top-client-body">
+                    <div className="top-client-name">
+                      {client.name}
+                      {client.verified && <div className="verified-badge" style={{ width: '16px', height: '16px', fontSize: '0.6rem' }}>✓</div>}
+                    </div>
+                    <div className="top-client-location">📍 {client.location}</div>
+
+                    {/* Stats */}
+                    <div className="top-client-stats">
+                      <div className="top-client-stat">
+                        <div className="top-client-stat-value">{client.sessions}</div>
+                        <div className="top-client-stat-label">Sessions</div>
+                      </div>
+                      <div className="top-client-stat">
+                        <div className="top-client-stat-value">{client.rating} ★</div>
+                        <div className="top-client-stat-label">Rating</div>
+                      </div>
+                      <div className="top-client-stat">
+                        <div className="top-client-stat-value">{client.trustScore}</div>
+                        <div className="top-client-stat-label">Trust</div>
+                      </div>
+                    </div>
+
+                    {/* Tags */}
+                    <div className="top-client-tags">
+                      {client.tags.slice(0, 3).map((tag, i) => (
+                        <span key={i} className="top-client-tag">{tag}</span>
+                      ))}
+                    </div>
+
+                    {/* Latest Session */}
+                    <div className="top-client-latest">
+                      Latest: <span>{client.latestSession}</span>
+                    </div>
+
+                    {/* Expanded Details */}
+                    {isExpanded && (
+                      <div style={{ marginTop: '1rem', textAlign: 'left' }}>
+                        {/* Quote */}
+                        <div style={{
+                          padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '0.75rem',
+                          background: 'rgba(0,217,255,0.05)', borderLeft: '3px solid var(--accent-teal)',
+                          fontStyle: 'italic', fontSize: '0.85rem', color: 'var(--text-secondary)'
+                        }}>
+                          {client.quote}
+                        </div>
+
+                        {/* More Details */}
+                        <div className="profile-detail-row">
+                          <span className="profile-detail-label">Member since</span>
+                          <span className="profile-detail-value">{client.memberSince}</span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="profile-detail-label">Repeat rate</span>
+                          <span className="profile-detail-value" style={{ color: 'var(--success-green)' }}>{client.repeatRate}</span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="profile-detail-label">Total booked</span>
+                          <span className="profile-detail-value" style={{ color: 'var(--accent-gold)' }}>${client.totalSpent.toLocaleString()}</span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="profile-detail-label">Worked with</span>
+                          <span className="profile-detail-value">{client.recentModels.join(', ')}</span>
+                        </div>
+
+                        {/* View Full Profile Button */}
+                        <button
+                          className="btn glow-btn btn-block"
+                          style={{ marginTop: '0.75rem', fontSize: '0.85rem' }}
+                          onClick={(e) => { e.stopPropagation(); window.location.hash = 'client/demo-client'; }}
+                        >
+                          View Full Profile
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* CTA for new clients */}
+          <div className="top-clients-cta">
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📸</div>
+            <h3>Want to make The Wall?</h3>
+            <p>Complete 3 confirmed sessions to earn your spot. Book your first session today and start building your reputation.</p>
+            <button className="btn glow-btn" onClick={() => window.location.hash = 'browse'}>
+              Browse Models & Book Now
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     function FeedPage() {
       const auth = useContext(AuthContext);
       const [feedTab, setFeedTab] = useState('foryou');
@@ -4582,6 +5100,7 @@
 
         if (page === 'home') return !auth.currentUser ? <HomePage /> : <FeedPage />;
         if (page === 'feed') return <FeedPage />;
+        if (page === 'wall') return <TopClientsPage />;
         if (page === 'browse') return <BrowseModelsPage />;
         if (page === 'profile' && params[0]) return <ProfilePage modelId={params[0]} />;
         if (page === 'client' && params[0]) return <ClientProfilePage clientId={params[0]} />;
@@ -4604,6 +5123,7 @@
             <div className="nav-links">
               <a className="nav-link" onClick={() => window.location.hash = 'feed'}>Feed</a>
               <a className="nav-link" onClick={() => window.location.hash = 'browse'}>Browse</a>
+              <a className="nav-link" onClick={() => window.location.hash = 'wall'}>🏆 The Wall</a>
               <a className="nav-link" onClick={() => window.location.hash = 'contracts'}>Contracts</a>
               <a className="nav-link" onClick={() => window.location.hash = 'formodels'}>For Models</a>
             </div>
