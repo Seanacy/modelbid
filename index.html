@@ -724,24 +724,311 @@
     }
 
     /* ===== PROFILE PAGE ===== */
-    .profile-header {
-      display: grid;
-      grid-template-columns: 200px 1fr;
-      gap: 2rem;
-      margin-bottom: 2rem;
-      align-items: start;
+    .profile-cover {
+      width: 100%;
+      height: 280px;
+      background: linear-gradient(135deg, #1a0a2e 0%, #16213e 30%, #0f3460 60%, #1a0a2e 100%);
+      border-radius: 1rem;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 0;
+    }
+
+    .profile-cover::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ff6ec7' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      opacity: 0.5;
+    }
+
+    .profile-cover::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 120px;
+      background: linear-gradient(to top, var(--bg-dark), transparent);
+    }
+
+    .profile-cover-content {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 2rem;
+      display: flex;
+      align-items: flex-end;
+      gap: 1.5rem;
+      z-index: 2;
     }
 
     .profile-avatar {
-      width: 200px;
-      height: 200px;
+      width: 140px;
+      height: 140px;
       background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
       border-radius: 1rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 4rem;
-      border: 3px solid var(--accent-gold);
+      font-size: 3.5rem;
+      border: 4px solid var(--bg-dark);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      flex-shrink: 0;
+    }
+
+    .profile-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 0.8rem;
+    }
+
+    .profile-cover-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .profile-cover-info h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.25rem;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+
+    .profile-tagline {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+
+    .profile-location {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 0.25rem;
+    }
+
+    .profile-stats-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border-color);
+      border-radius: 0.75rem;
+      overflow: hidden;
+      margin: 1.5rem 0;
+    }
+
+    .profile-stat {
+      background: var(--bg-card);
+      padding: 1.25rem 1rem;
+      text-align: center;
+      transition: background 0.3s ease;
+    }
+
+    .profile-stat:hover {
+      background: var(--bg-card-light);
+    }
+
+    .profile-stat-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent-pink), var(--accent-gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .profile-stat-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: 0.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .profile-actions {
+      display: flex;
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .profile-body {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 2rem;
+      margin-top: 1rem;
+    }
+
+    .profile-section {
+      background: var(--bg-card);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      border: 1px solid var(--border-color);
+      margin-bottom: 1.5rem;
+    }
+
+    .profile-section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .profile-section-title span {
+      font-size: 1.2rem;
+    }
+
+    .profile-about-text {
+      color: var(--text-secondary);
+      line-height: 1.8;
+      font-size: 0.95rem;
+    }
+
+    .profile-gallery {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+    }
+
+    .gallery-item {
+      aspect-ratio: 1;
+      background: linear-gradient(135deg, var(--bg-card-light), var(--bg-card));
+      border-radius: 0.75rem;
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .gallery-item:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 24px rgba(255, 110, 199, 0.3);
+      border-color: var(--accent-pink);
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .gallery-item-overlay {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 0.5rem;
+      background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .gallery-item:hover .gallery-item-overlay {
+      opacity: 1;
+    }
+
+    .profile-detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .profile-detail-row:last-child {
+      border-bottom: none;
+    }
+
+    .profile-detail-label {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .profile-detail-value {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .profile-availability {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.5rem;
+    }
+
+    .availability-day {
+      text-align: center;
+      padding: 0.5rem 0.25rem;
+      border-radius: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .availability-day.available {
+      background: rgba(0, 217, 163, 0.15);
+      color: var(--success-green);
+      border: 1px solid rgba(0, 217, 163, 0.3);
+    }
+
+    .availability-day.unavailable {
+      background: rgba(255,255,255,0.03);
+      color: var(--text-secondary);
+      opacity: 0.5;
+    }
+
+    .availability-day-name {
+      display: block;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.25rem;
+      color: var(--text-secondary);
+    }
+
+    .review-card {
+      padding: 1rem;
+      background: var(--bg-card-light);
+      border-radius: 0.75rem;
+      margin-bottom: 0.75rem;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .review-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .review-author {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .review-date {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .review-stars {
+      color: var(--accent-gold);
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .review-text {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.6;
     }
 
     .profile-info h1 {
@@ -869,15 +1156,34 @@
         height: 200px;
       }
 
-      .profile-header {
-        grid-template-columns: 1fr;
+      .profile-cover {
+        height: 200px;
+      }
+
+      .profile-cover-info h1 {
+        font-size: 1.4rem;
       }
 
       .profile-avatar {
-        width: 150px;
-        height: 150px;
-        margin: 0 auto;
-        font-size: 3rem;
+        width: 100px;
+        height: 100px;
+        font-size: 2.5rem;
+      }
+
+      .profile-stats-bar {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .profile-body {
+        grid-template-columns: 1fr;
+      }
+
+      .profile-gallery {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .profile-actions {
+        flex-wrap: wrap;
       }
 
       .modal {
@@ -1440,12 +1746,31 @@
           </div>
 
           <div className="grid grid-3">
+            {/* Demo model card - always visible for preview */}
+            <div className="card model-card" onClick={() => window.location.hash = 'profile/demo'}>
+              <div className="model-photo">👩</div>
+              <div className="model-name">
+                Aria Valentina
+                <div className="verified-badge">✓</div>
+              </div>
+              <div className="model-rate">$250/session</div>
+              <div className="model-rating">
+                <span className="stars">★★★★★</span>
+                <span>4.9</span>
+                <span style={{ color: 'var(--text-secondary)' }}>(47)</span>
+              </div>
+              <div className="model-tags">
+                <span className="tag">Lingerie</span>
+                <span className="tag">Glamour</span>
+                <span className="tag">Boudoir</span>
+              </div>
+            </div>
             {filtered.map(model => (
               <ModelCard key={model.id} model={model} />
             ))}
           </div>
 
-          {filtered.length === 0 && (
+          {filtered.length === 0 && models.length === 0 && (
             <div className="empty-state">
               <div className="empty-state-icon">🔍</div>
               <div className="empty-state-title">No models found</div>
@@ -1486,6 +1811,8 @@
       const [loading, setLoading] = useState(true);
       const [showBookingModal, setShowBookingModal] = useState(false);
       const [showPaywallModal, setShowPaywallModal] = useState(false);
+      const [selectedGalleryItem, setSelectedGalleryItem] = useState(null);
+      const [useDemo, setUseDemo] = useState(false);
       const [bookingData, setBookingData] = useState({
         date: '',
         duration: 1,
@@ -1493,9 +1820,50 @@
         contractType: 'standard',
       });
 
+      // Demo data for preview
+      const demoModel = {
+        id: 'demo-1',
+        display_name: 'Aria Valentina',
+        avatar_emoji: '👩',
+        verified: true,
+        rate: 250,
+        rating: 4.9,
+        review_count: 47,
+        bio: 'Professional lingerie and glamour model with 5+ years of experience. Based in Miami. I specialize in boudoir, pin-up, and luxury editorial shoots. I bring my own wardrobe collection of 200+ pieces. Let\'s create something stunning together.',
+        tags: ['Lingerie', 'Glamour', 'Boudoir', 'Pin-Up', 'Luxury'],
+        location: 'Miami, FL',
+        tagline: 'Elegance meets confidence',
+        response_time: '< 1 hour',
+        sessions_completed: 134,
+        member_since: '2024',
+        availability: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: false },
+        gallery: [
+          { emoji: '👙', label: 'Lingerie Set' },
+          { emoji: '🎭', label: 'Masquerade' },
+          { emoji: '✨', label: 'Glamour Shot' },
+          { emoji: '🌹', label: 'Boudoir' },
+          { emoji: '💎', label: 'Luxury Editorial' },
+          { emoji: '🎀', label: 'Pin-Up Classic' },
+        ]
+      };
+
+      const demoReviews = [
+        { id: 1, reviewer_name: 'Marcus T.', rating: 5, text: 'Absolutely professional from start to finish. Aria made the whole session feel comfortable and the photos turned out incredible.', date: '2 weeks ago' },
+        { id: 2, reviewer_name: 'David R.', rating: 5, text: 'Amazing wardrobe selection and she really knows her angles. Highly recommend for boudoir shoots.', date: '1 month ago' },
+        { id: 3, reviewer_name: 'James K.', rating: 4, text: 'Great energy and very punctual. The glamour session was exactly what I was looking for.', date: '2 months ago' },
+      ];
+
       useEffect(() => {
         const fetchData = async () => {
           try {
+            if (modelId === 'demo') {
+              setModel(demoModel);
+              setReviews(demoReviews);
+              setUseDemo(true);
+              setLoading(false);
+              return;
+            }
+
             const { data: modelData, error: modelError } = await supabase
               .from('profiles')
               .select('*')
@@ -1516,7 +1884,10 @@
             }
           } catch (error) {
             console.error('Fetch error:', error);
-            auth.showToast('Failed to load profile', 'error');
+            // Fall back to demo mode
+            setModel(demoModel);
+            setReviews(demoReviews);
+            setUseDemo(true);
           } finally {
             setLoading(false);
           }
@@ -1534,6 +1905,10 @@
       }
 
       const handleBooking = async () => {
+        if (useDemo) {
+          auth.showToast('Demo mode - sign up to book real sessions!', 'info');
+          return;
+        }
         if (!auth.currentUser) {
           window.location.hash = 'login';
           return;
@@ -1554,6 +1929,10 @@
       };
 
       const handleMessage = async () => {
+        if (useDemo) {
+          auth.showToast('Demo mode - sign up to message models!', 'info');
+          return;
+        }
         if (!auth.currentUser) {
           window.location.hash = 'login';
           return;
@@ -1568,44 +1947,201 @@
         }
       };
 
-      return (
-        <div>
-          <button className="btn btn-secondary" onClick={() => window.location.hash = 'browse'} style={{ marginBottom: '2rem' }}>← Back to Browse</button>
+      const galleryItems = model.gallery || [
+        { emoji: '📸', label: 'Photo 1' },
+        { emoji: '📸', label: 'Photo 2' },
+        { emoji: '📸', label: 'Photo 3' },
+        { emoji: '📸', label: 'Photo 4' },
+        { emoji: '📸', label: 'Photo 5' },
+        { emoji: '📸', label: 'Photo 6' },
+      ];
 
-          <div className="profile-header">
-            <div className="profile-avatar">{model.avatar_emoji || '👤'}</div>
-            <div className="profile-info">
-              <h1>
-                {model.display_name}
-                {model.verified && <div className="verified-badge">✓</div>}
-              </h1>
-              <div className="profile-meta">
-                <div className="profile-meta-item">
-                  <div className="profile-meta-value">${model.rate || 0}</div>
-                  <div className="profile-meta-label">Per Session</div>
-                </div>
-                <div className="profile-meta-item">
-                  <div className="profile-meta-value">{model.rating ? model.rating.toFixed(1) : '0.0'}★</div>
-                  <div className="profile-meta-label">{model.review_count || 0} reviews</div>
-                </div>
-              </div>
-              <p>{model.bio || 'No bio available'}</p>
-              <div className="model-tags" style={{ marginTop: '1rem' }}>
-                {model.tags && model.tags.map(tag => (
-                  <span key={tag} className="tag">{tag}</span>
-                ))}
-              </div>
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-                <button className="btn glow-btn" onClick={() => setShowBookingModal(true)}>Book Session</button>
-                <button className="btn btn-secondary" onClick={handleMessage}>Message</button>
+      const availability = model.availability || { mon: true, tue: true, wed: false, thu: true, fri: true, sat: true, sun: false };
+      const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+      return (
+        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+          {/* Back Button */}
+          <button className="btn btn-secondary" onClick={() => window.location.hash = 'browse'} style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
+            ← Back to Browse
+          </button>
+
+          {/* Cover / Hero */}
+          <div className="profile-cover">
+            <div className="profile-cover-content">
+              <div className="profile-avatar">{model.avatar_emoji || '👤'}</div>
+              <div className="profile-cover-info">
+                <h1>
+                  {model.display_name}
+                  {model.verified && <div className="verified-badge">✓</div>}
+                </h1>
+                {model.tagline && <div className="profile-tagline">"{model.tagline}"</div>}
+                {model.location && <div className="profile-location">📍 {model.location}</div>}
               </div>
             </div>
           </div>
 
+          {/* Stats Bar */}
+          <div className="profile-stats-bar">
+            <div className="profile-stat">
+              <div className="profile-stat-value">${model.rate || 0}</div>
+              <div className="profile-stat-label">Per Session</div>
+            </div>
+            <div className="profile-stat">
+              <div className="profile-stat-value">{model.rating ? model.rating.toFixed(1) : '0.0'} ★</div>
+              <div className="profile-stat-label">{model.review_count || 0} Reviews</div>
+            </div>
+            <div className="profile-stat">
+              <div className="profile-stat-value">{model.sessions_completed || 0}</div>
+              <div className="profile-stat-label">Sessions</div>
+            </div>
+            <div className="profile-stat">
+              <div className="profile-stat-value">{model.response_time || '< 24h'}</div>
+              <div className="profile-stat-label">Response</div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="profile-actions">
+            <button className="btn glow-btn" onClick={() => setShowBookingModal(true)} style={{ flex: 1 }}>
+              📅 Book a Session
+            </button>
+            <button className="btn btn-secondary" onClick={handleMessage} style={{ flex: 1 }}>
+              💬 Send Message
+            </button>
+          </div>
+
+          {/* Tags */}
+          <div className="model-tags" style={{ marginBottom: '1.5rem' }}>
+            {model.tags && model.tags.map(tag => (
+              <span key={tag} className="tag">{tag}</span>
+            ))}
+          </div>
+
+          {/* Body: Left + Right columns */}
+          <div className="profile-body">
+            {/* Left Column */}
+            <div>
+              {/* About */}
+              <div className="profile-section">
+                <div className="profile-section-title"><span>👋</span> About</div>
+                <div className="profile-about-text">{model.bio || 'No bio available.'}</div>
+              </div>
+
+              {/* Portfolio Gallery */}
+              <div className="profile-section">
+                <div className="profile-section-title"><span>📸</span> Portfolio</div>
+                <div className="profile-gallery">
+                  {galleryItems.map((item, i) => (
+                    <div key={i} className="gallery-item" onClick={() => setSelectedGalleryItem(i)}>
+                      {item.emoji}
+                      <div className="gallery-item-overlay">{item.label}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ textAlign: 'center', marginTop: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                  Tap any photo to enlarge • Models upload their own portfolio images
+                </div>
+              </div>
+
+              {/* Reviews */}
+              <div className="profile-section">
+                <div className="profile-section-title"><span>⭐</span> Reviews ({reviews.length})</div>
+                {reviews.length > 0 ? reviews.map((review, i) => (
+                  <div key={review.id || i} className="review-card">
+                    <div className="review-header">
+                      <div className="review-author">{review.reviewer_name || review.reviewer_id?.display_name || 'Anonymous'}</div>
+                      <div className="review-date">{review.date || new Date(review.created_at).toLocaleDateString()}</div>
+                    </div>
+                    <div className="review-stars">{'★'.repeat(review.rating || 5)}{'☆'.repeat(5 - (review.rating || 5))}</div>
+                    <div className="review-text">{review.text || review.content}</div>
+                  </div>
+                )) : (
+                  <div style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No reviews yet. Be the first to book a session!</div>
+                )}
+              </div>
+            </div>
+
+            {/* Right Column / Sidebar */}
+            <div>
+              {/* Details */}
+              <div className="profile-section">
+                <div className="profile-section-title"><span>📋</span> Details</div>
+                <div className="profile-detail-row">
+                  <span className="profile-detail-label">Rate</span>
+                  <span className="profile-detail-value" style={{ color: 'var(--accent-gold)' }}>${model.rate || 0}/session</span>
+                </div>
+                <div className="profile-detail-row">
+                  <span className="profile-detail-label">Location</span>
+                  <span className="profile-detail-value">{model.location || 'Not specified'}</span>
+                </div>
+                <div className="profile-detail-row">
+                  <span className="profile-detail-label">Member since</span>
+                  <span className="profile-detail-value">{model.member_since || '2024'}</span>
+                </div>
+                <div className="profile-detail-row">
+                  <span className="profile-detail-label">Response time</span>
+                  <span className="profile-detail-value" style={{ color: 'var(--success-green)' }}>{model.response_time || '< 24h'}</span>
+                </div>
+                <div className="profile-detail-row">
+                  <span className="profile-detail-label">Verified</span>
+                  <span className="profile-detail-value">{model.verified ? '✅ Yes' : '❌ No'}</span>
+                </div>
+              </div>
+
+              {/* Availability */}
+              <div className="profile-section">
+                <div className="profile-section-title"><span>📅</span> Availability</div>
+                <div className="profile-availability">
+                  {dayKeys.map((key, i) => (
+                    <div key={key} className={`availability-day ${availability[key] ? 'available' : 'unavailable'}`}>
+                      <span className="availability-day-name">{dayNames[i]}</span>
+                      {availability[key] ? '✓' : '—'}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick Book CTA */}
+              <div className="profile-section" style={{ background: 'linear-gradient(135deg, rgba(255,110,199,0.1), rgba(157,78,221,0.1))', borderColor: 'rgba(255,110,199,0.3)' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>✨</div>
+                  <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>Ready to book?</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                    Secure your session with {model.display_name?.split(' ')[0] || 'this model'} today
+                  </div>
+                  <button className="btn glow-btn btn-block" onClick={() => setShowBookingModal(true)}>
+                    Book Now — ${model.rate || 0}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Gallery Lightbox */}
+          {selectedGalleryItem !== null && (
+            <div className="modal-overlay" onClick={() => setSelectedGalleryItem(null)}>
+              <div className="modal" onClick={(e) => e.stopPropagation()} style={{ textAlign: 'center', maxWidth: '500px' }}>
+                <div style={{ fontSize: '6rem', padding: '2rem 0' }}>{galleryItems[selectedGalleryItem]?.emoji}</div>
+                <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{galleryItems[selectedGalleryItem]?.label}</div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                  Portfolio photo {selectedGalleryItem + 1} of {galleryItems.length}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+                  <button className="btn btn-secondary" onClick={() => setSelectedGalleryItem(Math.max(0, selectedGalleryItem - 1))} disabled={selectedGalleryItem === 0}>← Prev</button>
+                  <button className="btn btn-secondary" onClick={() => setSelectedGalleryItem(null)}>Close</button>
+                  <button className="btn btn-secondary" onClick={() => setSelectedGalleryItem(Math.min(galleryItems.length - 1, selectedGalleryItem + 1))} disabled={selectedGalleryItem === galleryItems.length - 1}>Next →</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Booking Modal */}
           {showBookingModal && (
             <div className="modal-overlay" onClick={() => setShowBookingModal(false)}>
               <div className="modal" onClick={(e) => e.stopPropagation()}>
-                <div className="modal-header">Book a Session</div>
+                <div className="modal-header">📅 Book a Session with {model.display_name}</div>
                 <div className="booking-form">
                   <div className="form-group">
                     <label>Date</label>
@@ -1644,6 +2180,10 @@
                       <option value="limited_commercial">Limited Commercial</option>
                     </select>
                   </div>
+                  <div style={{ background: 'var(--bg-card-light)', padding: '1rem', borderRadius: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Estimated Total</span>
+                    <span style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-gold)' }}>${(model.rate || 0) * bookingData.duration}</span>
+                  </div>
                 </div>
                 <div className="modal-footer">
                   <button className="btn btn-secondary" onClick={() => setShowBookingModal(false)}>Cancel</button>
@@ -1653,6 +2193,7 @@
             </div>
           )}
 
+          {/* Paywall Modal */}
           {showPaywallModal && (
             <div className="modal-overlay" onClick={() => setShowPaywallModal(false)}>
               <div className="modal paywall-modal" onClick={(e) => e.stopPropagation()}>
