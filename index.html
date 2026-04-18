@@ -3415,6 +3415,276 @@
       margin-bottom: 1.5rem;
     }
 
+    /* ===== REPUTATION-GATED ACCESS ===== */
+    .rep-page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+
+    .rep-hero {
+      text-align: center;
+      padding: 2rem 0;
+      margin-bottom: 1.5rem;
+    }
+
+    .rep-hero h2 {
+      font-size: 2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent-teal), var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+
+    .rep-hero p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+
+    .rep-level-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+
+    .rep-level-icon {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .rep-level-name {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 0.25rem;
+    }
+
+    .rep-level-subtitle {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+    }
+
+    .rep-progress-bar {
+      width: 100%;
+      height: 12px;
+      background: var(--bg-card-light);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 0.5rem;
+    }
+
+    .rep-progress-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.6s ease;
+    }
+
+    .rep-progress-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .rep-stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .rep-stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .rep-stat-value {
+      font-size: 1.3rem;
+      font-weight: 800;
+      margin-bottom: 0.15rem;
+    }
+
+    .rep-stat-label {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .rep-tiers {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .rep-tier {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .rep-tier.unlocked {
+      border-color: var(--accent-teal);
+    }
+
+    .rep-tier.current {
+      border-color: var(--accent-gold);
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.15);
+    }
+
+    .rep-tier.locked {
+      opacity: 0.55;
+    }
+
+    .rep-tier-icon {
+      font-size: 2rem;
+      flex-shrink: 0;
+    }
+
+    .rep-tier-info {
+      flex: 1;
+    }
+
+    .rep-tier-name {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.15rem;
+    }
+
+    .rep-tier-desc {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    .rep-tier-req {
+      font-size: 0.7rem;
+      color: var(--accent-teal);
+      margin-top: 0.25rem;
+      font-weight: 600;
+    }
+
+    .rep-tier-badge {
+      font-size: 0.7rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .rep-tier-badge.unlocked {
+      background: rgba(0,217,163,0.15);
+      color: var(--success-green);
+    }
+
+    .rep-tier-badge.current {
+      background: rgba(255,215,0,0.15);
+      color: var(--accent-gold);
+    }
+
+    .rep-tier-badge.locked {
+      background: rgba(176,176,184,0.1);
+      color: var(--text-secondary);
+    }
+
+    .rep-info-box {
+      background: rgba(0,217,255,0.06);
+      border: 1px solid rgba(0,217,255,0.2);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    .rep-info-box strong {
+      color: var(--accent-teal);
+    }
+
+    .rep-unlock-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .rep-unlock-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+    }
+
+    .rep-unlock-item.earned {
+      border-color: rgba(0,217,163,0.3);
+    }
+
+    .rep-unlock-item.pending {
+      opacity: 0.5;
+    }
+
+    .rep-gated-overlay {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1.25rem;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    .rep-gated-overlay .lock-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .rep-gated-overlay .lock-text {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.75rem;
+    }
+
+    .rep-gated-overlay .lock-action {
+      font-size: 0.8rem;
+      color: var(--accent-teal);
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .rep-badge-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 20px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      margin-left: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .rep-stats-row {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -4056,7 +4326,21 @@
             ))}
           </div>
 
-          {/* Buy/Sell Panel */}
+          {/* Buy/Sell Panel — Reputation-Gated */}
+          {(() => {
+            const demoClientRep = getClientRepLevel(7, 85);
+            const canTrade = demoClientRep.level >= 2;
+            if (!canTrade) {
+              return (
+                <div className="rep-gated-overlay" style={{ marginBottom: '1rem' }}>
+                  <div className="lock-icon">🔒</div>
+                  <div className="lock-text">Token trading requires <strong>Bronze Member</strong> status (Level 2+)</div>
+                  <div className="lock-action" onClick={() => window.location.hash = 'reputation'}>Complete {demoClientRep.sessionsNeeded} more session{demoClientRep.sessionsNeeded > 1 ? 's' : ''} to unlock →</div>
+                </div>
+              );
+            }
+            return null;
+          })()}
           <div className="token-trade-panel">
             <div className="token-trade-tabs">
               <button className={`token-trade-tab ${tradeMode === 'buy' ? 'active-buy' : ''}`}
@@ -4580,15 +4864,37 @@
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="profile-actions">
-            <button className="btn glow-btn" onClick={() => setShowBookingModal(true)} style={{ flex: 1 }}>
-              📅 Book a Session
-            </button>
-            <button className="btn btn-secondary" onClick={handleMessage} style={{ flex: 1 }}>
-              💬 Send Message
-            </button>
-          </div>
+          {/* Action Buttons — with Reputation Gating for elite models */}
+          {(() => {
+            const isElite = model.sessions_completed > 100;
+            const demoClientRep = getClientRepLevel(7, 85); // demo client: 7 sessions, 85 trust
+            const canBook = !isElite || demoClientRep.level >= 3;
+            return (
+              <div>
+                {isElite && !canBook && (
+                  <div className="rep-gated-overlay">
+                    <div className="lock-icon">🔒</div>
+                    <div className="lock-text">{model.display_name} is a <strong>Premium Model</strong> — Silver Pro (Level 3+) required to book</div>
+                    <div className="lock-action" onClick={() => window.location.hash = 'reputation'}>View My Reputation →</div>
+                  </div>
+                )}
+                {isElite && canBook && (
+                  <div style={{ background: 'rgba(0,217,163,0.06)', border: '1px solid rgba(0,217,163,0.2)', borderRadius: '8px', padding: '0.5rem 0.75rem', marginBottom: '0.75rem', fontSize: '0.8rem', color: 'var(--success-green)', textAlign: 'center' }}>
+                    ✅ Your <strong>{demoClientRep.name}</strong> reputation unlocks booking with premium models
+                  </div>
+                )}
+                <div className="profile-actions">
+                  <button className="btn glow-btn" onClick={() => canBook ? setShowBookingModal(true) : null} style={{ flex: 1, opacity: canBook ? 1 : 0.4, cursor: canBook ? 'pointer' : 'not-allowed' }}>
+                    {canBook ? '📅 Book a Session' : '🔒 Unlock at Silver Pro'}
+                  </button>
+                  <button className="btn btn-secondary" onClick={handleMessage} style={{ flex: 1 }}>
+                    💬 Send Message
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+
 
           {/* Tags */}
           <div className="model-tags" style={{ marginBottom: '1.5rem' }}>
@@ -5019,6 +5325,10 @@
                   <span className={`client-badge trust-${trustLevel}`}>
                     {trustLevel === 'high' ? '🛡️' : trustLevel === 'mid' ? '⭐' : '🆕'} {trustLabel}
                   </span>
+                  {(() => {
+                    const r = getClientRepLevel(client.sessions_completed || 0, client.trust_score || 0);
+                    return <span className="rep-badge-inline" style={{ background: `${r.color}22`, color: r.color, fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}>{r.icon} {r.name}</span>;
+                  })()}
                   {client.location && <span className="profile-location">📍 {client.location}</span>}
                 </div>
               </div>
@@ -5825,6 +6135,10 @@
                     <div className="top-client-name">
                       {client.name}
                       {client.verified && <div className="verified-badge" style={{ width: '16px', height: '16px', fontSize: '0.6rem' }}>✓</div>}
+                      {(() => {
+                        const r = getClientRepLevel(client.sessions, client.trustScore);
+                        return <span className="rep-badge-inline" style={{ background: `${r.color}22`, color: r.color }}>{r.icon} {r.name}</span>;
+                      })()}
                     </div>
                     <div className="top-client-location">📍 {client.location}</div>
 
@@ -7005,6 +7319,157 @@
       );
     }
 
+    // ===== REPUTATION LEVEL HELPER =====
+    function getClientRepLevel(sessions, trustScore) {
+      if (sessions >= 25 && trustScore >= 90) return { level: 5, name: 'Platinum Elite', icon: '💎', color: '#b388ff', next: null, sessionsNeeded: 0, trustNeeded: 0 };
+      if (sessions >= 15 && trustScore >= 85) return { level: 4, name: 'Gold VIP', icon: '👑', color: '#ffd700', next: 'Platinum Elite', sessionsNeeded: 25 - sessions, trustNeeded: Math.max(0, 90 - trustScore) };
+      if (sessions >= 10 && trustScore >= 80) return { level: 3, name: 'Silver Pro', icon: '🥈', color: '#c0c0c0', next: 'Gold VIP', sessionsNeeded: 15 - sessions, trustNeeded: Math.max(0, 85 - trustScore) };
+      if (sessions >= 3 && trustScore >= 70) return { level: 2, name: 'Bronze Member', icon: '🥉', color: '#cd7f32', next: 'Silver Pro', sessionsNeeded: 10 - sessions, trustNeeded: Math.max(0, 80 - trustScore) };
+      return { level: 1, name: 'Newcomer', icon: '🌱', color: '#66bb6a', next: 'Bronze Member', sessionsNeeded: 3 - sessions, trustNeeded: Math.max(0, 70 - trustScore) };
+    }
+
+    // ===== REPUTATION PAGE =====
+    function ReputationPage() {
+      // Demo client stats (in production, pull from auth context)
+      const demoStats = { sessions: 7, trustScore: 85, rating: 4.8, reviews: 6, totalSpent: 2100, memberSince: '2024' };
+      const rep = getClientRepLevel(demoStats.sessions, demoStats.trustScore);
+
+      const tiers = [
+        { level: 1, name: 'Newcomer', icon: '🌱', reqSessions: 0, reqTrust: 0, perks: 'Browse models, view profiles, basic booking access' },
+        { level: 2, name: 'Bronze Member', icon: '🥉', reqSessions: 3, reqTrust: 70, perks: 'Featured on The Wall, leave public reviews, basic token purchases' },
+        { level: 3, name: 'Silver Pro', icon: '🥈', reqSessions: 10, reqTrust: 80, perks: 'Access premium models, early token launches, Inner Circle discounts (5%)' },
+        { level: 4, name: 'Gold VIP', icon: '👑', reqSessions: 15, reqTrust: 85, perks: 'Priority booking, exclusive model access, Inner Circle discounts (10%), VIP token drops' },
+        { level: 5, name: 'Platinum Elite', icon: '💎', reqSessions: 25, reqTrust: 90, perks: 'Elite-only models, max Inner Circle discount (15%), first access to new features, Platinum badge on profile' },
+      ];
+
+      const unlocks = [
+        { feature: 'Browse & Book Models', reqLevel: 1, icon: '📸' },
+        { feature: 'The Wall Placement', reqLevel: 2, icon: '🏆' },
+        { feature: 'Leave Public Reviews', reqLevel: 2, icon: '⭐' },
+        { feature: 'Buy Model Tokens', reqLevel: 2, icon: '📈' },
+        { feature: 'Access Premium Models', reqLevel: 3, icon: '💃' },
+        { feature: 'Early Token Launches', reqLevel: 3, icon: '🚀' },
+        { feature: 'Inner Circle Discounts', reqLevel: 3, icon: '🎯' },
+        { feature: 'Priority Booking Queue', reqLevel: 4, icon: '⚡' },
+        { feature: 'Exclusive Model Access', reqLevel: 4, icon: '🔓' },
+        { feature: 'VIP Token Drops', reqLevel: 4, icon: '💰' },
+        { feature: 'Elite-Only Models', reqLevel: 5, icon: '💎' },
+        { feature: 'Max Inner Circle Discount (15%)', reqLevel: 5, icon: '🎪' },
+        { feature: 'Platinum Profile Badge', reqLevel: 5, icon: '🏅' },
+      ];
+
+      const progressPercent = rep.level === 5 ? 100 : (() => {
+        const currentTier = tiers[rep.level - 1];
+        const nextTier = tiers[rep.level];
+        const sessRange = nextTier.reqSessions - currentTier.reqSessions;
+        const sessDone = demoStats.sessions - currentTier.reqSessions;
+        return Math.min(100, Math.round((sessDone / sessRange) * 100));
+      })();
+
+      return (
+        <div className="rep-page">
+          <div className="rep-hero">
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🛡️</div>
+            <h2>My Reputation</h2>
+            <p>Your trust score and sessions unlock tiers of the platform. Keep booking to level up.</p>
+          </div>
+
+          {/* Info Box */}
+          <div className="rep-info-box">
+            <strong>What is Reputation-Gated Access?</strong> Your reputation level is based on your completed sessions and trust score. As you build trust with models, you unlock exclusive platform features — premium model access, token investment perks, Inner Circle discounts, and more. Every session counts toward your next tier.
+          </div>
+
+          {/* Current Level Card */}
+          <div className="rep-level-card" style={{ borderColor: rep.color, boxShadow: `0 0 25px ${rep.color}22` }}>
+            <div className="rep-level-icon">{rep.icon}</div>
+            <div className="rep-level-name" style={{ color: rep.color }}>{rep.name}</div>
+            <div className="rep-level-subtitle">Level {rep.level} of 5</div>
+            <div className="rep-progress-bar">
+              <div className="rep-progress-fill" style={{ width: `${progressPercent}%`, background: `linear-gradient(90deg, ${rep.color}, var(--accent-teal))` }}></div>
+            </div>
+            <div className="rep-progress-label">
+              {rep.level === 5 ? 'Max level reached!' : `${progressPercent}% to ${rep.next}`}
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="rep-stats-row">
+            <div className="rep-stat-card">
+              <div className="rep-stat-value">{demoStats.sessions}</div>
+              <div className="rep-stat-label">Sessions</div>
+            </div>
+            <div className="rep-stat-card">
+              <div className="rep-stat-value">{demoStats.trustScore}</div>
+              <div className="rep-stat-label">Trust Score</div>
+            </div>
+            <div className="rep-stat-card">
+              <div className="rep-stat-value">{demoStats.rating} ★</div>
+              <div className="rep-stat-label">Avg Rating</div>
+            </div>
+            <div className="rep-stat-card">
+              <div className="rep-stat-value">${(demoStats.totalSpent / 1000).toFixed(1)}k</div>
+              <div className="rep-stat-label">Total Spent</div>
+            </div>
+          </div>
+
+          {/* Tier Roadmap */}
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem' }}>🗺️ Tier Roadmap</h3>
+          <div className="rep-tiers">
+            {tiers.map((tier) => {
+              const status = tier.level < rep.level ? 'unlocked' : tier.level === rep.level ? 'current' : 'locked';
+              return (
+                <div key={tier.level} className={`rep-tier ${status}`}>
+                  <div className="rep-tier-icon">{tier.icon}</div>
+                  <div className="rep-tier-info">
+                    <div className="rep-tier-name">{tier.name}</div>
+                    <div className="rep-tier-desc">{tier.perks}</div>
+                    {tier.level > 1 && (
+                      <div className="rep-tier-req">Requires: {tier.reqSessions} sessions + {tier.reqTrust} trust score</div>
+                    )}
+                  </div>
+                  <div className={`rep-tier-badge ${status}`}>
+                    {status === 'unlocked' ? '✅ Unlocked' : status === 'current' ? '⭐ Current' : '🔒 Locked'}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Feature Unlock Checklist */}
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem' }}>🔓 Feature Unlocks</h3>
+          <div className="rep-unlock-list">
+            {unlocks.map((u, i) => {
+              const earned = rep.level >= u.reqLevel;
+              return (
+                <div key={i} className={`rep-unlock-item ${earned ? 'earned' : 'pending'}`}>
+                  <span style={{ fontSize: '1.2rem' }}>{earned ? '✅' : '🔒'}</span>
+                  <span style={{ fontSize: '1rem' }}>{u.icon}</span>
+                  <span style={{ flex: 1 }}>{u.feature}</span>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Level {u.reqLevel}+</span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Next Steps */}
+          {rep.level < 5 && (
+            <div className="rep-level-card" style={{ borderColor: 'var(--accent-teal)' }}>
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.5rem' }}>🎯 Next: {rep.next}</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                {rep.sessionsNeeded > 0 && <span>Complete <strong style={{ color: 'var(--accent-teal)' }}>{rep.sessionsNeeded} more session{rep.sessionsNeeded > 1 ? 's' : ''}</strong></span>}
+                {rep.sessionsNeeded > 0 && rep.trustNeeded > 0 && <span> and </span>}
+                {rep.trustNeeded > 0 && <span>raise trust score by <strong style={{ color: 'var(--accent-teal)' }}>{rep.trustNeeded} points</strong></span>}
+                <span> to unlock the next tier.</span>
+              </div>
+              <button className="btn glow-btn" style={{ marginTop: '1rem' }} onClick={() => window.location.hash = 'browse'}>
+                📸 Browse Models to Book
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
     // ===== MAIN APP COMPONENT =====
     function App() {
       const auth = useContext(AuthContext);
@@ -7037,6 +7502,7 @@
         if (page === 'feed') return <FeedPage />;
         if (page === 'wall') return <TopClientsPage />;
         if (page === 'invest') return <TokenMarketPage />;
+        if (page === 'reputation') return <ReputationPage />;
         if (page === 'token' && params[0]) return <ModelTokenPage modelId={params[0]} />;
         if (page === 'circle' && params[0]) return <InnerCirclePage modelId={params[0]} />;
         if (page === 'browse') return <BrowseModelsPage />;
@@ -7063,6 +7529,7 @@
               <a className="nav-link" onClick={() => window.location.hash = 'browse'}>Browse</a>
               <a className="nav-link" onClick={() => window.location.hash = 'wall'}>🏆 The Wall</a>
               <a className="nav-link" onClick={() => window.location.hash = 'invest'}>📈 Invest</a>
+              <a className="nav-link" onClick={() => window.location.hash = 'reputation'}>🛡️ Reputation</a>
               <a className="nav-link" onClick={() => window.location.hash = 'contracts'}>Contracts</a>
               <a className="nav-link" onClick={() => window.location.hash = 'formodels'}>For Models</a>
             </div>
