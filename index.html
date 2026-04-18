@@ -2242,6 +2242,188 @@
       color: var(--text-secondary);
     }
 
+    /* ===== 360 OUTFIT VIEWER ===== */
+    .viewer360-section {
+      margin-top: 0.5rem;
+    }
+
+    .viewer360-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .viewer360-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s, border-color 0.2s;
+      position: relative;
+    }
+
+    .viewer360-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-teal);
+    }
+
+    .viewer360-card-preview {
+      height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      background: linear-gradient(135deg, var(--bg-card-light), var(--bg-card));
+      position: relative;
+    }
+
+    .viewer360-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(0,217,255,0.15);
+      border: 1px solid rgba(0,217,255,0.4);
+      color: var(--accent-teal);
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .viewer360-card-label {
+      padding: 0.75rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .viewer360-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .viewer360-close {
+      position: absolute;
+      top: 1rem;
+      right: 1.5rem;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .viewer360-close:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .viewer360-stage {
+      width: 90vw;
+      max-width: 500px;
+      height: 60vh;
+      max-height: 500px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10rem;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: grab;
+      position: relative;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--bg-card), var(--bg-card-light));
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .viewer360-stage:active {
+      cursor: grabbing;
+    }
+
+    .viewer360-indicator {
+      display: flex;
+      gap: 6px;
+      margin-top: 1.5rem;
+      align-items: center;
+    }
+
+    .viewer360-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      transition: all 0.2s;
+    }
+
+    .viewer360-dot.active {
+      background: var(--accent-teal);
+      width: 10px;
+      height: 10px;
+      box-shadow: 0 0 8px rgba(0,217,255,0.5);
+    }
+
+    .viewer360-hint {
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      margin-top: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .viewer360-outfit-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-top: 1rem;
+      color: var(--text-primary);
+    }
+
+    .viewer360-angle-label {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      color: var(--accent-teal);
+      font-weight: 600;
+      pointer-events: none;
+    }
+
+    @media (max-width: 768px) {
+      .viewer360-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+      }
+      .viewer360-card-preview {
+        height: 140px;
+        font-size: 3rem;
+      }
+      .viewer360-stage {
+        height: 50vh;
+        font-size: 8rem;
+      }
+    }
+
     /* ===== TOP CLIENTS WALL ===== */
     .top-clients-header {
       text-align: center;
@@ -3270,6 +3452,92 @@
       );
     }
 
+    // ===== 360 OUTFIT VIEWER (Lazy-loaded, zero dependencies) =====
+    function OutfitViewer360({ outfits }) {
+      const [activeOutfit, setActiveOutfit] = useState(null);
+      const [currentAngle, setCurrentAngle] = useState(0);
+      const [isDragging, setIsDragging] = useState(false);
+      const dragStartX = React.useRef(0);
+      const startAngle = React.useRef(0);
+
+      if (!outfits || outfits.length === 0) return null;
+
+      const angleLabels = ['Front', 'Front-Right', 'Right', 'Back-Right', 'Back', 'Back-Left', 'Left', 'Front-Left'];
+
+      const handlePointerDown = (e) => {
+        setIsDragging(true);
+        dragStartX.current = e.clientX || e.touches?.[0]?.clientX || 0;
+        startAngle.current = currentAngle;
+        e.preventDefault();
+      };
+
+      const handlePointerMove = (e) => {
+        if (!isDragging || !activeOutfit) return;
+        const clientX = e.clientX || e.touches?.[0]?.clientX || 0;
+        const diff = clientX - dragStartX.current;
+        const totalAngles = activeOutfit.angles.length;
+        const sensitivity = 60; // pixels per angle step
+        const angleShift = Math.round(diff / sensitivity);
+        let newAngle = (startAngle.current + angleShift) % totalAngles;
+        if (newAngle < 0) newAngle += totalAngles;
+        setCurrentAngle(newAngle);
+      };
+
+      const handlePointerUp = () => {
+        setIsDragging(false);
+      };
+
+      const openViewer = (outfit) => {
+        setActiveOutfit(outfit);
+        setCurrentAngle(0);
+      };
+
+      return (
+        <div className="viewer360-section">
+          <div className="viewer360-grid">
+            {outfits.map((outfit, i) => (
+              <div key={i} className="viewer360-card" onClick={() => openViewer(outfit)}>
+                <div className="viewer360-card-preview">
+                  {outfit.angles[0]}
+                  <div className="viewer360-badge">🔄 360°</div>
+                </div>
+                <div className="viewer360-card-label">{outfit.name}</div>
+              </div>
+            ))}
+          </div>
+
+          {activeOutfit && (
+            <div className="viewer360-overlay"
+              onMouseMove={handlePointerMove}
+              onMouseUp={handlePointerUp}
+              onMouseLeave={handlePointerUp}
+              onTouchMove={handlePointerMove}
+              onTouchEnd={handlePointerUp}>
+              <button className="viewer360-close" onClick={() => setActiveOutfit(null)}>✕</button>
+              <div className="viewer360-stage"
+                onMouseDown={handlePointerDown}
+                onTouchStart={handlePointerDown}>
+                <span style={{ transition: 'transform 0.15s ease', transform: isDragging ? 'scale(1.05)' : 'scale(1)' }}>
+                  {activeOutfit.angles[currentAngle]}
+                </span>
+                <div className="viewer360-angle-label">
+                  {angleLabels[currentAngle] || `Angle ${currentAngle + 1}`} • {currentAngle + 1}/{activeOutfit.angles.length}
+                </div>
+              </div>
+              <div className="viewer360-outfit-name">{activeOutfit.name}</div>
+              <div className="viewer360-indicator">
+                {activeOutfit.angles.map((_, i) => (
+                  <div key={i} className={`viewer360-dot ${i === currentAngle ? 'active' : ''}`}
+                    onClick={() => setCurrentAngle(i)} style={{ cursor: 'pointer' }} />
+                ))}
+              </div>
+              <div className="viewer360-hint">👆 Drag left/right to rotate • Tap dots to jump</div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
     function ProfilePage({ modelId }) {
       const auth = useContext(AuthContext);
       const [model, setModel] = useState(null);
@@ -3312,6 +3580,26 @@
           { emoji: '🎀', label: 'Pin-Up Classic' },
         ]
       };
+
+      // Demo 360 outfit data — only loads into state when user opens viewer
+      const demo360Outfits = [
+        {
+          name: 'Red Lace Lingerie Set',
+          angles: ['👙', '🔴', '❤️', '💃', '🫦', '💋', '🌹', '♥️'],
+        },
+        {
+          name: 'Masquerade Noir',
+          angles: ['🎭', '🖤', '🃏', '🌙', '✨', '🎩', '🦇', '🌑'],
+        },
+        {
+          name: 'Golden Hour Glamour',
+          angles: ['✨', '💛', '👑', '🌟', '💫', '🔆', '⭐', '🌻'],
+        },
+        {
+          name: 'Classic Pin-Up',
+          angles: ['🎀', '💄', '👠', '🍒', '🎪', '💋', '🌸', '🎶'],
+        },
+      ];
 
       const demoReviews = [
         { id: 1, reviewer_name: 'Marcus T.', rating: 5, text: 'Absolutely professional from start to finish. Aria made the whole session feel comfortable and the photos turned out incredible.', date: '2 weeks ago' },
@@ -3511,6 +3799,32 @@
                 </div>
               </div>
 
+              {/* 360° Outfit Viewer */}
+              {useDemo && (
+                <div className="profile-section">
+                  <div className="profile-section-title"><span>🔄</span> 360° Outfit Viewer</div>
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(0,217,255,0.06), rgba(0,217,255,0.02))',
+                    border: '1px solid rgba(0,217,255,0.2)',
+                    borderRadius: '10px',
+                    padding: '0.85rem 1rem',
+                    marginBottom: '1rem',
+                    display: 'flex',
+                    gap: '0.75rem',
+                    alignItems: 'flex-start'
+                  }}>
+                    <div style={{ fontSize: '1.3rem', flexShrink: 0, marginTop: '2px' }}>ℹ️</div>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--accent-teal)', marginBottom: '0.25rem' }}>What is this?</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                        Drag or swipe to rotate and view outfits from every angle before you book. This helps you see exactly what you're getting — no surprises. Models upload 8 photos per outfit from different angles.
+                      </div>
+                    </div>
+                  </div>
+                  <OutfitViewer360 outfits={demo360Outfits} />
+                </div>
+              )}
+
               {/* Reviews */}
               <div className="profile-section">
                 <div className="profile-section-title"><span>⭐</span> Reviews ({reviews.length})</div>
@@ -3570,6 +3884,24 @@
               </div>
 
               {/* Inner Circle CTA */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(255,215,0,0.06), rgba(255,215,0,0.02))',
+                border: '1px solid rgba(255,215,0,0.2)',
+                borderRadius: '10px',
+                padding: '0.85rem 1rem',
+                marginBottom: '0.75rem',
+                display: 'flex',
+                gap: '0.75rem',
+                alignItems: 'flex-start'
+              }}>
+                <div style={{ fontSize: '1.3rem', flexShrink: 0, marginTop: '2px' }}>ℹ️</div>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--accent-gold)', marginBottom: '0.25rem' }}>What is Inner Circle?</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    A paid membership that gives you behind-the-scenes content, early booking access, session discounts, group chat with the model, and exclusive content drops. Pick a tier that fits your budget.
+                  </div>
+                </div>
+              </div>
               <div className="profile-section" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,110,199,0.08))', borderColor: 'rgba(255,215,0,0.25)' }}>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>💎</div>
