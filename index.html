@@ -1335,6 +1335,559 @@
       color: var(--accent-teal);
     }
 
+    /* ===== SOCIAL FEED ===== */
+    .feed-container {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .feed-create {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .feed-create-top {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .feed-create-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .feed-create-input {
+      flex: 1;
+      background: var(--bg-card-light);
+      border: 1px solid var(--border-color);
+      border-radius: 2rem;
+      padding: 0.75rem 1.25rem;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: border-color 0.3s;
+    }
+
+    .feed-create-input:hover {
+      border-color: var(--accent-pink);
+    }
+
+    .feed-create-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .feed-create-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1rem;
+      border-radius: 2rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card-light);
+      color: var(--text-secondary);
+      transition: all 0.3s;
+    }
+
+    .feed-create-btn:hover {
+      border-color: var(--accent-pink);
+      color: var(--accent-pink);
+    }
+
+    .post-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+      transition: border-color 0.3s;
+    }
+
+    .post-card:hover {
+      border-color: rgba(255,110,199,0.3);
+    }
+
+    .post-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+    }
+
+    .post-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .post-avatar.client-type {
+      background: linear-gradient(135deg, var(--accent-teal), #0066ff);
+    }
+
+    .post-user-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .post-username {
+      font-weight: 700;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      cursor: pointer;
+    }
+
+    .post-username:hover {
+      color: var(--accent-pink);
+    }
+
+    .post-meta {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .post-type-badge {
+      font-size: 0.65rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 1rem;
+      font-weight: 600;
+    }
+
+    .post-type-badge.session-preview {
+      background: rgba(255,110,199,0.15);
+      color: var(--accent-pink);
+    }
+
+    .post-type-badge.portfolio {
+      background: rgba(157,78,221,0.15);
+      color: var(--accent-purple);
+    }
+
+    .post-type-badge.behind-scenes {
+      background: rgba(255,215,0,0.15);
+      color: var(--accent-gold);
+    }
+
+    .post-type-badge.availability {
+      background: rgba(0,217,163,0.15);
+      color: var(--success-green);
+    }
+
+    .post-type-badge.client-showcase {
+      background: rgba(0,217,255,0.15);
+      color: var(--accent-teal);
+    }
+
+    .post-follow-btn {
+      padding: 0.35rem 1rem;
+      border-radius: 2rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--accent-pink);
+      background: transparent;
+      color: var(--accent-pink);
+      transition: all 0.3s;
+    }
+
+    .post-follow-btn:hover, .post-follow-btn.following {
+      background: var(--accent-pink);
+      color: white;
+    }
+
+    .post-text {
+      padding: 0 1.25rem 0.75rem;
+      font-size: 0.9rem;
+      line-height: 1.7;
+      color: var(--text-primary);
+    }
+
+    .post-image {
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: linear-gradient(135deg, var(--bg-card-light), var(--bg-card));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 5rem;
+      position: relative;
+    }
+
+    .post-image-locked {
+      position: relative;
+    }
+
+    .post-image-locked::after {
+      content: '🔒 Premium Content';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(10, 10, 15, 0.85);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-gold);
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .post-actions-bar {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1.25rem;
+      gap: 1.25rem;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .post-action {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: color 0.3s;
+      background: none;
+      border: none;
+      padding: 0;
+    }
+
+    .post-action:hover { color: var(--accent-pink); }
+    .post-action.liked { color: var(--danger-red); }
+    .post-action.bookmarked { color: var(--accent-gold); }
+
+    .post-action-icon {
+      font-size: 1.1rem;
+    }
+
+    .post-tip-btn {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 2rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--accent-gold);
+      background: rgba(255,215,0,0.1);
+      color: var(--accent-gold);
+      transition: all 0.3s;
+    }
+
+    .post-tip-btn:hover {
+      background: var(--accent-gold);
+      color: var(--bg-dark);
+    }
+
+    .post-comments {
+      padding: 0 1.25rem 1rem;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .post-comment {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.5rem 0;
+    }
+
+    .post-comment-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      flex-shrink: 0;
+    }
+
+    .post-comment-body {
+      flex: 1;
+    }
+
+    .post-comment-author {
+      font-weight: 600;
+      font-size: 0.8rem;
+      margin-right: 0.5rem;
+    }
+
+    .post-comment-text {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .post-comment-input {
+      display: flex;
+      gap: 0.5rem;
+      padding-top: 0.75rem;
+      margin-top: 0.5rem;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .post-comment-input input {
+      flex: 1;
+      background: var(--bg-card-light);
+      border: 1px solid var(--border-color);
+      border-radius: 2rem;
+      padding: 0.5rem 1rem;
+      color: var(--text-primary);
+      font-size: 0.85rem;
+    }
+
+    /* ===== STORIES BAR ===== */
+    .stories-bar {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem 0;
+      margin-bottom: 1rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .stories-bar::-webkit-scrollbar { display: none; }
+
+    .story-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .story-ring {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      padding: 3px;
+      background: linear-gradient(135deg, var(--accent-pink), var(--accent-gold), var(--accent-purple));
+    }
+
+    .story-ring.seen {
+      background: var(--border-color);
+    }
+
+    .story-ring.add-story {
+      background: var(--border-color);
+      position: relative;
+    }
+
+    .story-avatar-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: var(--bg-card);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      border: 3px solid var(--bg-dark);
+    }
+
+    .story-add-icon {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 22px;
+      height: 22px;
+      background: var(--accent-pink);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: white;
+      border: 2px solid var(--bg-dark);
+    }
+
+    .story-name {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      max-width: 70px;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .story-viewer {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.95);
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .story-content {
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      position: relative;
+    }
+
+    .story-progress {
+      display: flex;
+      gap: 4px;
+      padding: 1rem 1rem 0;
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      z-index: 2;
+    }
+
+    .story-progress-bar {
+      flex: 1;
+      height: 3px;
+      background: rgba(255,255,255,0.3);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .story-progress-fill {
+      height: 100%;
+      background: white;
+      border-radius: 2px;
+    }
+
+    .story-image {
+      width: 100%;
+      aspect-ratio: 9/16;
+      max-height: 80vh;
+      background: linear-gradient(135deg, var(--bg-card-light), var(--bg-card));
+      border-radius: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .story-header {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      padding: 2rem 1rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+      z-index: 2;
+    }
+
+    .story-caption {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 3rem 1.25rem 1.5rem;
+      background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+      text-align: left;
+    }
+
+    .story-caption-text {
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .story-cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 0.75rem;
+      padding: 0.5rem 1.25rem;
+      border-radius: 2rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: var(--accent-pink);
+      color: white;
+    }
+
+    .story-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 2rem;
+      cursor: pointer;
+      color: white;
+      opacity: 0.7;
+      transition: opacity 0.3s;
+      z-index: 5;
+      background: none;
+      border: none;
+    }
+
+    .story-nav:hover { opacity: 1; }
+    .story-nav.prev { left: -50px; }
+    .story-nav.next { right: -50px; }
+
+    /* ===== FEED TABS / NAV ===== */
+    .feed-tabs {
+      display: flex;
+      gap: 0.25rem;
+      background: var(--bg-card);
+      border-radius: 0.75rem;
+      padding: 0.25rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .feed-tab {
+      flex: 1;
+      padding: 0.6rem;
+      text-align: center;
+      border-radius: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.3s;
+      background: none;
+      border: none;
+    }
+
+    .feed-tab.active {
+      background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+      color: white;
+    }
+
+    .feed-tab:hover:not(.active) {
+      color: var(--text-primary);
+    }
+
     /* ===== BOOKING MODAL ===== */
     .booking-form {
       display: flex;
@@ -2909,6 +3462,404 @@
       );
     }
 
+    function FeedPage() {
+      const auth = useContext(AuthContext);
+      const [feedTab, setFeedTab] = useState('foryou');
+      const [liked, setLiked] = useState({});
+      const [bookmarked, setBookmarked] = useState({});
+      const [following, setFollowing] = useState({});
+      const [showComments, setShowComments] = useState({});
+      const [commentText, setCommentText] = useState({});
+      const [comments, setComments] = useState({});
+      const [viewingStory, setViewingStory] = useState(null);
+      const [storyIndex, setStoryIndex] = useState(0);
+      const [showCreatePost, setShowCreatePost] = useState(false);
+      const [newPostText, setNewPostText] = useState('');
+      const [newPostType, setNewPostType] = useState('portfolio');
+
+      const stories = [
+        { id: 's1', name: 'Your Story', emoji: auth?.profile?.avatar_emoji || '➕', isOwn: true, items: [] },
+        { id: 's2', name: 'Aria V.', emoji: '👩', seen: false, items: [
+          { emoji: '🔥', caption: 'New boudoir set dropping this week! Book now before slots fill up.', cta: 'Book Session', ctaHash: 'profile/demo' },
+          { emoji: '✨', caption: 'Behind the scenes from yesterday\'s glamour shoot in Miami', cta: null },
+        ]},
+        { id: 's3', name: 'Jade M.', emoji: '💃', seen: false, items: [
+          { emoji: '🎭', caption: 'Masquerade theme available for April bookings! Limited spots.', cta: 'View Profile', ctaHash: 'profile/demo' },
+        ]},
+        { id: 's4', name: 'Marcus T.', emoji: '📷', seen: true, isClient: true, items: [
+          { emoji: '📸', caption: 'Just wrapped an incredible session. Check out my showcase!', cta: 'View Portfolio', ctaHash: 'client/demo-client' },
+        ]},
+        { id: 's5', name: 'Sophie L.', emoji: '🌸', seen: false, items: [
+          { emoji: '🌅', caption: 'Golden hour availability open for next weekend. DM me!', cta: 'Message', ctaHash: 'messages' },
+          { emoji: '💐', caption: 'New spring collection outfits just arrived', cta: null },
+        ]},
+        { id: 's6', name: 'Raven K.', emoji: '🦋', seen: true, items: [
+          { emoji: '💎', caption: 'Luxury editorial — my favorite session this month', cta: null },
+        ]},
+      ];
+
+      const demoPosts = [
+        {
+          id: 'p1', userEmoji: '👩', userName: 'Aria Valentina', verified: true,
+          userType: 'model', time: '2h ago', type: 'session-preview', typeLabel: 'Session Preview',
+          text: 'Sneak peek from today\'s boudoir session in my Miami studio. The lighting was absolutely perfect. Slots still open for this week — link in bio to book! 📸✨',
+          imageEmoji: '🔥', likes: 234, commentCount: 18, tips: 12, locked: false,
+          previewComments: [
+            { author: 'Marcus T.', emoji: '📷', text: 'Incredible lighting work here!' },
+            { author: 'David R.', emoji: '🎬', text: 'Do you have weekend availability?' },
+          ]
+        },
+        {
+          id: 'p2', userEmoji: '📷', userName: 'Marcus Thompson', verified: true,
+          userType: 'client', time: '5h ago', type: 'client-showcase', typeLabel: 'Client Showcase',
+          text: 'Just published my latest editorial series from the masquerade shoot with @JadeM. This was such a creative collaboration — 10/10 would book again.',
+          imageEmoji: '🎭', likes: 156, commentCount: 8, tips: 0, locked: false,
+          previewComments: [
+            { author: 'Jade M.', emoji: '💃', text: 'Had so much fun with this one! The photos are stunning' },
+          ]
+        },
+        {
+          id: 'p3', userEmoji: '💃', userName: 'Jade Monroe', verified: true,
+          userType: 'model', time: '8h ago', type: 'availability', typeLabel: 'Now Booking',
+          text: 'April calendar is open! I\'ve added new costume options including masquerade, retro pin-up, and fantasy themes. DM me or use the booking link on my profile. First-time clients get 15% off 🎉',
+          imageEmoji: '📅', likes: 89, commentCount: 24, tips: 5, locked: false,
+          previewComments: [
+            { author: 'New Client', emoji: '👤', text: 'Just booked for next Saturday! Can\'t wait' },
+          ]
+        },
+        {
+          id: 'p4', userEmoji: '🌸', userName: 'Sophie Laurent', verified: true,
+          userType: 'model', time: '1d ago', type: 'behind-scenes', typeLabel: 'Behind the Scenes',
+          text: 'A little behind-the-scenes from the golden hour shoot. These moments between shots are my favorite part of the job. Full set coming to premium subscribers soon 👀',
+          imageEmoji: '🌅', likes: 312, commentCount: 42, tips: 28, locked: false,
+          previewComments: [
+            { author: 'James K.', emoji: '🖤', text: 'The BTS content is always so good' },
+            { author: 'Aria V.', emoji: '👩', text: 'You are glowing queen!' },
+          ]
+        },
+        {
+          id: 'p5', userEmoji: '🦋', userName: 'Raven Knight', verified: true,
+          userType: 'model', time: '2d ago', type: 'portfolio', typeLabel: 'Portfolio',
+          text: 'Premium exclusive: Full luxury lingerie editorial set from the penthouse shoot. 24 high-res photos. Subscribe to unlock.',
+          imageEmoji: '💎', likes: 198, commentCount: 15, tips: 45, locked: true,
+          previewComments: [
+            { author: 'Premium Fan', emoji: '👑', text: 'Subscribed just for this. Worth it!' },
+          ]
+        },
+      ];
+
+      const toggleLike = (postId) => {
+        setLiked(prev => ({ ...prev, [postId]: !prev[postId] }));
+      };
+
+      const toggleBookmark = (postId) => {
+        setBookmarked(prev => ({ ...prev, [postId]: !prev[postId] }));
+      };
+
+      const toggleFollow = (userName) => {
+        setFollowing(prev => ({ ...prev, [userName]: !prev[userName] }));
+      };
+
+      const toggleComments = (postId) => {
+        setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }));
+      };
+
+      const addComment = (postId) => {
+        if (!commentText[postId]?.trim()) return;
+        setComments(prev => ({
+          ...prev,
+          [postId]: [...(prev[postId] || []), { author: auth?.profile?.display_name || 'You', emoji: auth?.profile?.avatar_emoji || '👤', text: commentText[postId] }]
+        }));
+        setCommentText(prev => ({ ...prev, [postId]: '' }));
+      };
+
+      const openStory = (storyId) => {
+        const story = stories.find(s => s.id === storyId);
+        if (story && story.items && story.items.length > 0) {
+          setViewingStory(story);
+          setStoryIndex(0);
+        }
+      };
+
+      const nextStoryItem = () => {
+        if (viewingStory && storyIndex < viewingStory.items.length - 1) {
+          setStoryIndex(prev => prev + 1);
+        } else {
+          setViewingStory(null);
+        }
+      };
+
+      const prevStoryItem = () => {
+        if (storyIndex > 0) {
+          setStoryIndex(prev => prev - 1);
+        }
+      };
+
+      const filteredPosts = feedTab === 'foryou' ? demoPosts :
+        feedTab === 'models' ? demoPosts.filter(p => p.userType === 'model') :
+        feedTab === 'clients' ? demoPosts.filter(p => p.userType === 'client') :
+        feedTab === 'booking' ? demoPosts.filter(p => p.type === 'availability' || p.type === 'session-preview') :
+        demoPosts;
+
+      return (
+        <div className="feed-container">
+          {/* Stories Bar */}
+          <div className="stories-bar">
+            {stories.map(story => (
+              <div key={story.id} className="story-item" onClick={() => story.isOwn ? null : openStory(story.id)}>
+                <div className={`story-ring ${story.seen ? 'seen' : ''} ${story.isOwn ? 'add-story' : ''}`}>
+                  <div className="story-avatar-inner">{story.emoji}</div>
+                  {story.isOwn && <div className="story-add-icon">+</div>}
+                </div>
+                <div className="story-name">{story.name}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Feed Tabs */}
+          <div className="feed-tabs">
+            {[
+              { key: 'foryou', label: 'For You' },
+              { key: 'models', label: 'Models' },
+              { key: 'clients', label: 'Clients' },
+              { key: 'booking', label: 'Now Booking' },
+            ].map(tab => (
+              <button key={tab.key} className={`feed-tab ${feedTab === tab.key ? 'active' : ''}`} onClick={() => setFeedTab(tab.key)}>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Create Post */}
+          <div className="feed-create">
+            {!showCreatePost ? (
+              <div>
+                <div className="feed-create-top">
+                  <div className="feed-create-avatar">{auth?.profile?.avatar_emoji || '👤'}</div>
+                  <div className="feed-create-input" onClick={() => setShowCreatePost(true)}>
+                    Share a session preview, update, or availability...
+                  </div>
+                </div>
+                <div className="feed-create-actions">
+                  <button className="feed-create-btn" onClick={() => setShowCreatePost(true)}>📸 Photo</button>
+                  <button className="feed-create-btn" onClick={() => setShowCreatePost(true)}>📅 Availability</button>
+                  <button className="feed-create-btn" onClick={() => setShowCreatePost(true)}>✨ Portfolio</button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                  {[
+                    { key: 'portfolio', label: '✨ Portfolio' },
+                    { key: 'session-preview', label: '📸 Session Preview' },
+                    { key: 'availability', label: '📅 Availability' },
+                    { key: 'behind-scenes', label: '🎬 Behind Scenes' },
+                  ].map(t => (
+                    <button key={t.key}
+                      className={newPostType === t.key ? 'btn glow-btn' : 'btn btn-secondary'}
+                      style={{ fontSize: '0.75rem', padding: '0.3rem 0.75rem' }}
+                      onClick={() => setNewPostType(t.key)}
+                    >{t.label}</button>
+                  ))}
+                </div>
+                <textarea
+                  value={newPostText}
+                  onChange={(e) => setNewPostText(e.target.value)}
+                  placeholder="What do you want to share?"
+                  style={{
+                    width: '100%', minHeight: '80px', background: 'var(--bg-card-light)',
+                    border: '1px solid var(--border-color)', borderRadius: '0.5rem',
+                    padding: '0.75rem', color: 'var(--text-primary)', fontSize: '0.9rem',
+                    resize: 'vertical', marginBottom: '0.75rem'
+                  }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="feed-create-actions">
+                    <button className="feed-create-btn">📷 Add Photo</button>
+                    <button className="feed-create-btn">🔒 Premium Only</button>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => setShowCreatePost(false)}>Cancel</button>
+                    <button className="btn glow-btn" style={{ fontSize: '0.8rem' }} onClick={() => {
+                      if (newPostText.trim()) {
+                        auth?.showToast?.('Post published!', 'success') || alert('Post published!');
+                        setNewPostText('');
+                        setShowCreatePost(false);
+                      }
+                    }}>Post</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Posts Feed */}
+          {filteredPosts.map(post => (
+            <div key={post.id} className="post-card">
+              {/* Post Header */}
+              <div className="post-header">
+                <div className={`post-avatar ${post.userType === 'client' ? 'client-type' : ''}`}
+                  onClick={() => window.location.hash = post.userType === 'client' ? 'client/demo-client' : 'profile/demo'}>
+                  {post.userEmoji}
+                </div>
+                <div className="post-user-info">
+                  <div className="post-username"
+                    onClick={() => window.location.hash = post.userType === 'client' ? 'client/demo-client' : 'profile/demo'}>
+                    {post.userName}
+                    {post.verified && <div className="verified-badge" style={{ width: '16px', height: '16px', fontSize: '0.6rem' }}>✓</div>}
+                  </div>
+                  <div className="post-meta">
+                    {post.time}
+                    <span className={`post-type-badge ${post.type}`}>{post.typeLabel}</span>
+                  </div>
+                </div>
+                <button
+                  className={`post-follow-btn ${following[post.userName] ? 'following' : ''}`}
+                  onClick={() => toggleFollow(post.userName)}
+                >
+                  {following[post.userName] ? 'Following' : 'Follow'}
+                </button>
+              </div>
+
+              {/* Post Text */}
+              <div className="post-text">{post.text}</div>
+
+              {/* Post Image */}
+              <div className={`post-image ${post.locked ? 'post-image-locked' : ''}`}>
+                {post.imageEmoji}
+              </div>
+
+              {/* Actions Bar */}
+              <div className="post-actions-bar">
+                <button className={`post-action ${liked[post.id] ? 'liked' : ''}`} onClick={() => toggleLike(post.id)}>
+                  <span className="post-action-icon">{liked[post.id] ? '❤️' : '🤍'}</span>
+                  {post.likes + (liked[post.id] ? 1 : 0)}
+                </button>
+                <button className="post-action" onClick={() => toggleComments(post.id)}>
+                  <span className="post-action-icon">💬</span>
+                  {post.commentCount + (comments[post.id]?.length || 0)}
+                </button>
+                <button className={`post-action ${bookmarked[post.id] ? 'bookmarked' : ''}`} onClick={() => toggleBookmark(post.id)}>
+                  <span className="post-action-icon">{bookmarked[post.id] ? '🔖' : '📌'}</span>
+                  Save
+                </button>
+                {post.userType === 'model' && (
+                  <button className="post-tip-btn" onClick={() => auth?.showToast?.('Tips coming soon with Stripe!', 'info') || alert('Tips coming soon!')}>
+                    💰 Tip
+                  </button>
+                )}
+              </div>
+
+              {/* Comments */}
+              {(showComments[post.id] || post.previewComments?.length > 0) && (
+                <div className="post-comments">
+                  {post.previewComments?.map((c, i) => (
+                    <div key={i} className="post-comment">
+                      <div className="post-comment-avatar">{c.emoji}</div>
+                      <div className="post-comment-body">
+                        <span className="post-comment-author">{c.author}</span>
+                        <span className="post-comment-text">{c.text}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {comments[post.id]?.map((c, i) => (
+                    <div key={`new-${i}`} className="post-comment">
+                      <div className="post-comment-avatar">{c.emoji}</div>
+                      <div className="post-comment-body">
+                        <span className="post-comment-author">{c.author}</span>
+                        <span className="post-comment-text">{c.text}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {showComments[post.id] && (
+                    <div className="post-comment-input">
+                      <input
+                        placeholder="Add a comment..."
+                        value={commentText[post.id] || ''}
+                        onChange={(e) => setCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
+                        onKeyDown={(e) => e.key === 'Enter' && addComment(post.id)}
+                      />
+                      <button className="btn glow-btn" style={{ fontSize: '0.75rem', padding: '0.4rem 0.8rem' }} onClick={() => addComment(post.id)}>Post</button>
+                    </div>
+                  )}
+                  {!showComments[post.id] && (
+                    <div style={{ paddingTop: '0.5rem' }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => toggleComments(post.id)}>
+                        View all {post.commentCount} comments
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* Story Viewer Overlay */}
+          {viewingStory && (
+            <StoryViewer
+              story={viewingStory}
+              storyIndex={storyIndex}
+              onNext={nextStoryItem}
+              onPrev={prevStoryItem}
+              onClose={() => setViewingStory(null)}
+            />
+          )}
+        </div>
+      );
+    }
+
+    /* Story Viewer - separate component */
+    function StoryViewer({ story, storyIndex, onNext, onPrev, onClose }) {
+      if (!story || !story.items || story.items.length === 0) return null;
+      const item = story.items[storyIndex];
+
+      return (
+        <div className="story-viewer" onClick={onClose}>
+          <div className="story-content" onClick={(e) => e.stopPropagation()}>
+            <div className="story-image">
+              {/* Progress bars */}
+              <div className="story-progress">
+                {story.items.map((_, i) => (
+                  <div key={i} className="story-progress-bar">
+                    <div className="story-progress-fill" style={{ width: i < storyIndex ? '100%' : i === storyIndex ? '100%' : '0%' }}></div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Header */}
+              <div className="story-header">
+                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-pink))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>
+                  {story.emoji}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{story.name}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>Just now</div>
+                </div>
+                <button onClick={onClose} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' }}>✕</button>
+              </div>
+
+              {/* Main content */}
+              <div style={{ fontSize: '5rem' }}>{item.emoji}</div>
+
+              {/* Caption */}
+              <div className="story-caption">
+                <div className="story-caption-text">{item.caption}</div>
+                {item.cta && (
+                  <button className="story-cta-btn" onClick={() => { onClose(); window.location.hash = item.ctaHash; }}>
+                    {item.cta} →
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Navigation */}
+            {storyIndex > 0 && <button className="story-nav prev" onClick={onPrev}>‹</button>}
+            <button className="story-nav next" onClick={onNext}>›</button>
+          </div>
+        </div>
+      );
+    }
+
     function MessagesPage({ conversationId }) {
       const auth = useContext(AuthContext);
       const [conversations, setConversations] = useState([]);
@@ -3629,7 +4580,8 @@
       const renderPage = () => {
         const [page, ...params] = currentPage.split('/');
 
-        if (page === 'home') return !auth.currentUser ? <HomePage /> : <BrowseModelsPage />;
+        if (page === 'home') return !auth.currentUser ? <HomePage /> : <FeedPage />;
+        if (page === 'feed') return <FeedPage />;
         if (page === 'browse') return <BrowseModelsPage />;
         if (page === 'profile' && params[0]) return <ProfilePage modelId={params[0]} />;
         if (page === 'client' && params[0]) return <ClientProfilePage clientId={params[0]} />;
@@ -3650,6 +4602,7 @@
             <div className="nav-brand" onClick={() => window.location.hash = 'home'}>🎀 ModelBid</div>
 
             <div className="nav-links">
+              <a className="nav-link" onClick={() => window.location.hash = 'feed'}>Feed</a>
               <a className="nav-link" onClick={() => window.location.hash = 'browse'}>Browse</a>
               <a className="nav-link" onClick={() => window.location.hash = 'contracts'}>Contracts</a>
               <a className="nav-link" onClick={() => window.location.hash = 'formodels'}>For Models</a>
