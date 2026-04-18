@@ -1888,6 +1888,360 @@
       color: var(--text-primary);
     }
 
+    /* ===== INNER CIRCLE ===== */
+    .inner-circle-hero {
+      text-align: center;
+      padding: 2.5rem 1.5rem;
+      background: linear-gradient(135deg, rgba(255,110,199,0.08), rgba(157,78,221,0.08), rgba(255,215,0,0.05));
+      border: 1px solid rgba(255,110,199,0.2);
+      border-radius: 1rem;
+      margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .inner-circle-hero::before {
+      content: '';
+      position: absolute;
+      top: -50%; left: -50%; width: 200%; height: 200%;
+      background: conic-gradient(from 0deg, transparent, rgba(255,110,199,0.05), transparent, rgba(255,215,0,0.05), transparent);
+      animation: icRotate 20s linear infinite;
+    }
+
+    @keyframes icRotate {
+      to { transform: rotate(360deg); }
+    }
+
+    .inner-circle-hero > * { position: relative; z-index: 1; }
+
+    .ic-model-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin: 0 auto 1rem;
+      border: 3px solid var(--accent-gold);
+      box-shadow: 0 0 24px rgba(255,110,199,0.3);
+    }
+
+    .ic-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      margin-bottom: 0.25rem;
+    }
+
+    .ic-subtitle {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+    }
+
+    .ic-member-count {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 1rem;
+      border-radius: 2rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: rgba(255,215,0,0.1);
+      color: var(--accent-gold);
+      border: 1px solid rgba(255,215,0,0.25);
+    }
+
+    .ic-tiers {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .ic-tier-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border-color);
+      border-radius: 1rem;
+      padding: 1.75rem;
+      text-align: center;
+      position: relative;
+      transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .ic-tier-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .ic-tier-card.tier-bronze {
+      border-color: #cd7f32;
+    }
+
+    .ic-tier-card.tier-bronze:hover {
+      box-shadow: 0 8px 24px rgba(205,127,50,0.2);
+    }
+
+    .ic-tier-card.tier-silver {
+      border-color: #c0c0c0;
+    }
+
+    .ic-tier-card.tier-silver:hover {
+      box-shadow: 0 8px 24px rgba(192,192,192,0.2);
+    }
+
+    .ic-tier-card.tier-gold {
+      border-color: var(--accent-gold);
+      background: linear-gradient(135deg, var(--bg-card), rgba(255,215,0,0.05));
+    }
+
+    .ic-tier-card.tier-gold:hover {
+      box-shadow: 0 8px 24px rgba(255,215,0,0.25);
+    }
+
+    .ic-tier-badge {
+      display: inline-block;
+      padding: 0.3rem 0.75rem;
+      border-radius: 2rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.75rem;
+    }
+
+    .ic-tier-badge.bronze { background: rgba(205,127,50,0.2); color: #cd7f32; }
+    .ic-tier-badge.silver { background: rgba(192,192,192,0.2); color: #e0e0e0; }
+    .ic-tier-badge.gold { background: rgba(255,215,0,0.2); color: var(--accent-gold); }
+
+    .ic-tier-price {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 0.25rem;
+    }
+
+    .ic-tier-price span {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .ic-tier-perks {
+      list-style: none;
+      padding: 0;
+      margin: 1rem 0;
+      text-align: left;
+    }
+
+    .ic-tier-perks li {
+      padding: 0.4rem 0;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .ic-tier-perks li span {
+      flex-shrink: 0;
+    }
+
+    .ic-popular-tag {
+      position: absolute;
+      top: -1px;
+      right: 1.5rem;
+      background: var(--accent-gold);
+      color: var(--bg-dark);
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.3rem 0.75rem;
+      border-radius: 0 0 0.5rem 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .ic-feed-container {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .ic-section-tabs {
+      display: flex;
+      gap: 0.25rem;
+      background: var(--bg-card);
+      border-radius: 0.75rem;
+      padding: 0.25rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .ic-section-tab {
+      flex: 1;
+      padding: 0.6rem;
+      text-align: center;
+      border-radius: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.3s;
+      background: none;
+      border: none;
+    }
+
+    .ic-section-tab.active {
+      background: linear-gradient(135deg, var(--accent-gold), #ffaa00);
+      color: var(--bg-dark);
+    }
+
+    .ic-locked-overlay {
+      position: relative;
+      border-radius: 0.75rem;
+      overflow: hidden;
+    }
+
+    .ic-locked-overlay::after {
+      content: '🔒 Join Inner Circle to unlock';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(10,10,15,0.85);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-gold);
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 0.75rem;
+    }
+
+    .ic-chat-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      overflow: hidden;
+    }
+
+    .ic-chat-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .ic-chat-messages {
+      padding: 1rem 1.25rem;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .ic-chat-msg {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .ic-chat-msg-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+
+    .ic-chat-msg-avatar.model-msg {
+      border: 2px solid var(--accent-gold);
+    }
+
+    .ic-chat-msg-body {
+      background: var(--bg-card-light);
+      border-radius: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      max-width: 80%;
+    }
+
+    .ic-chat-msg-author {
+      font-weight: 600;
+      font-size: 0.8rem;
+      margin-bottom: 0.15rem;
+    }
+
+    .ic-chat-msg-author.is-model {
+      color: var(--accent-pink);
+    }
+
+    .ic-chat-msg-text {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .ic-chat-msg-time {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.3);
+      margin-top: 0.15rem;
+    }
+
+    .ic-chat-input {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .ic-chat-input input {
+      flex: 1;
+      background: var(--bg-card-light);
+      border: 1px solid var(--border-color);
+      border-radius: 2rem;
+      padding: 0.6rem 1rem;
+      color: var(--text-primary);
+      font-size: 0.85rem;
+    }
+
+    .ic-perk-highlight {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      margin-bottom: 0.75rem;
+      transition: border-color 0.3s;
+    }
+
+    .ic-perk-highlight:hover {
+      border-color: var(--accent-gold);
+    }
+
+    .ic-perk-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 0.75rem;
+      background: rgba(255,215,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .ic-perk-info h4 {
+      font-size: 0.95rem;
+      margin-bottom: 0.15rem;
+    }
+
+    .ic-perk-info p {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
     /* ===== TOP CLIENTS WALL ===== */
     .top-clients-header {
       text-align: center;
@@ -3215,6 +3569,24 @@
                 </div>
               </div>
 
+              {/* Inner Circle CTA */}
+              <div className="profile-section" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,110,199,0.08))', borderColor: 'rgba(255,215,0,0.25)' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>💎</div>
+                  <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>Inner Circle</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
+                    Exclusive BTS content, early bookings, member discounts & group chat
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--accent-gold)', marginBottom: '0.75rem' }}>
+                    👥 89 members • From $9.99/mo
+                  </div>
+                  <button className="btn glow-btn btn-block" style={{ background: 'linear-gradient(135deg, var(--accent-gold), #ffaa00)', fontSize: '0.85rem' }}
+                    onClick={() => window.location.hash = `circle/${model.id || 'demo'}`}>
+                    Join Inner Circle →
+                  </button>
+                </div>
+              </div>
+
               {/* Quick Book CTA */}
               <div className="profile-section" style={{ background: 'linear-gradient(135deg, rgba(255,110,199,0.1), rgba(157,78,221,0.1))', borderColor: 'rgba(255,110,199,0.3)' }}>
                 <div style={{ textAlign: 'center' }}>
@@ -3705,6 +4077,368 @@
               </div>
             </div>
           </div>
+        </div>
+      );
+    }
+
+    function InnerCirclePage({ modelId }) {
+      const auth = useContext(AuthContext);
+      const [activeSection, setActiveSection] = useState('perks');
+      const [isMember, setIsMember] = useState(false);
+      const [selectedTier, setSelectedTier] = useState(null);
+      const [chatInput, setChatInput] = useState('');
+      const [chatMessages, setChatMessages] = useState([]);
+      const [likedPosts, setLikedPosts] = useState({});
+
+      // Demo data
+      const model = {
+        name: 'Aria Valentina',
+        emoji: '👩',
+        verified: true,
+        memberCount: 89,
+        tagline: 'Welcome to my inner circle. Exclusive content, early bookings, and direct access.',
+      };
+
+      const tiers = [
+        {
+          id: 'bronze', name: 'Bronze Circle', badge: 'bronze', price: 9.99, color: '#cd7f32',
+          perks: [
+            { icon: '📸', text: 'Behind-the-scenes feed access' },
+            { icon: '🔔', text: 'New content drop notifications' },
+            { icon: '💬', text: 'Group chat access (read only)' },
+            { icon: '🏷️', text: 'Bronze badge on your profile' },
+          ]
+        },
+        {
+          id: 'silver', name: 'Silver Circle', badge: 'silver', price: 19.99, color: '#c0c0c0', popular: true,
+          perks: [
+            { icon: '📸', text: 'All Bronze perks included' },
+            { icon: '⏰', text: '24-hour early booking window' },
+            { icon: '💬', text: 'Full group chat access (post & react)' },
+            { icon: '💰', text: '10% off all session bookings' },
+            { icon: '🎁', text: 'Monthly exclusive content drop' },
+            { icon: '⚡', text: 'Priority DM responses' },
+          ]
+        },
+        {
+          id: 'gold', name: 'Gold Circle', badge: 'gold', price: 34.99, color: '#ffd700',
+          perks: [
+            { icon: '👑', text: 'All Silver perks included' },
+            { icon: '⏰', text: '48-hour early booking window' },
+            { icon: '💰', text: '20% off all session bookings' },
+            { icon: '📞', text: '1-on-1 monthly video call (15 min)' },
+            { icon: '🎨', text: 'Vote on upcoming session themes' },
+            { icon: '📦', text: 'Quarterly surprise content bundle' },
+            { icon: '🌟', text: 'Gold badge + featured in model\'s profile' },
+          ]
+        },
+      ];
+
+      const btsPosts = [
+        { id: 'bts1', emoji: '🔥', caption: 'Just finished setting up the studio for tomorrow\'s shoot. The new lighting rig is INSANE. You\'re gonna love what\'s coming.', time: '3h ago', likes: 34, tier: 'bronze' },
+        { id: 'bts2', emoji: '👗', caption: 'New outfits just arrived! Sneak peek at the luxury lingerie collection I\'ll be wearing for April sessions. Which one should I debut first?', time: '1d ago', likes: 67, tier: 'bronze', poll: ['Black lace set', 'Red silk robe', 'Gold bodysuit'] },
+        { id: 'bts3', emoji: '✨', caption: 'Unedited behind-the-scenes from the penthouse shoot. Raw, real, and my favorite photos from the whole day.', time: '3d ago', likes: 89, tier: 'silver' },
+        { id: 'bts4', emoji: '🎬', caption: 'Full 12-minute BTS video walkthrough of my favorite session this month. I break down every outfit, pose, and lighting setup.', time: '1w ago', likes: 112, tier: 'gold' },
+      ];
+
+      const demoChat = [
+        { author: 'Aria Valentina', emoji: '👩', isModel: true, text: 'Hey everyone! Just dropped new content in the BTS feed. Check it out and let me know which outfit you want to see next week! 💕', time: '2h ago' },
+        { author: 'Marcus T.', emoji: '📷', isModel: false, text: 'The gold bodysuit for sure! That would look amazing with the studio lighting you showed earlier', time: '1h ago' },
+        { author: 'David R.', emoji: '🎬', isModel: false, text: 'Red silk robe gets my vote. Classic elegance.', time: '45m ago' },
+        { author: 'Aria Valentina', emoji: '👩', isModel: true, text: 'Love the energy! I\'m thinking I\'ll do gold bodysuit for Friday and red silk for the weekend shoot. Gold Circle members — I\'ll post the full unedited set from both 🔥', time: '30m ago' },
+        { author: 'James K.', emoji: '🖤', isModel: false, text: 'Any availability for next Thursday? Trying to book before it goes public', time: '15m ago' },
+        { author: 'Aria Valentina', emoji: '👩', isModel: true, text: 'Thursday 2pm is open! Silver & Gold members can book now — it goes public tomorrow at noon. Use your member discount at checkout ✨', time: '5m ago' },
+      ];
+
+      const memberPerks = [
+        { icon: '⏰', title: 'Early Booking Access', desc: 'See new availability 24-48 hours before anyone else. Never miss a slot.' },
+        { icon: '📸', title: 'Exclusive BTS Content', desc: 'Behind-the-scenes photos, videos, and stories only members can see.' },
+        { icon: '💬', title: 'Private Group Chat', desc: 'Direct access to the model and other members. Ask questions, make requests.' },
+        { icon: '💰', title: 'Member Discounts', desc: '10-20% off every session booking. The subscription pays for itself.' },
+        { icon: '🎁', title: 'Content Drops', desc: 'Monthly and quarterly exclusive content bundles delivered to your feed.' },
+        { icon: '⚡', title: 'Priority Everything', desc: 'Your DMs answered first. Your bookings processed first. VIP treatment.' },
+      ];
+
+      const upcomingDrops = [
+        { title: 'Midnight Masquerade Set', emoji: '🎭', date: 'Apr 22', tier: 'silver', photos: 18 },
+        { title: 'Studio Session Raw BTS', emoji: '🎬', date: 'Apr 25', tier: 'gold', photos: 24 },
+        { title: 'Spring Lookbook Preview', emoji: '🌸', date: 'Apr 28', tier: 'bronze', photos: 8 },
+      ];
+
+      const handleJoin = (tier) => {
+        setSelectedTier(tier);
+        setIsMember(true);
+        auth?.showToast?.(`Joined ${tier.name} for $${tier.price}/mo!`, 'success');
+      };
+
+      const sendChat = () => {
+        if (!chatInput.trim()) return;
+        setChatMessages(prev => [...prev, {
+          author: auth?.profile?.display_name || 'You',
+          emoji: auth?.profile?.avatar_emoji || '👤',
+          isModel: false,
+          text: chatInput,
+          time: 'Just now'
+        }]);
+        setChatInput('');
+      };
+
+      const tierAccess = (postTier) => {
+        if (!isMember) return false;
+        if (!selectedTier) return false;
+        const order = ['bronze', 'silver', 'gold'];
+        return order.indexOf(selectedTier.id) >= order.indexOf(postTier);
+      };
+
+      return (
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+          {/* Back */}
+          <button className="btn btn-secondary" onClick={() => window.history.back()} style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
+            ← Back
+          </button>
+
+          {/* Hero */}
+          <div className="inner-circle-hero">
+            <div className="ic-model-avatar">{model.emoji}</div>
+            <div className="ic-title">
+              {model.name}'s Inner Circle
+            </div>
+            <div className="ic-subtitle">{model.tagline}</div>
+            <div className="ic-member-count">
+              👥 {model.memberCount} members
+            </div>
+          </div>
+
+          {/* Tier Cards */}
+          <h3 style={{ marginBottom: '1rem', textAlign: 'center' }}>Choose Your Tier</h3>
+          <div className="ic-tiers">
+            {tiers.map(tier => (
+              <div key={tier.id} className={`ic-tier-card tier-${tier.id}`}>
+                {tier.popular && <div className="ic-popular-tag">Most Popular</div>}
+                <div className={`ic-tier-badge ${tier.badge}`}>{tier.name}</div>
+                <div className="ic-tier-price" style={{ color: tier.color }}>
+                  ${tier.price}<span>/mo</span>
+                </div>
+                <ul className="ic-tier-perks">
+                  {tier.perks.map((perk, i) => (
+                    <li key={i}><span>{perk.icon}</span> {perk.text}</li>
+                  ))}
+                </ul>
+                <button
+                  className={isMember && selectedTier?.id === tier.id ? 'btn btn-secondary btn-block' : 'btn glow-btn btn-block'}
+                  style={{ fontSize: '0.85rem' }}
+                  onClick={() => handleJoin(tier)}
+                >
+                  {isMember && selectedTier?.id === tier.id ? '✓ Current Plan' : `Join for $${tier.price}/mo`}
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Section Tabs */}
+          <div className="ic-section-tabs" style={{ marginTop: '2rem' }}>
+            {[
+              { key: 'perks', label: '✨ Perks' },
+              { key: 'bts', label: '📸 BTS Feed' },
+              { key: 'chat', label: '💬 Group Chat' },
+              { key: 'drops', label: '🎁 Upcoming Drops' },
+            ].map(tab => (
+              <button key={tab.key} className={`ic-section-tab ${activeSection === tab.key ? 'active' : ''}`} onClick={() => setActiveSection(tab.key)}>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Perks Section */}
+          {activeSection === 'perks' && (
+            <div>
+              <h3 style={{ marginBottom: '1rem' }}>Member Perks</h3>
+              {memberPerks.map((perk, i) => (
+                <div key={i} className="ic-perk-highlight">
+                  <div className="ic-perk-icon">{perk.icon}</div>
+                  <div className="ic-perk-info">
+                    <h4>{perk.title}</h4>
+                    <p>{perk.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* BTS Feed */}
+          {activeSection === 'bts' && (
+            <div className="ic-feed-container">
+              <h3 style={{ marginBottom: '1rem' }}>Behind the Scenes</h3>
+              {btsPosts.map(post => {
+                const hasAccess = tierAccess(post.tier);
+                return (
+                  <div key={post.id} className={`post-card ${!hasAccess && !isMember ? '' : ''}`} style={{ marginBottom: '1rem' }}>
+                    <div className="post-header">
+                      <div className="post-avatar">{model.emoji}</div>
+                      <div className="post-user-info">
+                        <div className="post-username">{model.name} <div className="verified-badge" style={{ width: '16px', height: '16px', fontSize: '0.6rem' }}>✓</div></div>
+                        <div className="post-meta">
+                          {post.time}
+                          <span className={`ic-tier-badge ${post.tier}`} style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem' }}>
+                            {post.tier === 'bronze' ? '🥉 Bronze+' : post.tier === 'silver' ? '🥈 Silver+' : '🥇 Gold'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {hasAccess || post.tier === 'bronze' ? (
+                      <div>
+                        <div className="post-text">{post.caption}</div>
+                        <div className="post-image" style={{ aspectRatio: '16/9' }}>{post.emoji}</div>
+                        {post.poll && (
+                          <div style={{ padding: '0.75rem 1.25rem' }}>
+                            {post.poll.map((opt, i) => (
+                              <div key={i} style={{
+                                padding: '0.6rem 1rem', marginBottom: '0.5rem', borderRadius: '0.5rem',
+                                background: 'var(--bg-card-light)', border: '1px solid var(--border-color)',
+                                cursor: 'pointer', fontSize: '0.85rem', transition: 'border-color 0.3s'
+                              }}
+                              onMouseOver={(e) => e.target.style.borderColor = 'var(--accent-pink)'}
+                              onMouseOut={(e) => e.target.style.borderColor = 'var(--border-color)'}
+                              >
+                                {opt}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div className="post-actions-bar">
+                          <button className={`post-action ${likedPosts[post.id] ? 'liked' : ''}`} onClick={() => setLikedPosts(p => ({...p, [post.id]: !p[post.id]}))}>
+                            <span className="post-action-icon">{likedPosts[post.id] ? '❤️' : '🤍'}</span>
+                            {post.likes + (likedPosts[post.id] ? 1 : 0)}
+                          </button>
+                          <button className="post-action"><span className="post-action-icon">💬</span> Reply</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="ic-locked-overlay" style={{ margin: '0 1.25rem 1rem', height: '200px', background: 'var(--bg-card-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ fontSize: '3rem', opacity: 0.1 }}>{post.emoji}</div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Group Chat */}
+          {activeSection === 'chat' && (
+            <div>
+              <h3 style={{ marginBottom: '1rem' }}>Group Chat</h3>
+              {isMember && selectedTier?.id !== 'bronze' ? (
+                <div className="ic-chat-container">
+                  <div className="ic-chat-header">
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>💬 {model.name}'s Circle Chat</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{model.memberCount} members • {Math.floor(model.memberCount * 0.3)} online</div>
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--success-green)' }}>● Live</div>
+                  </div>
+                  <div className="ic-chat-messages">
+                    {demoChat.map((msg, i) => (
+                      <div key={i} className="ic-chat-msg">
+                        <div className={`ic-chat-msg-avatar ${msg.isModel ? 'model-msg' : ''}`}>{msg.emoji}</div>
+                        <div className="ic-chat-msg-body">
+                          <div className={`ic-chat-msg-author ${msg.isModel ? 'is-model' : ''}`}>
+                            {msg.author} {msg.isModel && <span style={{ fontSize: '0.65rem', color: 'var(--accent-gold)' }}>★ Model</span>}
+                          </div>
+                          <div className="ic-chat-msg-text">{msg.text}</div>
+                          <div className="ic-chat-msg-time">{msg.time}</div>
+                        </div>
+                      </div>
+                    ))}
+                    {chatMessages.map((msg, i) => (
+                      <div key={`new-${i}`} className="ic-chat-msg">
+                        <div className="ic-chat-msg-avatar">{msg.emoji}</div>
+                        <div className="ic-chat-msg-body">
+                          <div className="ic-chat-msg-author">{msg.author}</div>
+                          <div className="ic-chat-msg-text">{msg.text}</div>
+                          <div className="ic-chat-msg-time">{msg.time}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="ic-chat-input">
+                    <input
+                      placeholder="Message the circle..."
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && sendChat()}
+                    />
+                    <button className="btn glow-btn" style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }} onClick={sendChat}>Send</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="ic-locked-overlay" style={{
+                  height: '350px', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: '1px solid var(--border-color)'
+                }}>
+                  <div style={{ textAlign: 'center', position: 'relative', zIndex: 2 }}>
+                    <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem', opacity: 0.3 }}>💬</div>
+                  </div>
+                </div>
+              )}
+              {(!isMember || selectedTier?.id === 'bronze') && (
+                <div style={{ textAlign: 'center', marginTop: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                  {selectedTier?.id === 'bronze' ? 'Upgrade to Silver or Gold to post in the group chat' : 'Join Silver or Gold tier to access the group chat'}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Upcoming Drops */}
+          {activeSection === 'drops' && (
+            <div>
+              <h3 style={{ marginBottom: '1rem' }}>Upcoming Content Drops</h3>
+              {upcomingDrops.map((drop, i) => (
+                <div key={i} className="ic-perk-highlight">
+                  <div className="ic-perk-icon" style={{ fontSize: '2rem' }}>{drop.emoji}</div>
+                  <div className="ic-perk-info" style={{ flex: 1 }}>
+                    <h4>{drop.title}</h4>
+                    <p>{drop.photos} photos • Drops {drop.date}</p>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <span className={`ic-tier-badge ${drop.tier}`}>
+                      {drop.tier === 'bronze' ? '🥉 Bronze+' : drop.tier === 'silver' ? '🥈 Silver+' : '🥇 Gold'}
+                    </span>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                      {Math.ceil((new Date(`2026-${drop.date.split(' ')[0] === 'Apr' ? '04' : '05'}-${drop.date.split(' ')[1]}`) - new Date()) / (1000 * 60 * 60 * 24))} days
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <div style={{ marginTop: '1.5rem', padding: '1.5rem', background: 'var(--bg-card)', borderRadius: '0.75rem', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📊</div>
+                <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>Drop History</div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                  Aria has delivered 23 content drops in the last 3 months • 100% on-time delivery
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Bottom CTA */}
+          {!isMember && (
+            <div style={{
+              marginTop: '2rem', padding: '2rem', textAlign: 'center',
+              background: 'linear-gradient(135deg, rgba(255,110,199,0.1), rgba(255,215,0,0.1))',
+              borderRadius: '1rem', border: '1px solid rgba(255,110,199,0.2)'
+            }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>💎</div>
+              <h3 style={{ marginBottom: '0.5rem' }}>Join {model.name}'s Inner Circle</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                Get exclusive content, early bookings, member discounts, and direct access. Starting at just $9.99/mo.
+              </p>
+              <button className="btn glow-btn" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                Choose Your Tier ↑
+              </button>
+            </div>
+          )}
         </div>
       );
     }
@@ -5101,6 +5835,7 @@
         if (page === 'home') return !auth.currentUser ? <HomePage /> : <FeedPage />;
         if (page === 'feed') return <FeedPage />;
         if (page === 'wall') return <TopClientsPage />;
+        if (page === 'circle' && params[0]) return <InnerCirclePage modelId={params[0]} />;
         if (page === 'browse') return <BrowseModelsPage />;
         if (page === 'profile' && params[0]) return <ProfilePage modelId={params[0]} />;
         if (page === 'client' && params[0]) return <ClientProfilePage clientId={params[0]} />;
