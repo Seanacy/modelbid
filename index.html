@@ -1062,6 +1062,279 @@
       color: var(--text-secondary);
     }
 
+    /* ===== CLIENT PROFILE PAGE ===== */
+    .client-cover {
+      width: 100%;
+      height: 240px;
+      background: linear-gradient(135deg, #0a1628 0%, #162447 30%, #1f4068 60%, #0a1628 100%);
+      border-radius: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .client-cover::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2300d9ff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      opacity: 0.5;
+    }
+
+    .client-cover::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 120px;
+      background: linear-gradient(to top, var(--bg-dark), transparent);
+    }
+
+    .client-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 2rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .client-badge.trust-high {
+      background: rgba(0, 217, 163, 0.15);
+      color: var(--success-green);
+      border: 1px solid rgba(0, 217, 163, 0.3);
+    }
+
+    .client-badge.trust-new {
+      background: rgba(0, 217, 255, 0.15);
+      color: var(--accent-teal);
+      border: 1px solid rgba(0, 217, 255, 0.3);
+    }
+
+    .client-badge.trust-mid {
+      background: rgba(255, 215, 0, 0.15);
+      color: var(--accent-gold);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+    }
+
+    .favorites-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 1rem;
+    }
+
+    .favorite-card {
+      background: var(--bg-card-light);
+      border-radius: 0.75rem;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.3s ease, border-color 0.3s ease;
+      border: 1px solid var(--border-color);
+    }
+
+    .favorite-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent-pink);
+    }
+
+    .favorite-avatar {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin: 0 auto 0.5rem;
+    }
+
+    .favorite-name {
+      font-weight: 600;
+      font-size: 0.85rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .favorite-rate {
+      font-size: 0.75rem;
+      color: var(--accent-gold);
+    }
+
+    .client-photo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1rem;
+    }
+
+    .client-photo-card {
+      aspect-ratio: 4/5;
+      background: linear-gradient(135deg, var(--bg-card-light), var(--bg-card));
+      border-radius: 0.75rem;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .client-photo-card:hover {
+      transform: scale(1.03);
+      box-shadow: 0 8px 24px rgba(0, 217, 255, 0.2);
+      border-color: var(--accent-teal);
+    }
+
+    .client-photo-info {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 0.75rem;
+      background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+    }
+
+    .client-photo-session {
+      font-size: 0.75rem;
+      color: var(--accent-teal);
+      font-weight: 600;
+    }
+
+    .client-photo-date {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+    }
+
+    .model-feedback-card {
+      padding: 1rem;
+      background: var(--bg-card-light);
+      border-radius: 0.75rem;
+      margin-bottom: 0.75rem;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .model-feedback-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .model-feedback-author {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .model-feedback-avatar {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+    }
+
+    .model-feedback-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .model-feedback-model-tag {
+      font-size: 0.65rem;
+      color: var(--accent-pink);
+      background: rgba(255,110,199,0.1);
+      padding: 0.15rem 0.5rem;
+      border-radius: 1rem;
+      font-weight: 600;
+    }
+
+    .trust-meter {
+      width: 100%;
+      height: 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 0.5rem 0;
+    }
+
+    .trust-meter-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 1s ease;
+    }
+
+    .trust-meter-fill.high {
+      background: linear-gradient(90deg, var(--success-green), var(--accent-teal));
+    }
+
+    .trust-meter-fill.mid {
+      background: linear-gradient(90deg, var(--accent-gold), #ffaa00);
+    }
+
+    .trust-meter-fill.low {
+      background: linear-gradient(90deg, var(--danger-red), #ff8800);
+    }
+
+    .session-history-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem;
+      background: var(--bg-card-light);
+      border-radius: 0.5rem;
+      margin-bottom: 0.5rem;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .session-history-avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .session-history-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .session-history-model {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .session-history-date {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .session-history-status {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 1rem;
+      font-weight: 600;
+    }
+
+    .session-history-status.completed {
+      background: rgba(0,217,163,0.15);
+      color: var(--success-green);
+    }
+
+    .session-history-status.upcoming {
+      background: rgba(0,217,255,0.15);
+      color: var(--accent-teal);
+    }
+
     /* ===== BOOKING MODAL ===== */
     .booking-form {
       display: flex;
@@ -1184,6 +1457,18 @@
 
       .profile-actions {
         flex-wrap: wrap;
+      }
+
+      .client-cover {
+        height: 180px;
+      }
+
+      .client-photo-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .favorites-grid {
+        grid-template-columns: repeat(2, 1fr);
       }
 
       .modal {
@@ -1777,6 +2062,33 @@
               <div className="empty-state-text">Try adjusting your search or filters</div>
             </div>
           )}
+
+          {/* Featured Clients Section */}
+          <div style={{ marginTop: '3rem', borderTop: '1px solid var(--border-color)', paddingTop: '2rem' }}>
+            <h2 style={{ marginBottom: '0.5rem' }}>Featured Clients</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+              Models — check out verified clients before accepting bookings
+            </p>
+            <div className="grid grid-3">
+              <div className="card model-card" onClick={() => window.location.hash = 'client/demo-client'}>
+                <div className="model-photo" style={{ background: 'linear-gradient(135deg, var(--accent-teal), #0066ff)' }}>📷</div>
+                <div className="model-name">
+                  Marcus Thompson
+                  <div className="verified-badge">✓</div>
+                </div>
+                <div className="model-rate" style={{ color: 'var(--accent-teal)' }}>28 sessions • 4.8★</div>
+                <div className="model-rating">
+                  <span className="stars">★★★★★</span>
+                  <span>4.8</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>(22)</span>
+                </div>
+                <div className="model-tags">
+                  <span className="tag" style={{ background: 'rgba(0,217,255,0.12)', color: 'var(--accent-teal)', borderColor: 'rgba(0,217,255,0.3)' }}>Respectful</span>
+                  <span className="tag" style={{ background: 'rgba(0,217,255,0.12)', color: 'var(--accent-teal)', borderColor: 'rgba(0,217,255,0.3)' }}>Professional</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       );
     }
@@ -2215,6 +2527,384 @@
               </div>
             </div>
           )}
+        </div>
+      );
+    }
+
+    function ClientProfilePage({ clientId }) {
+      const auth = useContext(AuthContext);
+      const [client, setClient] = useState(null);
+      const [feedback, setFeedback] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [useDemo, setUseDemo] = useState(false);
+      const [activeTab, setActiveTab] = useState('photos');
+
+      // Demo client data
+      const demoClient = {
+        id: 'demo-client',
+        display_name: 'Marcus Thompson',
+        avatar_emoji: '📷',
+        role: 'client',
+        bio: 'Professional photographer and creative director based in Atlanta. I specialize in editorial, boudoir, and fashion photography. I treat every session as a collaboration — your comfort and vision matter. Check out my portfolio and feel free to reach out!',
+        location: 'Atlanta, GA',
+        member_since: '2023',
+        sessions_completed: 28,
+        rating: 4.8,
+        review_count: 22,
+        trust_score: 92,
+        verified: true,
+        response_time: '< 2 hours',
+        repeat_rate: '78%',
+        favorites: [
+          { id: 'f1', name: 'Aria V.', emoji: '👩', rate: 250 },
+          { id: 'f2', name: 'Jade M.', emoji: '💃', rate: 180 },
+          { id: 'f3', name: 'Sophie L.', emoji: '🌸', rate: 200 },
+          { id: 'f4', name: 'Raven K.', emoji: '🦋', rate: 300 },
+        ],
+        photos: [
+          { emoji: '📸', label: 'Boudoir Editorial', model: 'with Aria V.', date: 'Mar 2026' },
+          { emoji: '🎭', label: 'Masquerade Series', model: 'with Jade M.', date: 'Feb 2026' },
+          { emoji: '✨', label: 'Golden Hour Glam', model: 'with Sophie L.', date: 'Jan 2026' },
+          { emoji: '🌹', label: 'Valentine Special', model: 'with Aria V.', date: 'Feb 2026' },
+          { emoji: '💎', label: 'Luxury Lingerie', model: 'with Raven K.', date: 'Dec 2025' },
+          { emoji: '🎀', label: 'Pin-Up Retro', model: 'with Jade M.', date: 'Nov 2025' },
+          { emoji: '🔥', label: 'Firelight Series', model: 'with Sophie L.', date: 'Oct 2025' },
+          { emoji: '🌙', label: 'Moonlit Glamour', model: 'with Raven K.', date: 'Sep 2025' },
+        ],
+        sessions: [
+          { model: 'Aria V.', emoji: '👩', date: 'Mar 15, 2026', status: 'completed' },
+          { model: 'Jade M.', emoji: '💃', date: 'Apr 22, 2026', status: 'upcoming' },
+          { model: 'Sophie L.', emoji: '🌸', date: 'Feb 10, 2026', status: 'completed' },
+          { model: 'Raven K.', emoji: '🦋', date: 'Dec 5, 2025', status: 'completed' },
+        ]
+      };
+
+      const demoFeedback = [
+        { id: 1, model_name: 'Aria V.', model_emoji: '👩', rating: 5, text: 'Marcus is one of the best clients I\'ve worked with. Super respectful, clear about his vision, and the photos always turn out amazing. Highly recommend to any model.', date: '2 weeks ago', tags: ['Respectful', 'Professional', 'Great Communicator'] },
+        { id: 2, model_name: 'Jade M.', model_emoji: '💃', rating: 5, text: 'Always on time, pays promptly, and makes the session feel comfortable and fun. His photography skills are next level. Will definitely book again.', date: '1 month ago', tags: ['Punctual', 'Fair Pay', 'Skilled'] },
+        { id: 3, model_name: 'Sophie L.', model_emoji: '🌸', rating: 4, text: 'Great experience overall. Marcus was professional and respectful throughout. The only note would be sessions sometimes run a bit long, but the quality of work makes up for it.', date: '2 months ago', tags: ['Professional', 'Respectful'] },
+        { id: 4, model_name: 'Raven K.', model_emoji: '🦋', rating: 5, text: 'I\'ve done 3 sessions with Marcus now and every one has been incredible. He really listens to what you want and brings creative ideas. 10/10 client.', date: '3 months ago', tags: ['Creative', 'Repeat Client', 'Respectful'] },
+      ];
+
+      useEffect(() => {
+        const fetchData = async () => {
+          try {
+            if (clientId === 'demo-client') {
+              setClient(demoClient);
+              setFeedback(demoFeedback);
+              setUseDemo(true);
+              setLoading(false);
+              return;
+            }
+
+            const { data: clientData, error: clientError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', clientId)
+              .single();
+
+            if (clientError) throw clientError;
+            setClient(clientData);
+
+            const { data: feedbackData, error: feedbackError } = await supabase
+              .from('reviews')
+              .select('*')
+              .eq('model_id', clientId)
+              .order('created_at', { ascending: false });
+
+            if (!feedbackError) {
+              setFeedback(feedbackData || []);
+            }
+          } catch (error) {
+            console.error('Fetch error:', error);
+            setClient(demoClient);
+            setFeedback(demoFeedback);
+            setUseDemo(true);
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        fetchData();
+      }, [clientId]);
+
+      if (loading) {
+        return <div className="text-center" style={{ padding: '2rem' }}>Loading profile...</div>;
+      }
+
+      if (!client) {
+        return <div>Client not found</div>;
+      }
+
+      const trustScore = client.trust_score || 0;
+      const trustLevel = trustScore >= 80 ? 'high' : trustScore >= 50 ? 'mid' : 'low';
+      const trustLabel = trustScore >= 80 ? 'Trusted Client' : trustScore >= 50 ? 'Established' : 'New Member';
+
+      const photos = client.photos || [];
+      const favorites = client.favorites || [];
+      const sessions = client.sessions || [];
+
+      return (
+        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+          {/* Back Button */}
+          <button className="btn btn-secondary" onClick={() => window.history.back()} style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
+            ← Back
+          </button>
+
+          {/* Cover / Hero */}
+          <div className="client-cover">
+            <div className="profile-cover-content">
+              <div className="profile-avatar" style={{ background: 'linear-gradient(135deg, var(--accent-teal), #0066ff)' }}>
+                {client.avatar_emoji || '👤'}
+              </div>
+              <div className="profile-cover-info">
+                <h1>
+                  {client.display_name}
+                  {client.verified && <div className="verified-badge">✓</div>}
+                </h1>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+                  <span className={`client-badge trust-${trustLevel}`}>
+                    {trustLevel === 'high' ? '🛡️' : trustLevel === 'mid' ? '⭐' : '🆕'} {trustLabel}
+                  </span>
+                  {client.location && <span className="profile-location">📍 {client.location}</span>}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Stats Bar */}
+          <div className="profile-stats-bar">
+            <div className="profile-stat">
+              <div className="profile-stat-value">{client.sessions_completed || 0}</div>
+              <div className="profile-stat-label">Sessions</div>
+            </div>
+            <div className="profile-stat">
+              <div className="profile-stat-value">{client.rating ? client.rating.toFixed(1) : '0.0'} ★</div>
+              <div className="profile-stat-label">{client.review_count || 0} Reviews</div>
+            </div>
+            <div className="profile-stat">
+              <div className="profile-stat-value">{client.repeat_rate || '0%'}</div>
+              <div className="profile-stat-label">Repeat Rate</div>
+            </div>
+            <div className="profile-stat">
+              <div className="profile-stat-value">{client.response_time || '—'}</div>
+              <div className="profile-stat-label">Response</div>
+            </div>
+          </div>
+
+          {/* Trust Score */}
+          <div className="profile-section" style={{ marginTop: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+              <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>🛡️ Trust Score</span>
+              <span style={{ fontWeight: 700, color: trustLevel === 'high' ? 'var(--success-green)' : trustLevel === 'mid' ? 'var(--accent-gold)' : 'var(--text-secondary)' }}>{trustScore}/100</span>
+            </div>
+            <div className="trust-meter">
+              <div className={`trust-meter-fill ${trustLevel}`} style={{ width: `${trustScore}%` }}></div>
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+              Based on model ratings, session history, and payment reliability
+            </div>
+          </div>
+
+          {/* Tab Navigation */}
+          <div style={{ display: 'flex', gap: '0.5rem', margin: '1.5rem 0', flexWrap: 'wrap' }}>
+            {[
+              { key: 'photos', label: '📸 My Photos', count: photos.length },
+              { key: 'favorites', label: '❤️ Favorites', count: favorites.length },
+              { key: 'feedback', label: '⭐ Model Feedback', count: feedback.length },
+              { key: 'history', label: '📋 Sessions', count: sessions.length },
+            ].map(tab => (
+              <button
+                key={tab.key}
+                className={activeTab === tab.key ? 'btn glow-btn' : 'btn btn-secondary'}
+                onClick={() => setActiveTab(tab.key)}
+                style={{ fontSize: '0.85rem' }}
+              >
+                {tab.label} ({tab.count})
+              </button>
+            ))}
+          </div>
+
+          {/* Body: Left + Right columns */}
+          <div className="profile-body">
+            {/* Left Column - Main Content */}
+            <div>
+              {/* About */}
+              <div className="profile-section">
+                <div className="profile-section-title"><span>👋</span> About</div>
+                <div className="profile-about-text">{client.bio || 'No bio yet.'}</div>
+              </div>
+
+              {/* Photos Tab */}
+              {activeTab === 'photos' && (
+                <div className="profile-section">
+                  <div className="profile-section-title"><span>📸</span> Photo Showcase</div>
+                  <div className="client-photo-grid">
+                    {photos.map((photo, i) => (
+                      <div key={i} className="client-photo-card">
+                        {photo.emoji}
+                        <div className="client-photo-info">
+                          <div className="client-photo-session">{photo.label}</div>
+                          <div className="client-photo-date">{photo.model} • {photo.date}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {photos.length === 0 && (
+                    <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem' }}>
+                      No photos shared yet
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Favorites Tab */}
+              {activeTab === 'favorites' && (
+                <div className="profile-section">
+                  <div className="profile-section-title"><span>❤️</span> Favorite Models</div>
+                  <div className="favorites-grid">
+                    {favorites.map((fav, i) => (
+                      <div key={i} className="favorite-card" onClick={() => window.location.hash = `profile/${fav.id}`}>
+                        <div className="favorite-avatar">{fav.emoji}</div>
+                        <div className="favorite-name">{fav.name}</div>
+                        <div className="favorite-rate">${fav.rate}/session</div>
+                      </div>
+                    ))}
+                  </div>
+                  {favorites.length === 0 && (
+                    <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem' }}>
+                      No favorites yet — browse models to add some!
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Model Feedback Tab */}
+              {activeTab === 'feedback' && (
+                <div className="profile-section">
+                  <div className="profile-section-title"><span>⭐</span> What Models Say</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem', fontStyle: 'italic' }}>
+                    These reviews are from verified models who have completed sessions with this client
+                  </div>
+                  {feedback.map((fb, i) => (
+                    <div key={fb.id || i} className="model-feedback-card">
+                      <div className="model-feedback-header">
+                        <div className="model-feedback-author">
+                          <div className="model-feedback-avatar">{fb.model_emoji || '👤'}</div>
+                          <div>
+                            <div className="model-feedback-name">{fb.model_name || 'Anonymous Model'}</div>
+                            <span className="model-feedback-model-tag">Verified Model</span>
+                          </div>
+                        </div>
+                        <div className="review-date">{fb.date || 'Recently'}</div>
+                      </div>
+                      <div className="review-stars">{'★'.repeat(fb.rating || 5)}{'☆'.repeat(5 - (fb.rating || 5))}</div>
+                      <div className="review-text">{fb.text || fb.content}</div>
+                      {fb.tags && fb.tags.length > 0 && (
+                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+                          {fb.tags.map((tag, j) => (
+                            <span key={j} style={{
+                              fontSize: '0.7rem',
+                              padding: '0.2rem 0.5rem',
+                              borderRadius: '1rem',
+                              background: 'rgba(0, 217, 255, 0.1)',
+                              color: 'var(--accent-teal)',
+                              border: '1px solid rgba(0, 217, 255, 0.2)',
+                              fontWeight: 600
+                            }}>{tag}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {feedback.length === 0 && (
+                    <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem' }}>
+                      No model feedback yet
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Session History Tab */}
+              {activeTab === 'history' && (
+                <div className="profile-section">
+                  <div className="profile-section-title"><span>📋</span> Session History</div>
+                  {sessions.map((session, i) => (
+                    <div key={i} className="session-history-item">
+                      <div className="session-history-avatar">{session.emoji}</div>
+                      <div className="session-history-info">
+                        <div className="session-history-model">{session.model}</div>
+                        <div className="session-history-date">{session.date}</div>
+                      </div>
+                      <span className={`session-history-status ${session.status}`}>{session.status}</span>
+                    </div>
+                  ))}
+                  {sessions.length === 0 && (
+                    <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem' }}>
+                      No sessions yet
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Right Column / Sidebar */}
+            <div>
+              {/* Quick Details */}
+              <div className="profile-section">
+                <div className="profile-section-title"><span>📋</span> Details</div>
+                <div className="profile-detail-row">
+                  <span className="profile-detail-label">Role</span>
+                  <span className="profile-detail-value" style={{ color: 'var(--accent-teal)' }}>Client / Photographer</span>
+                </div>
+                <div className="profile-detail-row">
+                  <span className="profile-detail-label">Location</span>
+                  <span className="profile-detail-value">{client.location || 'Not specified'}</span>
+                </div>
+                <div className="profile-detail-row">
+                  <span className="profile-detail-label">Member since</span>
+                  <span className="profile-detail-value">{client.member_since || '—'}</span>
+                </div>
+                <div className="profile-detail-row">
+                  <span className="profile-detail-label">Sessions</span>
+                  <span className="profile-detail-value">{client.sessions_completed || 0} completed</span>
+                </div>
+                <div className="profile-detail-row">
+                  <span className="profile-detail-label">Repeat Rate</span>
+                  <span className="profile-detail-value" style={{ color: 'var(--success-green)' }}>{client.repeat_rate || '—'}</span>
+                </div>
+                <div className="profile-detail-row">
+                  <span className="profile-detail-label">Verified</span>
+                  <span className="profile-detail-value">{client.verified ? '✅ Yes' : '❌ No'}</span>
+                </div>
+              </div>
+
+              {/* Top Tags from feedback */}
+              <div className="profile-section">
+                <div className="profile-section-title"><span>🏷️</span> Top Qualities</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {['Respectful', 'Professional', 'Punctual', 'Fair Pay', 'Great Communicator', 'Creative'].map((tag, i) => (
+                    <span key={i} className="tag" style={{
+                      background: 'rgba(0, 217, 255, 0.12)',
+                      color: 'var(--accent-teal)',
+                      borderColor: 'rgba(0, 217, 255, 0.3)'
+                    }}>{tag}</span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Safety Info */}
+              <div className="profile-section" style={{ background: 'linear-gradient(135deg, rgba(0,217,163,0.08), rgba(0,217,255,0.08))', borderColor: 'rgba(0,217,163,0.2)' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🛡️</div>
+                  <div style={{ fontWeight: 700, marginBottom: '0.5rem', fontSize: '0.95rem' }}>Safety First</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', lineHeight: 1.7 }}>
+                    All sessions include contract protection. Models can rate clients after every session. Trust scores are calculated automatically.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       );
     }
@@ -2942,6 +3632,7 @@
         if (page === 'home') return !auth.currentUser ? <HomePage /> : <BrowseModelsPage />;
         if (page === 'browse') return <BrowseModelsPage />;
         if (page === 'profile' && params[0]) return <ProfilePage modelId={params[0]} />;
+        if (page === 'client' && params[0]) return <ClientProfilePage clientId={params[0]} />;
         if (page === 'formodels') return <ForModelsPage />;
         if (page === 'contracts') return <ContractsPage />;
         if (page === 'login') return <LoginPage />;
