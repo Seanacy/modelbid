@@ -1,26 +1,2465 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ModelBid</title>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ModelBid - Social Media for Photo Sessions</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- React & Babel from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:system-ui,sans-serif;background:#0a0a0f;color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center}
-    .wrap{text-align:center;max-width:600px;padding:40px}
-    h1{font-size:48px;font-weight:900;margin-bottom:16px;background:linear-gradient(135deg,#e91e63,#9c27b0);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-    p{color:#9e9eae;font-size:18px;line-height:1.7;margin-bottom:32px}
-    .btn{display:inline-block;padding:14px 32px;border-radius:50px;background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;font-weight:700;font-size:16px;text-decoration:none;border:none;cursor:pointer}
-    </style>
-  </head>
-  <body>
-    <div class="wrap">
-      <h1>ModelBid</h1>
-    <p>The social platform for private photo sessions. Browse models, book sessions, and connect — all in one place.</p>
-    <button class="btn">Coming Soon</button>button>
-    </div>div>
-  </body>
-</html>html></p></h1>
-  </body>
-  </style></title>
-  </head>
+    /* ===== CSS CUSTOM PROPERTIES & GLOBAL STYLES ===== */
+    :root {
+      --bg-dark: #0a0a0f;
+      --bg-card: #16161f;
+      --bg-card-light: #1f1f2e;
+      --text-primary: #ffffff;
+      --text-secondary: #b0b0b8;
+      --accent-pink: #ff6ec7;
+      --accent-gold: #ffd700;
+      --accent-purple: #9d4edd;
+      --accent-teal: #00d9ff;
+      --border-color: #2a2a35;
+      --success-green: #00d9a3;
+      --danger-red: #ff4757;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    a {
+      color: var(--accent-pink);
+      text-decoration: none;
+      transition: color 0.3s ease;
+      cursor: pointer;
+    }
+
+    a:hover {
+      color: var(--accent-gold);
+    }
+
+    /* ===== LAYOUT & CONTAINERS ===== */
+    .app-container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .nav {
+      background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-card-light) 100%);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .nav-brand {
+      font-size: 1.5rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--accent-pink), var(--accent-gold), var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .nav-link {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .nav-link:hover {
+      color: var(--accent-pink);
+      transform: translateY(-2px);
+    }
+
+    .nav-link.active {
+      color: var(--accent-pink);
+      border-bottom: 2px solid var(--accent-pink);
+      padding-bottom: 0.25rem;
+    }
+
+    .user-section {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      border: 2px solid var(--accent-gold);
+    }
+
+    .user-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .glow-btn {
+      background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+      color: white;
+      box-shadow: 0 0 20px rgba(255, 110, 199, 0.3);
+    }
+
+    .glow-btn:hover {
+      box-shadow: 0 0 30px rgba(255, 110, 199, 0.5);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent-pink);
+      color: var(--accent-pink);
+    }
+
+    .btn-small {
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+    }
+
+    .btn-block {
+      width: 100%;
+    }
+
+    /* ===== MAIN CONTENT ===== */
+    .main-content {
+      flex: 1;
+      padding: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* ===== HERO SECTION ===== */
+    .hero {
+      background: linear-gradient(135deg, rgba(255, 110, 199, 0.1) 0%, rgba(157, 78, 221, 0.1) 50%, rgba(0, 217, 255, 0.1) 100%);
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      padding: 4rem 2rem;
+      text-align: center;
+      margin-bottom: 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 110, 199, 0.1) 0%, transparent 70%);
+      animation: float 20s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(30px, 30px); }
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 900;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--accent-pink), var(--accent-gold), var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 1.2rem;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* ===== CARD STYLES ===== */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: var(--accent-pink);
+      box-shadow: 0 8px 20px rgba(255, 110, 199, 0.1);
+      transform: translateY(-4px);
+    }
+
+    .model-card {
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .model-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 110, 199, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .model-card:hover::before {
+      left: 100%;
+    }
+
+    .model-photo {
+      width: 100%;
+      height: 250px;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+    }
+
+    .model-name {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .verified-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      background: var(--success-green);
+      border-radius: 50%;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--bg-dark);
+    }
+
+    .model-rate {
+      font-size: 0.9rem;
+      color: var(--accent-gold);
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    .model-rating {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .stars {
+      color: var(--accent-gold);
+    }
+
+    .model-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .tag {
+      display: inline-block;
+      background: rgba(255, 110, 199, 0.2);
+      color: var(--accent-pink);
+      padding: 0.25rem 0.75rem;
+      border-radius: 2rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      border: 1px solid rgba(255, 110, 199, 0.4);
+    }
+
+    /* ===== GRID LAYOUTS ===== */
+    .grid {
+      display: grid;
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .grid-2 {
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+
+    .grid-3 {
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    }
+
+    .grid-4 {
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+
+    /* ===== FORMS ===== */
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 0.75rem;
+      background: var(--bg-card-light);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--accent-pink);
+      box-shadow: 0 0 10px rgba(255, 110, 199, 0.3);
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    .form-group select {
+      cursor: pointer;
+    }
+
+    .form-error {
+      color: var(--danger-red);
+      font-size: 0.85rem;
+      margin-top: 0.25rem;
+    }
+
+    /* ===== MODALS ===== */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      animation: slideUp 0.3s ease;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .modal-header {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+    }
+
+    .modal-body {
+      margin-bottom: 1.5rem;
+      color: var(--text-secondary);
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+    }
+
+    /* ===== MESSAGING UI ===== */
+    .messages-container {
+      display: flex;
+      gap: 2rem;
+      height: 600px;
+      margin-bottom: 2rem;
+    }
+
+    .conversations-list {
+      width: 300px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .conversations-list-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 700;
+    }
+
+    .conversations-list-scroll {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .conversation-item {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: var(--bg-card);
+    }
+
+    .conversation-item:hover {
+      background: var(--bg-card-light);
+      border-left: 3px solid var(--accent-pink);
+    }
+
+    .conversation-item.active {
+      background: var(--bg-card-light);
+      border-left: 3px solid var(--accent-pink);
+    }
+
+    .conversation-name {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .conversation-preview {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .message-thread {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .message-thread-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 700;
+    }
+
+    .message-thread-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .message-bubble {
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-end;
+    }
+
+    .message-bubble.sent {
+      justify-content: flex-end;
+    }
+
+    .message-content {
+      max-width: 70%;
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      word-wrap: break-word;
+    }
+
+    .message-bubble.received .message-content {
+      background: var(--bg-card-light);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    .message-bubble.sent .message-content {
+      background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+      color: white;
+    }
+
+    .message-time {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .message-input-section {
+      padding: 1rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .message-input-section input {
+      flex: 1;
+      padding: 0.75rem;
+      background: var(--bg-card-light);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+    }
+
+    .message-input-section input:focus {
+      outline: none;
+      border-color: var(--accent-pink);
+    }
+
+    .message-input-section button {
+      padding: 0.75rem 1.5rem;
+      background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+      border: none;
+      border-radius: 0.5rem;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .message-input-section button:hover {
+      box-shadow: 0 0 20px rgba(255, 110, 199, 0.3);
+    }
+
+    /* ===== DASHBOARD ===== */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    .stat-card.gradient {
+      border: 2px solid transparent;
+      background: linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
+                  linear-gradient(135deg, var(--accent-pink), var(--accent-purple)) border-box;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--accent-pink);
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* ===== PAYWALL MODAL ===== */
+    .paywall-modal {
+      background: linear-gradient(135deg, var(--bg-card), var(--bg-card-light));
+      border: 2px solid var(--accent-pink);
+    }
+
+    .paywall-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .paywall-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--accent-pink);
+    }
+
+    .paywall-description {
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+
+    .paywall-price {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      color: var(--text-primary);
+    }
+
+    .paywall-price-value {
+      color: var(--accent-gold);
+    }
+
+    /* ===== PROFILE PAGE ===== */
+    .profile-header {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 2rem;
+      margin-bottom: 2rem;
+      align-items: start;
+    }
+
+    .profile-avatar {
+      width: 200px;
+      height: 200px;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+      border-radius: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      border: 3px solid var(--accent-gold);
+    }
+
+    .profile-info h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .profile-meta {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .profile-meta-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .profile-meta-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--accent-pink);
+    }
+
+    .profile-meta-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    /* ===== BOOKING MODAL ===== */
+    .booking-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* ===== TOAST NOTIFICATIONS ===== */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      padding: 1rem 1.5rem;
+      z-index: 200;
+      animation: slideInRight 0.3s ease;
+    }
+
+    .toast.success {
+      border-color: var(--success-green);
+      color: var(--success-green);
+    }
+
+    .toast.error {
+      border-color: var(--danger-red);
+      color: var(--danger-red);
+    }
+
+    @keyframes slideInRight {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 110, 199, 0.3);
+      border-top-color: var(--accent-pink);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ===== RESPONSIVE DESIGN ===== */
+    @media (max-width: 768px) {
+      .nav {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .nav-links {
+        gap: 1rem;
+        justify-content: center;
+      }
+
+      .hero {
+        padding: 2rem 1rem;
+      }
+
+      .hero h1 {
+        font-size: 2rem;
+      }
+
+      .main-content {
+        padding: 1rem;
+      }
+
+      .grid-2, .grid-3, .grid-4 {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      }
+
+      .messages-container {
+        flex-direction: column;
+        height: auto;
+      }
+
+      .conversations-list {
+        width: 100%;
+        height: 200px;
+      }
+
+      .profile-header {
+        grid-template-columns: 1fr;
+      }
+
+      .profile-avatar {
+        width: 150px;
+        height: 150px;
+        margin: 0 auto;
+        font-size: 3rem;
+      }
+
+      .modal {
+        padding: 1.5rem;
+      }
+
+      .hero-buttons {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    /* ===== SCROLLBAR STYLING ===== */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-card);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--accent-pink);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-purple);
+    }
+
+    /* ===== UTILITY CLASSES ===== */
+    .text-center {
+      text-align: center;
+    }
+
+    .mt-2 { margin-top: 1rem; }
+    .mt-3 { margin-top: 1.5rem; }
+    .mb-2 { margin-bottom: 1rem; }
+    .mb-3 { margin-bottom: 1.5rem; }
+    .gap-1 { gap: 0.5rem; }
+    .gap-2 { gap: 1rem; }
+    .gap-3 { gap: 1.5rem; }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 2rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .badge-success {
+      background: rgba(0, 217, 163, 0.2);
+      color: var(--success-green);
+    }
+
+    .badge-warning {
+      background: rgba(255, 215, 0, 0.2);
+      color: var(--accent-gold);
+    }
+
+    .badge-pending {
+      background: rgba(0, 217, 255, 0.2);
+      color: var(--accent-teal);
+    }
+
+    /* ===== FILTER BAR ===== */
+    .filter-bar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 0.5rem 1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 2rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .filter-btn:hover {
+      border-color: var(--accent-pink);
+      color: var(--accent-pink);
+    }
+
+    .filter-btn.active {
+      background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+      border-color: var(--accent-pink);
+      color: white;
+    }
+
+    .search-bar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .search-bar input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+    }
+
+    .search-bar input:focus {
+      outline: none;
+      border-color: var(--accent-pink);
+      box-shadow: 0 0 10px rgba(255, 110, 199, 0.3);
+    }
+
+    /* ===== TABS ===== */
+    .tabs {
+      display: flex;
+      gap: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 2rem;
+    }
+
+    .tab {
+      padding: 1rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+      font-weight: 600;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s ease;
+    }
+
+    .tab:hover {
+      color: var(--accent-pink);
+    }
+
+    .tab.active {
+      color: var(--accent-pink);
+      border-bottom-color: var(--accent-pink);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 2rem;
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .empty-state-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-state-text {
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+    }
+
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    // ===== REACT APP START =====
+    const { useState, useContext, createContext, useEffect, useRef } = React;
+
+    // ===== SUPABASE INITIALIZATION =====
+    const SUPABASE_URL = 'https://qjtanxqywpvqdpcxejlr.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqdGFueHF5d3B2cWRwY3hlamxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1MzQxNzUsImV4cCI6MjA5MjExMDE3NX0.73e_qRunECUFRpcvUNvDx9IyOLIKMvxCGsklgIBgF1I';
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ===== AUTH CONTEXT =====
+    const AuthContext = createContext();
+
+    // ===== TOAST NOTIFICATION =====
+    function Toast({ message, type, onClose }) {
+      useEffect(() => {
+        const timer = setTimeout(onClose, 3000);
+        return () => clearTimeout(timer);
+      }, [onClose]);
+
+      return (
+        <div className={`toast ${type}`}>
+          {message}
+        </div>
+      );
+    }
+
+    // ===== AUTH PROVIDER =====
+    function AuthProvider({ children }) {
+      const [currentUser, setCurrentUser] = useState(null);
+      const [profile, setProfile] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [toast, setToast] = useState(null);
+
+      // Initialize auth state on mount
+      useEffect(() => {
+        const initAuth = async () => {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+              setCurrentUser(session.user);
+              await fetchProfile(session.user.id);
+            }
+          } catch (error) {
+            console.error('Auth init error:', error);
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        initAuth();
+
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+          if (session?.user) {
+            setCurrentUser(session.user);
+            await fetchProfile(session.user.id);
+          } else {
+            setCurrentUser(null);
+            setProfile(null);
+          }
+        });
+
+        return () => subscription?.unsubscribe();
+      }, []);
+
+      const fetchProfile = async (userId) => {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+          if (error) throw error;
+          setProfile(data);
+        } catch (error) {
+          console.error('Profile fetch error:', error);
+        }
+      };
+
+      const signup = async (displayName, email, password, role) => {
+        try {
+          const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                display_name: displayName,
+                role,
+              },
+            },
+          });
+
+          if (error) throw error;
+          showToast('Account created! Please check your email to confirm.', 'success');
+          return true;
+        } catch (error) {
+          showToast(error.message, 'error');
+          return false;
+        }
+      };
+
+      const login = async (email, password) => {
+        try {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+          if (error) throw error;
+          showToast('Logged in successfully!', 'success');
+          return true;
+        } catch (error) {
+          showToast(error.message, 'error');
+          return false;
+        }
+      };
+
+      const logout = async () => {
+        try {
+          const { error } = await supabase.auth.signOut();
+          if (error) throw error;
+          setCurrentUser(null);
+          setProfile(null);
+          showToast('Logged out successfully!', 'success');
+        } catch (error) {
+          showToast(error.message, 'error');
+        }
+      };
+
+      const updateProfile = async (updates) => {
+        try {
+          const { error } = await supabase
+            .from('profiles')
+            .update(updates)
+            .eq('id', currentUser.id);
+
+          if (error) throw error;
+          setProfile(prev => ({ ...prev, ...updates }));
+          showToast('Profile updated successfully!', 'success');
+          return true;
+        } catch (error) {
+          showToast(error.message, 'error');
+          return false;
+        }
+      };
+
+      const sendMessage = async (conversationId, content) => {
+        try {
+          const { error } = await supabase
+            .from('messages')
+            .insert({
+              conversation_id: conversationId,
+              sender_id: currentUser.id,
+              content,
+            });
+
+          if (error) throw error;
+          return true;
+        } catch (error) {
+          showToast(error.message, 'error');
+          return false;
+        }
+      };
+
+      const createConversation = async (participant2Id) => {
+        try {
+          // Check if conversation exists
+          const { data: existing } = await supabase
+            .from('conversations')
+            .select('id')
+            .or(`and(participant_1.eq.${currentUser.id},participant_2.eq.${participant2Id}),and(participant_1.eq.${participant2Id},participant_2.eq.${currentUser.id})`)
+            .limit(1);
+
+          if (existing && existing.length > 0) {
+            return existing[0].id;
+          }
+
+          // Create new conversation
+          const { data, error } = await supabase
+            .from('conversations')
+            .insert({
+              participant_1: currentUser.id,
+              participant_2: participant2Id,
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+          return data.id;
+        } catch (error) {
+          showToast(error.message, 'error');
+          return null;
+        }
+      };
+
+      const createBooking = async (modelId, sessionDate, durationHours, outfitDescription, contractType, rate) => {
+        try {
+          const { error } = await supabase
+            .from('bookings')
+            .insert({
+              client_id: currentUser.id,
+              model_id: modelId,
+              session_date: sessionDate,
+              duration_hours: durationHours,
+              outfit_description: outfitDescription,
+              contract_type: contractType,
+              rate,
+            });
+
+          if (error) throw error;
+          showToast('Booking request sent!', 'success');
+          return true;
+        } catch (error) {
+          showToast(error.message, 'error');
+          return false;
+        }
+      };
+
+      const updateBooking = async (bookingId, status) => {
+        try {
+          const { error } = await supabase
+            .from('bookings')
+            .update({ status })
+            .eq('id', bookingId);
+
+          if (error) throw error;
+          showToast('Booking updated!', 'success');
+          return true;
+        } catch (error) {
+          showToast(error.message, 'error');
+          return false;
+        }
+      };
+
+      const upgradeToPremium = async () => {
+        try {
+          const { error } = await supabase
+            .from('profiles')
+            .update({ subscription_tier: 'premium' })
+            .eq('id', currentUser.id);
+
+          if (error) throw error;
+          setProfile(prev => ({ ...prev, subscription_tier: 'premium' }));
+          showToast('Upgraded to Premium!', 'success');
+          return true;
+        } catch (error) {
+          showToast(error.message, 'error');
+          return false;
+        }
+      };
+
+      const showToast = (message, type) => {
+        setToast({ message, type });
+      };
+
+      const contextValue = {
+        currentUser,
+        profile,
+        loading,
+        signup,
+        login,
+        logout,
+        updateProfile,
+        sendMessage,
+        createConversation,
+        createBooking,
+        updateBooking,
+        upgradeToPremium,
+        showToast,
+      };
+
+      return (
+        <AuthContext.Provider value={contextValue}>
+          {children}
+          {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+        </AuthContext.Provider>
+      );
+    }
+
+    // ===== PAGE COMPONENTS =====
+    function HomePage() {
+      return (
+        <div className="hero">
+          <div className="hero-content">
+            <h1>Book Private Photo Sessions</h1>
+            <p>Connect with verified models for lingerie, costume, and glamour photography. Secure, professional, and discreet.</p>
+            <div className="hero-buttons">
+              <button className="btn glow-btn" onClick={() => window.location.hash = 'browse'}>Browse Models</button>
+              <button className="btn btn-secondary" onClick={() => window.location.hash = 'formodels'}>For Models</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function BrowseModelsPage() {
+      const auth = useContext(AuthContext);
+      const [models, setModels] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [searchTerm, setSearchTerm] = useState('');
+      const [selectedTag, setSelectedTag] = useState(null);
+
+      const allTags = ['Lingerie', 'Costume', 'Glamour', 'Boudoir', 'Pin-Up', 'Cosplay', 'Fantasy', 'Retro', 'Luxury', 'Fun', 'Casual', 'Elegant'];
+
+      useEffect(() => {
+        const fetchModels = async () => {
+          try {
+            const { data, error } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('role', 'model')
+              .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            setModels(data || []);
+          } catch (error) {
+            console.error('Fetch models error:', error);
+            auth.showToast('Failed to load models', 'error');
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        fetchModels();
+      }, []);
+
+      const filtered = models.filter(m => {
+        const matchesSearch = m.display_name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesTag = !selectedTag || (m.tags && m.tags.includes(selectedTag));
+        return matchesSearch && matchesTag;
+      });
+
+      if (loading) {
+        return <div className="text-center" style={{ padding: '2rem' }}>Loading models...</div>;
+      }
+
+      return (
+        <div>
+          <h2 style={{ marginBottom: '1rem' }}>Browse Models</h2>
+
+          <div className="search-bar">
+            <input
+              type="text"
+              placeholder="Search by name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <div className="filter-bar">
+            <button
+              className={`filter-btn ${!selectedTag ? 'active' : ''}`}
+              onClick={() => setSelectedTag(null)}
+            >
+              All
+            </button>
+            {allTags.map(tag => (
+              <button
+                key={tag}
+                className={`filter-btn ${selectedTag === tag ? 'active' : ''}`}
+                onClick={() => setSelectedTag(tag)}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-3">
+            {filtered.map(model => (
+              <ModelCard key={model.id} model={model} />
+            ))}
+          </div>
+
+          {filtered.length === 0 && (
+            <div className="empty-state">
+              <div className="empty-state-icon">🔍</div>
+              <div className="empty-state-title">No models found</div>
+              <div className="empty-state-text">Try adjusting your search or filters</div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function ModelCard({ model }) {
+      return (
+        <div className="card model-card" onClick={() => window.location.hash = `profile/${model.id}`}>
+          <div className="model-photo">{model.avatar_emoji || '👤'}</div>
+          <div className="model-name">
+            {model.display_name}
+            {model.verified && <div className="verified-badge">✓</div>}
+          </div>
+          <div className="model-rate">${model.rate || 0}/session</div>
+          <div className="model-rating">
+            <span className="stars">{'★'.repeat(Math.floor(model.rating || 0))}</span>
+            <span>{model.rating ? model.rating.toFixed(1) : '0.0'}</span>
+            <span style={{ color: 'var(--text-secondary)' }}>({model.review_count || 0})</span>
+          </div>
+          <div className="model-tags">
+            {model.tags && model.tags.map(tag => (
+              <span key={tag} className="tag">{tag}</span>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function ProfilePage({ modelId }) {
+      const auth = useContext(AuthContext);
+      const [model, setModel] = useState(null);
+      const [reviews, setReviews] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [showBookingModal, setShowBookingModal] = useState(false);
+      const [showPaywallModal, setShowPaywallModal] = useState(false);
+      const [bookingData, setBookingData] = useState({
+        date: '',
+        duration: 1,
+        outfit: '',
+        contractType: 'standard',
+      });
+
+      useEffect(() => {
+        const fetchData = async () => {
+          try {
+            const { data: modelData, error: modelError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', modelId)
+              .single();
+
+            if (modelError) throw modelError;
+            setModel(modelData);
+
+            const { data: reviewsData, error: reviewsError } = await supabase
+              .from('reviews')
+              .select('*, reviewer_id(*)')
+              .eq('model_id', modelId)
+              .order('created_at', { ascending: false });
+
+            if (!reviewsError) {
+              setReviews(reviewsData || []);
+            }
+          } catch (error) {
+            console.error('Fetch error:', error);
+            auth.showToast('Failed to load profile', 'error');
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        fetchData();
+      }, [modelId]);
+
+      if (loading) {
+        return <div className="text-center" style={{ padding: '2rem' }}>Loading profile...</div>;
+      }
+
+      if (!model) {
+        return <div>Model not found</div>;
+      }
+
+      const handleBooking = async () => {
+        if (!auth.currentUser) {
+          window.location.hash = 'login';
+          return;
+        }
+        if (bookingData.date && bookingData.outfit) {
+          const success = await auth.createBooking(
+            model.id,
+            bookingData.date,
+            bookingData.duration,
+            bookingData.outfit,
+            bookingData.contractType,
+            model.rate
+          );
+          if (success) {
+            setShowBookingModal(false);
+          }
+        }
+      };
+
+      const handleMessage = async () => {
+        if (!auth.currentUser) {
+          window.location.hash = 'login';
+          return;
+        }
+        if (auth.profile?.subscription_tier === 'free') {
+          setShowPaywallModal(true);
+          return;
+        }
+        const convId = await auth.createConversation(model.id);
+        if (convId) {
+          window.location.hash = `messages/${convId}`;
+        }
+      };
+
+      return (
+        <div>
+          <button className="btn btn-secondary" onClick={() => window.location.hash = 'browse'} style={{ marginBottom: '2rem' }}>← Back to Browse</button>
+
+          <div className="profile-header">
+            <div className="profile-avatar">{model.avatar_emoji || '👤'}</div>
+            <div className="profile-info">
+              <h1>
+                {model.display_name}
+                {model.verified && <div className="verified-badge">✓</div>}
+              </h1>
+              <div className="profile-meta">
+                <div className="profile-meta-item">
+                  <div className="profile-meta-value">${model.rate || 0}</div>
+                  <div className="profile-meta-label">Per Session</div>
+                </div>
+                <div className="profile-meta-item">
+                  <div className="profile-meta-value">{model.rating ? model.rating.toFixed(1) : '0.0'}★</div>
+                  <div className="profile-meta-label">{model.review_count || 0} reviews</div>
+                </div>
+              </div>
+              <p>{model.bio || 'No bio available'}</p>
+              <div className="model-tags" style={{ marginTop: '1rem' }}>
+                {model.tags && model.tags.map(tag => (
+                  <span key={tag} className="tag">{tag}</span>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                <button className="btn glow-btn" onClick={() => setShowBookingModal(true)}>Book Session</button>
+                <button className="btn btn-secondary" onClick={handleMessage}>Message</button>
+              </div>
+            </div>
+          </div>
+
+          {showBookingModal && (
+            <div className="modal-overlay" onClick={() => setShowBookingModal(false)}>
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">Book a Session</div>
+                <div className="booking-form">
+                  <div className="form-group">
+                    <label>Date</label>
+                    <input
+                      type="date"
+                      value={bookingData.date}
+                      onChange={(e) => setBookingData({ ...bookingData, date: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Duration (hours)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="8"
+                      value={bookingData.duration}
+                      onChange={(e) => setBookingData({ ...bookingData, duration: parseInt(e.target.value) })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Outfit Description</label>
+                    <textarea
+                      value={bookingData.outfit}
+                      onChange={(e) => setBookingData({ ...bookingData, outfit: e.target.value })}
+                      placeholder="Describe the outfit or look you're interested in..."
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Contract Type</label>
+                    <select
+                      value={bookingData.contractType}
+                      onChange={(e) => setBookingData({ ...bookingData, contractType: e.target.value })}
+                    >
+                      <option value="standard">Standard (Personal Use)</option>
+                      <option value="full_rights">Full Rights Release</option>
+                      <option value="limited_commercial">Limited Commercial</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button className="btn btn-secondary" onClick={() => setShowBookingModal(false)}>Cancel</button>
+                  <button className="btn glow-btn" onClick={handleBooking}>Send Request</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showPaywallModal && (
+            <div className="modal-overlay" onClick={() => setShowPaywallModal(false)}>
+              <div className="modal paywall-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="paywall-icon">💬</div>
+                <div className="paywall-title">Unlock Messaging</div>
+                <div className="paywall-description">
+                  Upgrade to Premium to send messages to models and receive responses. Direct communication is key to booking the perfect session.
+                </div>
+                <div className="paywall-price">
+                  <span className="paywall-price-value">$9.99</span>/month
+                </div>
+                <div className="modal-footer" style={{ flexDirection: 'column', gap: '1rem' }}>
+                  <button className="btn glow-btn btn-block" onClick={async () => {
+                    await auth.upgradeToPremium();
+                    setShowPaywallModal(false);
+                  }}>Upgrade Now</button>
+                  <button className="btn btn-secondary btn-block" onClick={() => setShowPaywallModal(false)}>Maybe Later</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function MessagesPage({ conversationId }) {
+      const auth = useContext(AuthContext);
+      const [conversations, setConversations] = useState([]);
+      const [messages, setMessages] = useState([]);
+      const [selectedConvId, setSelectedConvId] = useState(conversationId);
+      const [newMessage, setNewMessage] = useState('');
+      const [loading, setLoading] = useState(true);
+      const messageEndRef = useRef(null);
+
+      const scrollToBottom = () => {
+        messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      };
+
+      useEffect(() => {
+        scrollToBottom();
+      }, [messages]);
+
+      useEffect(() => {
+        const fetchConversations = async () => {
+          try {
+            const { data, error } = await supabase
+              .from('conversations')
+              .select('*')
+              .or(`participant_1.eq.${auth.currentUser.id},participant_2.eq.${auth.currentUser.id}`)
+              .order('last_message_at', { ascending: false });
+
+            if (error) throw error;
+            setConversations(data || []);
+          } catch (error) {
+            console.error('Fetch conversations error:', error);
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        if (auth.currentUser) {
+          fetchConversations();
+        }
+      }, [auth.currentUser]);
+
+      useEffect(() => {
+        const fetchMessages = async () => {
+          if (!selectedConvId) return;
+
+          try {
+            const { data, error } = await supabase
+              .from('messages')
+              .select('*')
+              .eq('conversation_id', selectedConvId)
+              .order('created_at', { ascending: true });
+
+            if (error) throw error;
+            setMessages(data || []);
+          } catch (error) {
+            console.error('Fetch messages error:', error);
+          }
+        };
+
+        fetchMessages();
+
+        // Subscribe to realtime messages
+        const subscription = supabase
+          .channel(`messages:${selectedConvId}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'messages',
+              filter: `conversation_id=eq.${selectedConvId}`,
+            },
+            (payload) => {
+              setMessages(prev => [...prev, payload.new]);
+            }
+          )
+          .subscribe();
+
+        return () => {
+          subscription.unsubscribe();
+        };
+      }, [selectedConvId]);
+
+      const handleSendMessage = async () => {
+        if (newMessage.trim() && selectedConvId) {
+          const success = await auth.sendMessage(selectedConvId, newMessage);
+          if (success) {
+            setNewMessage('');
+            // Update conversation's last_message_at
+            await supabase
+              .from('conversations')
+              .update({
+                last_message_at: new Date().toISOString(),
+                last_message_preview: newMessage.substring(0, 50),
+              })
+              .eq('id', selectedConvId);
+          }
+        }
+      };
+
+      if (loading) {
+        return <div className="text-center" style={{ padding: '2rem' }}>Loading messages...</div>;
+      }
+
+      if (conversations.length === 0) {
+        return (
+          <div>
+            <h2 style={{ marginBottom: '1.5rem' }}>Messages</h2>
+            <div className="empty-state">
+              <div className="empty-state-icon">💬</div>
+              <div className="empty-state-title">No conversations yet</div>
+              <div className="empty-state-text">Browse models and start messaging</div>
+            </div>
+          </div>
+        );
+      }
+
+      const currentConversation = conversations.find(c => c.id === selectedConvId);
+
+      if (!currentConversation) {
+        return (
+          <div>
+            <h2 style={{ marginBottom: '1.5rem' }}>Messages</h2>
+            <div className="empty-state">
+              <div className="empty-state-icon">💬</div>
+              <div className="empty-state-title">Select a conversation</div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div>
+          <h2 style={{ marginBottom: '1.5rem' }}>Messages</h2>
+          <div className="messages-container">
+            <div className="conversations-list">
+              <div className="conversations-list-header">Conversations</div>
+              <div className="conversations-list-scroll">
+                {conversations.map(conv => (
+                  <div
+                    key={conv.id}
+                    className={`conversation-item ${selectedConvId === conv.id ? 'active' : ''}`}
+                    onClick={() => setSelectedConvId(conv.id)}
+                  >
+                    <div className="conversation-name">
+                      {conv.participant_1 === auth.currentUser.id ? 'Model' : 'Client'}
+                    </div>
+                    <div className="conversation-preview">{conv.last_message_preview || 'No messages yet'}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="message-thread">
+              <div className="message-thread-header">Conversation</div>
+              <div className="message-thread-scroll">
+                {messages.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="empty-state-icon">👋</div>
+                    <div className="empty-state-title">No messages yet</div>
+                    <div className="empty-state-text">Start the conversation!</div>
+                  </div>
+                ) : (
+                  <>
+                    {messages.map(msg => (
+                      <div key={msg.id} className={`message-bubble ${msg.sender_id === auth.currentUser.id ? 'sent' : 'received'}`}>
+                        <div className="message-content">{msg.content}</div>
+                        <div className="message-time">
+                          {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                    ))}
+                    <div ref={messageEndRef} />
+                  </>
+                )}
+              </div>
+              <div className="message-input-section">
+                <input
+                  type="text"
+                  placeholder="Type your message..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                />
+                <button onClick={handleSendMessage}>Send</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function DashboardPage() {
+      const auth = useContext(AuthContext);
+      const [bookings, setBookings] = useState([]);
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => {
+        const fetchBookings = async () => {
+          try {
+            let query = supabase.from('bookings').select('*');
+
+            if (auth.profile?.role === 'model') {
+              query = query.eq('model_id', auth.currentUser.id);
+            } else {
+              query = query.eq('client_id', auth.currentUser.id);
+            }
+
+            const { data, error } = await query.order('created_at', { ascending: false });
+
+            if (error) throw error;
+            setBookings(data || []);
+          } catch (error) {
+            console.error('Fetch bookings error:', error);
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        if (auth.currentUser && auth.profile) {
+          fetchBookings();
+        }
+      }, [auth.currentUser, auth.profile]);
+
+      if (loading) {
+        return <div className="text-center" style={{ padding: '2rem' }}>Loading dashboard...</div>;
+      }
+
+      const isModel = auth.profile?.role === 'model';
+
+      if (isModel) {
+        const pendingBookings = bookings.filter(b => b.status === 'pending');
+
+        return (
+          <div>
+            <h2 style={{ marginBottom: '2rem' }}>Model Dashboard</h2>
+
+            <div className="dashboard-grid">
+              <div className="stat-card gradient">
+                <div className="stat-value">${auth.profile.earnings || 0}</div>
+                <div className="stat-label">Total Earnings</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-value">{pendingBookings.length}</div>
+                <div className="stat-label">Pending Requests</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-value">{auth.profile.rating ? auth.profile.rating.toFixed(1) : '0.0'}★</div>
+                <div className="stat-label">Rating</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-value">{auth.profile.review_count || 0}</div>
+                <div className="stat-label">Total Reviews</div>
+              </div>
+            </div>
+
+            <h3 style={{ marginBottom: '1rem' }}>Booking Requests</h3>
+            <div className="grid">
+              {bookings.map(booking => (
+                <div key={booking.id} className="card">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
+                    <div>
+                      <div style={{ fontWeight: '700' }}>Client</div>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{booking.session_date} • {booking.duration_hours}h</div>
+                    </div>
+                    <div className={`badge ${booking.status === 'pending' ? 'badge-pending' : 'badge-success'}`}>
+                      {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                    </div>
+                  </div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                    <strong>Rate:</strong> ${booking.rate}<br />
+                    <strong>Contract:</strong> {booking.contract_type}
+                  </div>
+                  {booking.status === 'pending' && (
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button className="btn glow-btn btn-small" onClick={async () => {
+                        await auth.updateBooking(booking.id, 'accepted');
+                        setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, status: 'accepted' } : b));
+                      }}>Accept</button>
+                      <button className="btn btn-secondary btn-small" onClick={async () => {
+                        await auth.updateBooking(booking.id, 'declined');
+                        setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, status: 'declined' } : b));
+                      }}>Decline</button>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {bookings.length === 0 && (
+                <div className="empty-state">
+                  <div className="empty-state-icon">📅</div>
+                  <div className="empty-state-title">No bookings yet</div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      } else {
+        return (
+          <div>
+            <h2 style={{ marginBottom: '2rem' }}>Client Dashboard</h2>
+
+            <div className="dashboard-grid">
+              <div className="stat-card">
+                <div className="stat-value">{auth.profile.subscription_tier === 'premium' ? 'Premium' : 'Free'}</div>
+                <div className="stat-label">Subscription Status</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-value">{bookings.length}</div>
+                <div className="stat-label">Total Bookings</div>
+              </div>
+            </div>
+
+            {auth.profile.subscription_tier === 'free' && (
+              <div className="card" style={{ marginBottom: '2rem', border: '2px solid var(--accent-pink)', background: 'linear-gradient(135deg, rgba(255, 110, 199, 0.1), rgba(157, 78, 221, 0.1))' }}>
+                <h3 style={{ marginBottom: '0.5rem', color: 'var(--accent-pink)' }}>Upgrade to Premium</h3>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                  Send messages to models, receive responses, and secure bookings with premium features.
+                </p>
+                <button className="btn glow-btn" onClick={() => auth.upgradeToPremium()}>Upgrade - $9.99/month</button>
+              </div>
+            )}
+
+            <h3 style={{ marginBottom: '1rem' }}>Your Bookings</h3>
+            <div className="grid">
+              {bookings.map(booking => (
+                <div key={booking.id} className="card">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
+                    <div>
+                      <div style={{ fontWeight: '700' }}>Model</div>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{booking.session_date} • {booking.duration_hours}h</div>
+                    </div>
+                    <div className={`badge ${booking.status === 'pending' ? 'badge-pending' : booking.status === 'accepted' ? 'badge-success' : 'badge-warning'}`}>
+                      {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                    </div>
+                  </div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                    <strong>Rate:</strong> ${booking.rate}
+                  </div>
+                </div>
+              ))}
+              {bookings.length === 0 && (
+                <div className="empty-state">
+                  <div className="empty-state-icon">📅</div>
+                  <div className="empty-state-title">No bookings yet</div>
+                  <div className="empty-state-text">Browse models and book your first session</div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
+    }
+
+    function ForModelsPage() {
+      return (
+        <div>
+          <h2 style={{ marginBottom: '2rem' }}>Join as a Model</h2>
+
+          <div className="grid grid-2" style={{ marginBottom: '3rem' }}>
+            <div className="card">
+              <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>💰</div>
+              <h3 style={{ marginBottom: '0.5rem' }}>Earn on Your Terms</h3>
+              <p style={{ color: 'var(--text-secondary)' }}>Set your own rates and availability. Keep 100% of what you earn after the platform fee.</p>
+            </div>
+            <div className="card">
+              <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🛡️</div>
+              <h3 style={{ marginBottom: '0.5rem' }}>Safe & Secure</h3>
+              <p style={{ color: 'var(--text-secondary)' }}>All models are verified. Contract options and client reviews keep everyone accountable.</p>
+            </div>
+            <div className="card">
+              <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>📱</div>
+              <h3 style={{ marginBottom: '0.5rem' }}>Direct Client Access</h3>
+              <p style={{ color: 'var(--text-secondary)' }}>Message clients directly, negotiate sessions, and build your reputation on the platform.</p>
+            </div>
+            <div className="card">
+              <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🔗</div>
+              <h3 style={{ marginBottom: '0.5rem' }}>Referral Program</h3>
+              <p style={{ color: 'var(--text-secondary)' }}>Get a referral link. Share it on social media—waive the $29/mo fee when someone signs up!</p>
+            </div>
+          </div>
+
+          <div className="card" style={{ background: 'linear-gradient(135deg, rgba(255, 110, 199, 0.15), rgba(0, 217, 255, 0.15))', border: '2px solid var(--accent-pink)', marginBottom: '2rem' }}>
+            <h3 style={{ marginBottom: '1rem' }}>$29/month</h3>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Model membership • Unlimited bookings • Direct messaging • Professional tools</p>
+            <button className="btn glow-btn" onClick={() => window.location.hash = 'signup'}>Apply as Model</button>
+          </div>
+        </div>
+      );
+    }
+
+    function ContractsPage() {
+      return (
+        <div>
+          <h2 style={{ marginBottom: '2rem' }}>Photo Session Contracts</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
+            Choose the contract that fits your comfort level. Models review and agree before any session.
+          </p>
+
+          <div className="grid grid-3">
+            <div className="card">
+              <h3 style={{ marginBottom: '1rem', color: 'var(--accent-pink)' }}>Standard</h3>
+              <div style={{ color: 'var(--accent-gold)', fontWeight: '700', marginBottom: '1rem' }}>Personal Use</div>
+              <ul style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: '2' }}>
+                <li>✓ Photos for personal portfolio</li>
+                <li>✓ Social media (credit model)</li>
+                <li>✗ Commercial licensing</li>
+                <li>✗ Brand sponsorships</li>
+              </ul>
+              <button className="btn glow-btn btn-block">Download PDF</button>
+            </div>
+
+            <div className="card" style={{ border: '2px solid var(--accent-gold)' }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--accent-gold)' }}>Full Rights</h3>
+              <div style={{ color: 'var(--accent-gold)', fontWeight: '700', marginBottom: '1rem' }}>Commercial License</div>
+              <ul style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: '2' }}>
+                <li>✓ Commercial use</li>
+                <li>✓ Magazine publication</li>
+                <li>✓ Advertising campaigns</li>
+                <li>✓ No ongoing royalties</li>
+              </ul>
+              <button className="btn glow-btn btn-block">Download PDF</button>
+            </div>
+
+            <div className="card">
+              <h3 style={{ marginBottom: '1rem', color: 'var(--accent-purple)' }}>Limited</h3>
+              <div style={{ color: 'var(--accent-purple)', fontWeight: '700', marginBottom: '1rem' }}>Restricted Commercial</div>
+              <ul style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: '2' }}>
+                <li>✓ Limited commercial use</li>
+                <li>✓ Specific purpose only</li>
+                <li>✓ Model approval required</li>
+                <li>✗ Resale prohibited</li>
+              </ul>
+              <button className="btn glow-btn btn-block">Download PDF</button>
+            </div>
+          </div>
+
+          <div className="card" style={{ marginTop: '2rem', background: 'rgba(0, 217, 163, 0.1)', border: '1px solid var(--success-green)' }}>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'start' }}>
+              <div style={{ fontSize: '1.5rem' }}>✓</div>
+              <div>
+                <strong style={{ color: 'var(--success-green)' }}>Model-Controlled</strong>
+                <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                  Models choose which contract to use and can decline specific requests. Your comfort and rights come first.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function LoginPage() {
+      const { login } = useContext(AuthContext);
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      const [error, setError] = useState('');
+      const [loading, setLoading] = useState(false);
+
+      const handleLogin = async () => {
+        setError('');
+        setLoading(true);
+        const success = await login(email, password);
+        setLoading(false);
+        if (success) {
+          window.location.hash = 'dashboard';
+        }
+      };
+
+      return (
+        <div style={{ maxWidth: '400px', margin: '3rem auto' }}>
+          <div className="card">
+            <h2 style={{ marginBottom: '1.5rem' }}>Login</h2>
+
+            <div className="form-group">
+              <label>Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+              />
+            </div>
+
+            {error && <div className="form-error">{error}</div>}
+
+            <button className="btn glow-btn btn-block" onClick={handleLogin} disabled={loading} style={{ marginBottom: '1rem', opacity: loading ? 0.6 : 1 }}>
+              {loading ? 'Logging in...' : 'Login'}
+            </button>
+
+            <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+              Don't have an account? <a onClick={() => window.location.hash = 'signup'}>Sign up</a>
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    function SignupPage() {
+      const { signup } = useContext(AuthContext);
+      const [displayName, setDisplayName] = useState('');
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      const [role, setRole] = useState('client');
+      const [error, setError] = useState('');
+      const [loading, setLoading] = useState(false);
+
+      const handleSignup = async () => {
+        setError('');
+        if (!displayName || !email || !password) {
+          setError('Please fill in all fields');
+          return;
+        }
+        setLoading(true);
+        const success = await signup(displayName, email, password, role);
+        setLoading(false);
+        if (success) {
+          window.location.hash = 'login';
+        }
+      };
+
+      return (
+        <div style={{ maxWidth: '400px', margin: '3rem auto' }}>
+          <div className="card">
+            <h2 style={{ marginBottom: '1.5rem' }}>Create Account</h2>
+
+            <div className="form-group">
+              <label>I am a...</label>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    value="client"
+                    checked={role === 'client'}
+                    onChange={(e) => setRole(e.target.value)}
+                  />
+                  Client
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    value="model"
+                    checked={role === 'model'}
+                    onChange={(e) => setRole(e.target.value)}
+                  />
+                  Model ($29/mo)
+                </label>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Full Name</label>
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Your name"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                onKeyPress={(e) => e.key === 'Enter' && handleSignup()}
+              />
+            </div>
+
+            {error && <div className="form-error">{error}</div>}
+
+            <button className="btn glow-btn btn-block" onClick={handleSignup} disabled={loading} style={{ marginBottom: '1rem', opacity: loading ? 0.6 : 1 }}>
+              {loading ? 'Creating account...' : 'Create Account'}
+            </button>
+
+            <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
+              Already have an account? <a onClick={() => window.location.hash = 'login'}>Login</a>
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    function EditProfilePage() {
+      const { currentUser, profile, updateProfile } = useContext(AuthContext);
+      const [data, setData] = useState(profile || {});
+      const [loading, setLoading] = useState(false);
+
+      if (!profile) {
+        return <div>Loading...</div>;
+      }
+
+      const handleSave = async () => {
+        setLoading(true);
+        const success = await updateProfile(data);
+        setLoading(false);
+        if (success) {
+          window.location.hash = `profile/${currentUser.id}`;
+        }
+      };
+
+      const isModel = profile.role === 'model';
+
+      return (
+        <div style={{ maxWidth: '600px', margin: '2rem auto' }}>
+          <button className="btn btn-secondary" onClick={() => window.location.hash = 'dashboard'} style={{ marginBottom: '2rem' }}>← Back</button>
+
+          <div className="card">
+            <h2 style={{ marginBottom: '1.5rem' }}>Edit Profile</h2>
+
+            <div className="form-group">
+              <label>Name</label>
+              <input
+                type="text"
+                value={data.display_name || ''}
+                onChange={(e) => setData({ ...data, display_name: e.target.value })}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Bio</label>
+              <textarea
+                value={data.bio || ''}
+                onChange={(e) => setData({ ...data, bio: e.target.value })}
+              />
+            </div>
+
+            {isModel && (
+              <>
+                <div className="form-group">
+                  <label>Rate per Session</label>
+                  <input
+                    type="number"
+                    value={data.rate || 0}
+                    onChange={(e) => setData({ ...data, rate: parseInt(e.target.value) })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Tags (comma separated)</label>
+                  <input
+                    type="text"
+                    value={(data.tags && data.tags.join(', ')) || ''}
+                    onChange={(e) => setData({ ...data, tags: e.target.value.split(',').map(t => t.trim()) })}
+                    placeholder="Lingerie, Glamour, Costume..."
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Availability</label>
+                  <input
+                    type="text"
+                    value={data.availability || 'Flexible'}
+                    onChange={(e) => setData({ ...data, availability: e.target.value })}
+                    placeholder="e.g., Mon-Fri, Weekends"
+                  />
+                </div>
+              </>
+            )}
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button className="btn glow-btn" onClick={handleSave} disabled={loading} style={{ opacity: loading ? 0.6 : 1 }}>
+                {loading ? 'Saving...' : 'Save Changes'}
+              </button>
+              <button className="btn btn-secondary" onClick={() => window.location.hash = 'dashboard'}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ===== MAIN APP COMPONENT =====
+    function App() {
+      const auth = useContext(AuthContext);
+      const [currentPage, setCurrentPage] = useState('home');
+
+      useEffect(() => {
+        const handleHashChange = () => {
+          const hash = window.location.hash.slice(1) || 'home';
+          setCurrentPage(hash);
+        };
+        window.addEventListener('hashchange', handleHashChange);
+        handleHashChange();
+        return () => window.removeEventListener('hashchange', handleHashChange);
+      }, []);
+
+      if (auth.loading) {
+        return (
+          <div className="app-container">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+              <div className="loading-spinner"></div>
+            </div>
+          </div>
+        );
+      }
+
+      const renderPage = () => {
+        const [page, ...params] = currentPage.split('/');
+
+        if (page === 'home') return !auth.currentUser ? <HomePage /> : <BrowseModelsPage />;
+        if (page === 'browse') return <BrowseModelsPage />;
+        if (page === 'profile' && params[0]) return <ProfilePage modelId={params[0]} />;
+        if (page === 'formodels') return <ForModelsPage />;
+        if (page === 'contracts') return <ContractsPage />;
+        if (page === 'login') return <LoginPage />;
+        if (page === 'signup') return <SignupPage />;
+        if (page === 'dashboard') return auth.currentUser ? <DashboardPage /> : <LoginPage />;
+        if (page === 'messages' && params[0]) return auth.currentUser ? <MessagesPage conversationId={params[0]} /> : <LoginPage />;
+        if (page === 'messages') return auth.currentUser ? <MessagesPage conversationId={null} /> : <LoginPage />;
+        if (page === 'edit-profile') return auth.currentUser ? <EditProfilePage /> : <LoginPage />;
+        return !auth.currentUser ? <HomePage /> : <BrowseModelsPage />;
+      };
+
+      return (
+        <div className="app-container">
+          <nav className="nav">
+            <div className="nav-brand" onClick={() => window.location.hash = 'home'}>🎀 ModelBid</div>
+
+            <div className="nav-links">
+              <a className="nav-link" onClick={() => window.location.hash = 'browse'}>Browse</a>
+              <a className="nav-link" onClick={() => window.location.hash = 'contracts'}>Contracts</a>
+              <a className="nav-link" onClick={() => window.location.hash = 'formodels'}>For Models</a>
+            </div>
+
+            <div className="nav-links">
+              {!auth.currentUser ? (
+                <>
+                  <button className="btn btn-secondary" onClick={() => window.location.hash = 'login'}>Login</button>
+                  <button className="btn glow-btn" onClick={() => window.location.hash = 'signup'}>Sign Up</button>
+                </>
+              ) : (
+                <div className="user-section">
+                  <a className="nav-link" onClick={() => window.location.hash = 'messages'}>📬 Messages</a>
+                  <a className="nav-link" onClick={() => window.location.hash = 'dashboard'}>Dashboard</a>
+                  <a className="nav-link" onClick={() => window.location.hash = 'edit-profile'}>⚙️ Profile</a>
+                  <div className="user-info">
+                    <div className="avatar">{auth.profile?.avatar_emoji || '👤'}</div>
+                    <div className="user-name">{auth.profile?.display_name || 'User'}</div>
+                  </div>
+                  <button className="btn btn-secondary" onClick={async () => {
+                    await auth.logout();
+                    window.location.hash = 'home';
+                  }}>Logout</button>
+                </div>
+              )}
+            </div>
+          </nav>
+
+          <div className="main-content">
+            {renderPage()}
+          </div>
+        </div>
+      );
+    }
+
+    // ===== RENDER APP =====
+    ReactDOM.createRoot(document.getElementById('root')).render(
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    );
+  </script>
+</body>
+</html>
