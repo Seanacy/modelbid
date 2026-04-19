@@ -3872,6 +3872,115 @@
       .ws-card-stats { gap: 12px; }
     }
 
+    /* ===== Suggested / Boost ===== */
+    .suggested-section {
+      margin: 20px 0 28px 0;
+      position: relative;
+    }
+    .suggested-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .suggested-label {
+      font-size: 0.82em;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      font-weight: 600;
+    }
+    .suggested-dots {
+      display: flex;
+      gap: 5px;
+    }
+    .suggested-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #333;
+      transition: background 0.3s;
+    }
+    .suggested-dot.active {
+      background: linear-gradient(135deg, #ff6b9d, #c44dff);
+      width: 18px;
+      border-radius: 3px;
+    }
+    .suggested-scroll {
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      padding-bottom: 8px;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .suggested-scroll::-webkit-scrollbar { display: none; }
+
+    .suggested-card {
+      min-width: 160px;
+      max-width: 160px;
+      background: #1a1a2e;
+      border-radius: 14px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.25s, box-shadow 0.25s;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .suggested-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 25px rgba(255,107,157,0.12);
+    }
+    .suggested-card-img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      display: block;
+    }
+    .suggested-card-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 40px 12px 12px 12px;
+      background: linear-gradient(transparent, rgba(0,0,0,0.85));
+    }
+    .suggested-card-name {
+      font-size: 0.88em;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .suggested-card-detail {
+      font-size: 0.72em;
+      color: rgba(255,255,255,0.6);
+    }
+    .suggested-card-rate {
+      font-size: 0.72em;
+      color: #ff6b9d;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+    .boost-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ff6b9d, #c44dff);
+      opacity: 0.7;
+    }
+
+    @media (max-width: 768px) {
+      .suggested-card { min-width: 140px; max-width: 140px; }
+      .suggested-card-img { height: 170px; }
+    }
+
   </style>
 </head>
 <body>
@@ -4174,6 +4283,43 @@
       );
     }
 
+    function SuggestedModels() {
+      const suggested = [
+        { id: 's1', name: 'Luna Noir', rate: '$280/session', detail: '★ 4.9 • Boudoir', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=320&h=400&fit=crop', hash: 'profile/demo' },
+        { id: 's2', name: 'Sasha Velvet', rate: '$320/session', detail: '★ 5.0 • Luxury', img: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=320&h=400&fit=crop', hash: 'profile/demo' },
+        { id: 's3', name: 'Mika Rose', rate: '$200/session', detail: '★ 4.8 • Cosplay', img: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=320&h=400&fit=crop', hash: 'profile/demo' },
+        { id: 's4', name: 'Jade Monroe', rate: '$350/session', detail: '★ 4.9 • Pin-Up', img: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=320&h=400&fit=crop', hash: 'profile/demo' },
+        { id: 's5', name: 'Nova Starr', rate: '$275/session', detail: '★ 4.7 • Fantasy', img: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=320&h=400&fit=crop', hash: 'profile/demo' },
+        { id: 's6', name: 'Elara Bliss', rate: '$240/session', detail: '★ 4.8 • Glamour', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=320&h=400&fit=crop', hash: 'profile/demo' },
+      ];
+
+      return (
+        <div className="suggested-section">
+          <div className="suggested-header">
+            <span className="suggested-label">Suggested for you</span>
+            <div className="suggested-dots">
+              <div className="suggested-dot active"></div>
+              <div className="suggested-dot"></div>
+              <div className="suggested-dot"></div>
+            </div>
+          </div>
+          <div className="suggested-scroll">
+            {suggested.map(m => (
+              <div key={m.id} className="suggested-card" onClick={() => window.location.hash = m.hash}>
+                <div className="boost-badge"></div>
+                <img className="suggested-card-img" src={m.img} alt={m.name} />
+                <div className="suggested-card-overlay">
+                  <div className="suggested-card-name">{m.name}</div>
+                  <div className="suggested-card-detail">{m.detail}</div>
+                  <div className="suggested-card-rate">{m.rate}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
     function BrowseModelsPage() {
       const auth = useContext(AuthContext);
       const [models, setModels] = useState([]);
@@ -4181,7 +4327,7 @@
       const [searchTerm, setSearchTerm] = useState('');
       const [selectedTag, setSelectedTag] = useState(null);
 
-      const allTags = ['Lingerie', 'Costume', 'Glamour', 'Boudoir', 'Pin-Up', 'Cosplay', 'Fantasy', 'Retro', 'Luxury', 'Fun', 'Casual', 'Elegant'];
+      const allTags = ['Lingerie', 'Costume', 'Glamour', 'Boudoir', 'Pin-Up', 'Cosplay', 'Fantasy', 'Retro', 'Luxury', 'Fun', 'Casual', 'Elegant', 'Swimwear', 'Streetwear', 'Artistic', 'Fitness', 'Bridal', 'Editorial'];
 
       useEffect(() => {
         const fetchModels = async () => {
@@ -4245,6 +4391,8 @@
               </button>
             ))}
           </div>
+
+          <SuggestedModels />
 
           <div className="grid grid-3">
             {/* Demo model card - always visible for preview */}
@@ -6570,6 +6718,8 @@
             ))}
           </div>
 
+          <SuggestedModels />
+
           {/* Feed Tabs */}
           <div className="feed-tabs">
             {[
@@ -7790,13 +7940,47 @@
                 </div>
 
                 <div className="form-group">
-                  <label>Tags (comma separated)</label>
-                  <input
-                    type="text"
-                    value={(data.tags && data.tags.join(', ')) || ''}
-                    onChange={(e) => setData({ ...data, tags: e.target.value.split(',').map(t => t.trim()) })}
-                    placeholder="Lingerie, Glamour, Costume..."
-                  />
+                  <label>Your Styles</label>
+                  <p style={{ color: '#888', fontSize: '0.82em', marginBottom: '10px', marginTop: '-4px' }}>
+                    Tap to add or remove. Only show what fits you — your page should feel like you.
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {['Lingerie', 'Costume', 'Glamour', 'Boudoir', 'Pin-Up', 'Cosplay', 'Fantasy', 'Retro', 'Luxury', 'Fun', 'Casual', 'Elegant', 'Swimwear', 'Streetwear', 'Artistic', 'Fitness', 'Bridal', 'Editorial'].map(tag => {
+                      const isSelected = data.tags && data.tags.includes(tag);
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => {
+                            const current = data.tags || [];
+                            if (isSelected) {
+                              setData({ ...data, tags: current.filter(t => t !== tag) });
+                            } else {
+                              setData({ ...data, tags: [...current, tag] });
+                            }
+                          }}
+                          style={{
+                            padding: '7px 16px',
+                            borderRadius: '20px',
+                            border: isSelected ? '1px solid #ff6b9d' : '1px solid #333',
+                            background: isSelected ? 'rgba(255,107,157,0.12)' : 'transparent',
+                            color: isSelected ? '#ff6b9d' : '#888',
+                            fontSize: '0.85em',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            fontWeight: isSelected ? '600' : '400',
+                          }}
+                        >
+                          {isSelected ? '✓ ' : ''}{tag}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {data.tags && data.tags.length > 0 && (
+                    <div style={{ marginTop: '10px', fontSize: '0.8em', color: '#666' }}>
+                      {data.tags.length} style{data.tags.length !== 1 ? 's' : ''} selected
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-group">
