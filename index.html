@@ -4012,68 +4012,61 @@
       background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: 14px;
-      padding: 1.1rem 1.25rem;
+      padding: 1.25rem 1rem;
       display: flex;
-      align-items: flex-start;
-      gap: 1rem;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.6rem;
       transition: border-color 0.3s, transform 0.2s;
       cursor: pointer;
       position: relative;
       overflow: hidden;
+      min-width: 0;
     }
     .nudge-card:hover {
       border-color: var(--accent-pink);
-      transform: translateY(-2px);
-    }
-    .nudge-card::after {
-      content: '→';
-      position: absolute;
-      right: 1.25rem;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-secondary);
-      font-size: 1.1rem;
-      opacity: 0;
-      transition: opacity 0.2s, right 0.2s;
-    }
-    .nudge-card:hover::after {
-      opacity: 1;
-      right: 1rem;
+      transform: translateY(-3px);
     }
     .nudge-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.3rem;
+      font-size: 1.4rem;
       flex-shrink: 0;
     }
-    .nudge-content { flex: 1; padding-right: 1.5rem; }
+    .nudge-content { flex: 1; }
     .nudge-title {
       font-weight: 700;
-      font-size: 0.88rem;
-      margin-bottom: 0.2rem;
+      font-size: 0.85rem;
+      margin-bottom: 0.25rem;
     }
     .nudge-desc {
-      font-size: 0.78rem;
+      font-size: 0.73rem;
       color: var(--text-secondary);
       line-height: 1.4;
     }
     .nudge-earn {
       display: inline-block;
-      margin-top: 0.4rem;
-      font-size: 0.7rem;
+      margin-top: 0.5rem;
+      font-size: 0.65rem;
       font-weight: 600;
-      padding: 2px 8px;
+      padding: 3px 10px;
       border-radius: 20px;
     }
     .nudge-grid {
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 0.75rem;
       margin: 1.25rem 0;
+    }
+    @media (max-width: 768px) {
+      .nudge-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
     .nudge-section-label {
       font-size: 0.65rem;
