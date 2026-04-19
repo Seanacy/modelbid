@@ -7017,58 +7017,149 @@
     }
 
     function ContractsPage() {
+      const [showProPreview, setShowProPreview] = useState(false);
+      const demoClientRep = getClientRepLevel(7, 85);
+      const hasFreeProPerk = demoClientRep.level >= 2; // Bronze+ gets 1 free Pro/month
+
+      const handleFreeDownload = () => {
+        // Generate a basic contract PDF (demo — just shows alert)
+        alert('Demo: Downloading Standard Contract PDF...\n\nIn production, this generates a PDF with:\n• Session date, time, location\n• Duration & rate\n• Basic usage rights (personal only)\n• Cancellation policy\n• Both party signatures');
+      };
+
+      const handleProDownload = () => {
+        if (hasFreeProPerk) {
+          alert('Demo: Your ' + demoClientRep.name + ' reputation includes 1 free Pro Contract per month!\n\nDownloading Pro Contract PDF...');
+        } else {
+          alert('Demo: Purchasing Pro Contract for $2.99...\n\nIn production, this triggers Stripe checkout, then generates the PDF.');
+        }
+      };
+
       return (
-        <div>
-          <h2 style={{ marginBottom: '2rem' }}>Photo Session Contracts</h2>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
-            Choose the contract that fits your comfort level. Models review and agree before any session.
-          </p>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', padding: '2rem 0', marginBottom: '1rem' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📄</div>
+            <h2 style={{ fontSize: '2rem', fontWeight: 800, background: 'linear-gradient(135deg, var(--accent-pink), var(--accent-gold))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', marginBottom: '0.5rem' }}>
+              Photo Session Contracts
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+              Protect yourself and your models. Choose the contract that fits your session.
+            </p>
+          </div>
 
-          <div className="grid grid-3">
-            <div className="card">
-              <h3 style={{ marginBottom: '1rem', color: 'var(--accent-pink)' }}>Standard</h3>
-              <div style={{ color: 'var(--accent-gold)', fontWeight: '700', marginBottom: '1rem' }}>Personal Use</div>
-              <ul style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: '2' }}>
-                <li>✓ Photos for personal portfolio</li>
-                <li>✓ Social media (credit model)</li>
-                <li>✗ Commercial licensing</li>
-                <li>✗ Brand sponsorships</li>
-              </ul>
-              <button className="btn glow-btn btn-block">Download PDF</button>
+          {/* Info Box — What Are Contracts? */}
+          <div className="rep-info-box" style={{ marginBottom: '1.5rem' }}>
+            <strong style={{ color: 'var(--accent-teal)' }}>What are ModelBid Contracts?</strong> Every session on ModelBid is backed by a legal contract that protects both the client and the model. Contracts define usage rights, payment terms, cancellation rules, and content ownership. Models review and agree before any session begins. The Standard contract is free and covers personal use. The Pro contract ($2.99) adds commercial licensing, model releases, dispute resolution, and more — everything you need for professional shoots.
+          </div>
+
+          {/* Contract Tiers */}
+          <div className="grid grid-2" style={{ gap: '1.5rem', marginBottom: '1.5rem' }}>
+            {/* FREE — Standard Contract */}
+            <div className="card" style={{ position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(0,217,163,0.15)', color: 'var(--success-green)', padding: '0.2rem 0.7rem', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 700 }}>FREE</div>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📋</div>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '0.25rem' }}>Standard Contract</h3>
+              <div style={{ color: 'var(--success-green)', fontWeight: 700, fontSize: '1.5rem', marginBottom: '0.75rem' }}>$0</div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: 1.6, marginBottom: '1rem' }}>
+                The essentials for personal photo sessions. Covers basic rights, cancellation, and payment terms.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                {['Session date, time & location', 'Duration & agreed rate', 'Personal use rights only', 'Social media (credit model)', 'Basic cancellation policy', 'Both party signatures'].map((item, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--success-green)' }}>✓</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>{item}</span>
+                  </div>
+                ))}
+                {['Commercial licensing', 'Model release language', 'Dispute resolution clause', 'Exclusivity options'].map((item, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--danger-red)', opacity: 0.6 }}>✗</span>
+                    <span style={{ color: 'var(--text-secondary)', opacity: 0.5 }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+              <button className="btn glow-btn btn-block" onClick={handleFreeDownload}>
+                📥 Download Free Contract
+              </button>
             </div>
 
-            <div className="card" style={{ border: '2px solid var(--accent-gold)' }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--accent-gold)' }}>Full Rights</h3>
-              <div style={{ color: 'var(--accent-gold)', fontWeight: '700', marginBottom: '1rem' }}>Commercial License</div>
-              <ul style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: '2' }}>
-                <li>✓ Commercial use</li>
-                <li>✓ Magazine publication</li>
-                <li>✓ Advertising campaigns</li>
-                <li>✓ No ongoing royalties</li>
-              </ul>
-              <button className="btn glow-btn btn-block">Download PDF</button>
-            </div>
+            {/* PRO — $2.99 Contract */}
+            <div className="card" style={{ position: 'relative', overflow: 'hidden', border: '2px solid var(--accent-gold)', boxShadow: '0 0 25px rgba(255,215,0,0.1)' }}>
+              <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(255,215,0,0.15)', color: 'var(--accent-gold)', padding: '0.2rem 0.7rem', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 700 }}>PRO</div>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⚖️</div>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '0.25rem' }}>Pro Contract</h3>
+              <div style={{ marginBottom: '0.75rem' }}>
+                <span style={{ color: 'var(--accent-gold)', fontWeight: 700, fontSize: '1.5rem' }}>$2.99</span>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginLeft: '0.25rem' }}>per contract</span>
+              </div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: 1.6, marginBottom: '1rem' }}>
+                Full legal protection for commercial and professional sessions. Everything in Standard, plus:
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                {['Everything in Standard', 'Commercial use & licensing rights', 'Full model release language', 'Magazine & advertising clearance', 'Content distribution rights', 'Exclusivity clause options', 'Payment milestones & schedule', 'Dispute resolution & arbitration', 'Confidentiality agreement', 'Custom usage period (1yr / unlimited)'].map((item, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--accent-gold)' }}>{i === 0 ? '📋' : '✓'}</span>
+                    <span style={{ color: i === 0 ? 'var(--accent-teal)' : 'var(--text-secondary)' }}>{item}</span>
+                  </div>
+                ))}
+              </div>
 
-            <div className="card">
-              <h3 style={{ marginBottom: '1rem', color: 'var(--accent-purple)' }}>Limited</h3>
-              <div style={{ color: 'var(--accent-purple)', fontWeight: '700', marginBottom: '1rem' }}>Restricted Commercial</div>
-              <ul style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: '2' }}>
-                <li>✓ Limited commercial use</li>
-                <li>✓ Specific purpose only</li>
-                <li>✓ Model approval required</li>
-                <li>✗ Resale prohibited</li>
-              </ul>
-              <button className="btn glow-btn btn-block">Download PDF</button>
+              {/* Reputation perk callout */}
+              {hasFreeProPerk && (
+                <div style={{ background: 'rgba(0,217,163,0.06)', border: '1px solid rgba(0,217,163,0.2)', borderRadius: '8px', padding: '0.5rem 0.75rem', marginBottom: '0.75rem', fontSize: '0.8rem', color: 'var(--success-green)', textAlign: 'center' }}>
+                  🎁 Your <strong>{demoClientRep.name}</strong> status includes 1 free Pro Contract/month!
+                </div>
+              )}
+
+              <button className="btn btn-block" onClick={handleProDownload} style={{ background: 'linear-gradient(135deg, var(--accent-gold), #e6a800)', color: '#000', fontWeight: 700 }}>
+                {hasFreeProPerk ? '📥 Download Free (Rep Perk)' : '💳 Purchase & Download — $2.99'}
+              </button>
             </div>
           </div>
 
-          <div className="card" style={{ marginTop: '2rem', background: 'rgba(0, 217, 163, 0.1)', border: '1px solid var(--success-green)' }}>
+          {/* Info Box — Pro Contract */}
+          <div style={{ background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.2)', borderRadius: '10px', padding: '1rem 1.25rem', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+            <strong style={{ color: 'var(--accent-gold)' }}>Why go Pro?</strong> The Standard contract works great for casual personal shoots. But if you're doing commercial work — brand campaigns, magazine features, advertising — you need a contract with proper licensing, model releases, and distribution rights. The Pro contract is reviewed by legal professionals and covers both parties for high-stakes sessions. Bronze Members and above get 1 free Pro Contract per month as a reputation perk.
+          </div>
+
+          {/* Pro Contract Preview Toggle */}
+          <div className="card" style={{ marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setShowProPreview(!showProPreview)}>
+              <div>
+                <strong>👀 Preview Pro Contract Sections</strong>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.25rem' }}>See what's covered before purchasing</p>
+              </div>
+              <div style={{ fontSize: '1.2rem', transform: showProPreview ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.3s' }}>▼</div>
+            </div>
+            {showProPreview && (
+              <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
+                {[
+                  { section: '1. Parties & Session Details', desc: 'Full legal names, contact info, session date/time/location, agreed duration and rate' },
+                  { section: '2. Scope of Work', desc: 'Detailed description of session type, outfit count, number of final deliverables, retouching expectations' },
+                  { section: '3. Usage & Licensing Rights', desc: 'Commercial vs. personal use, distribution channels, geographic scope, duration of license (1yr or perpetual)' },
+                  { section: '4. Model Release', desc: 'Full model release granting right to use likeness in agreed contexts, with clear limitations on usage beyond scope' },
+                  { section: '5. Compensation & Payment', desc: 'Total fee, deposit amount, payment milestones, late payment penalties, acceptable payment methods' },
+                  { section: '6. Exclusivity', desc: 'Optional exclusivity clause — model agrees not to shoot with competing brands for a defined period' },
+                  { section: '7. Content Ownership', desc: 'Who owns raw files vs. edited files, backup/storage responsibilities, deletion timeline' },
+                  { section: '8. Cancellation & Rescheduling', desc: '48-hour cancellation policy, rescheduling terms, force majeure clause, refund schedule' },
+                  { section: '9. Confidentiality', desc: 'NDA covering session details, unreleased content, and personal information of both parties' },
+                  { section: '10. Dispute Resolution', desc: 'Mediation first, then binding arbitration. Governing law, venue, attorney fee allocation' },
+                ].map((s, i) => (
+                  <div key={i} style={{ marginBottom: '0.75rem' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--accent-gold)' }}>{s.section}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{s.desc}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Model-Controlled Notice */}
+          <div className="card" style={{ background: 'rgba(0, 217, 163, 0.1)', border: '1px solid var(--success-green)' }}>
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'start' }}>
               <div style={{ fontSize: '1.5rem' }}>✓</div>
               <div>
                 <strong style={{ color: 'var(--success-green)' }}>Model-Controlled</strong>
                 <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
-                  Models choose which contract to use and can decline specific requests. Your comfort and rights come first.
+                  Models choose which contract to accept and can decline specific requests. Both Standard and Pro contracts require mutual agreement before a session is confirmed. Your comfort and rights always come first.
                 </p>
               </div>
             </div>
