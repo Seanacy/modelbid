@@ -3685,6 +3685,137 @@
       }
     }
 
+    /* ===== WeStackr - Crowdfund ===== */
+    .ws-page { max-width: 900px; margin: 0 auto; padding: 20px; }
+    .ws-hero { text-align: center; margin-bottom: 30px; }
+    .ws-hero h1 { font-size: 2.2em; margin-bottom: 5px; }
+    .ws-hero h1 span { background: linear-gradient(135deg, #00e676, #00bcd4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .ws-hero p { color: #aaa; font-size: 1.05em; }
+
+    .ws-info-box {
+      background: linear-gradient(135deg, rgba(0,230,118,0.08), rgba(0,188,212,0.08));
+      border: 1px solid rgba(0,230,118,0.25);
+      border-radius: 16px; padding: 24px; margin-bottom: 28px;
+    }
+    .ws-info-box h3 { color: #00e676; margin-bottom: 10px; font-size: 1.1em; }
+    .ws-info-box p { color: #ccc; line-height: 1.7; margin-bottom: 8px; font-size: 0.95em; }
+    .ws-info-box .ws-info-highlight { color: #fff; font-weight: 600; }
+
+    .ws-tabs { display: flex; gap: 10px; margin-bottom: 24px; justify-content: center; flex-wrap: wrap; }
+    .ws-tab {
+      padding: 10px 22px; border-radius: 25px; border: 1px solid #333;
+      background: transparent; color: #aaa; cursor: pointer; font-size: 0.9em; transition: all 0.3s;
+    }
+    .ws-tab:hover { border-color: #00e676; color: #fff; }
+    .ws-tab.active { background: linear-gradient(135deg, #00e676, #00bcd4); color: #000; border-color: transparent; font-weight: 600; }
+
+    .ws-create-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, #00e676, #00bcd4); color: #000;
+      padding: 12px 28px; border-radius: 30px; border: none; cursor: pointer;
+      font-weight: 700; font-size: 1em; margin-bottom: 28px; transition: transform 0.2s;
+    }
+    .ws-create-btn:hover { transform: scale(1.05); }
+
+    .ws-campaigns { display: flex; flex-direction: column; gap: 20px; }
+
+    .ws-card {
+      background: #1a1a2e; border-radius: 16px; overflow: hidden;
+      border: 1px solid #2a2a3e; transition: transform 0.2s, border-color 0.3s;
+    }
+    .ws-card:hover { transform: translateY(-2px); border-color: #00e676; }
+    .ws-card-img {
+      width: 100%; height: 200px; object-fit: cover; display: block;
+    }
+    .ws-card-body { padding: 20px; }
+    .ws-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .ws-card-title { font-size: 1.2em; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .ws-card-creator { font-size: 0.85em; color: #aaa; }
+    .ws-card-creator span { color: #00e676; cursor: pointer; }
+    .ws-card-badge {
+      padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .ws-badge-active { background: rgba(0,230,118,0.15); color: #00e676; }
+    .ws-badge-funded { background: rgba(255,215,0,0.15); color: #ffd700; }
+    .ws-badge-new { background: rgba(0,188,212,0.15); color: #00bcd4; }
+
+    .ws-card-desc { color: #bbb; font-size: 0.92em; line-height: 1.6; margin-bottom: 16px; }
+
+    .ws-progress-wrap { margin-bottom: 14px; }
+    .ws-progress-labels { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.85em; }
+    .ws-progress-raised { color: #00e676; font-weight: 700; }
+    .ws-progress-goal { color: #888; }
+    .ws-progress-bar { height: 10px; background: #2a2a3e; border-radius: 10px; overflow: hidden; }
+    .ws-progress-fill {
+      height: 100%; border-radius: 10px; transition: width 0.6s ease;
+      background: linear-gradient(90deg, #00e676, #00bcd4);
+    }
+
+    .ws-card-stats { display: flex; gap: 20px; margin-bottom: 16px; flex-wrap: wrap; }
+    .ws-card-stat { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #aaa; }
+    .ws-card-stat span:first-child { font-size: 1em; }
+
+    .ws-card-admins { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+    .ws-card-admins-label { font-size: 0.8em; color: #888; }
+    .ws-admin-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, #667, #445); display: flex; align-items: center;
+      justify-content: center; font-size: 0.7em; border: 2px solid #1a1a2e; margin-left: -6px;
+    }
+    .ws-admin-avatar:first-of-type { margin-left: 0; }
+
+    .ws-card-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .ws-pledge-btn {
+      flex: 1; padding: 10px 20px; border-radius: 25px; border: none; cursor: pointer;
+      font-weight: 700; font-size: 0.9em; transition: all 0.3s;
+      background: linear-gradient(135deg, #00e676, #00bcd4); color: #000;
+    }
+    .ws-pledge-btn:hover { transform: scale(1.03); }
+    .ws-share-btn {
+      padding: 10px 20px; border-radius: 25px; border: 1px solid #333; cursor: pointer;
+      font-weight: 600; font-size: 0.9em; color: #aaa; background: transparent; transition: all 0.3s;
+    }
+    .ws-share-btn:hover { border-color: #00e676; color: #00e676; }
+    .ws-msg-btn {
+      padding: 10px 20px; border-radius: 25px; border: 1px solid #333; cursor: pointer;
+      font-weight: 600; font-size: 0.9em; color: #aaa; background: transparent; transition: all 0.3s;
+    }
+    .ws-msg-btn:hover { border-color: #00bcd4; color: #00bcd4; }
+
+    .ws-msg-gate {
+      background: rgba(255,152,0,0.08); border: 1px solid rgba(255,152,0,0.3);
+      border-radius: 12px; padding: 16px 20px; margin-top: 14px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .ws-msg-gate-icon { font-size: 1.5em; }
+    .ws-msg-gate-text { flex: 1; }
+    .ws-msg-gate-text strong { color: #ff9800; display: block; margin-bottom: 2px; font-size: 0.9em; }
+    .ws-msg-gate-text span { color: #aaa; font-size: 0.82em; }
+    .ws-msg-gate-btn {
+      padding: 8px 18px; border-radius: 20px; border: none; cursor: pointer;
+      background: #ff9800; color: #000; font-weight: 700; font-size: 0.8em; white-space: nowrap;
+    }
+
+    .ws-funded-banner {
+      background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,152,0,0.1));
+      border: 1px solid rgba(255,215,0,0.3); border-radius: 12px;
+      padding: 14px 20px; margin-top: 14px; text-align: center;
+    }
+    .ws-funded-banner span { color: #ffd700; font-weight: 700; font-size: 0.95em; }
+    .ws-funded-banner p { color: #aaa; font-size: 0.82em; margin-top: 4px; }
+
+    .ws-split-info {
+      background: rgba(0,188,212,0.08); border: 1px solid rgba(0,188,212,0.2);
+      border-radius: 10px; padding: 12px 16px; margin-top: 10px; font-size: 0.82em; color: #aaa;
+    }
+    .ws-split-info strong { color: #00bcd4; }
+
+    @media (max-width: 768px) {
+      .ws-card-actions { flex-direction: column; }
+      .ws-card-stats { gap: 12px; }
+    }
+
   </style>
 </head>
 <body>
@@ -7016,6 +7147,231 @@
       );
     }
 
+    function WeStackrPage() {
+      const [activeTab, setActiveTab] = useState('all');
+      const [showCreate, setShowCreate] = useState(false);
+      const isUpgraded = false; // demo: free-tier client
+
+      const campaigns = [
+        {
+          id: 1, title: 'Ethereal Forest Fairy Shoot', status: 'active',
+          creator: { name: 'Aria Belle', type: 'model', avatar: '🧚' },
+          admins: [{ name: 'Aria Belle', avatar: '🧚' }, { name: 'Luna Noir', avatar: '🌙' }],
+          desc: 'A magical woodland photoshoot with flowing gowns, fairy wings, and natural lighting through ancient trees. Two models, one photographer, enchanted forest location.',
+          raised: 1240, goal: 2000, backers: 18, daysLeft: 12,
+          image: 'https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=600&h=300&fit=crop',
+          category: 'fantasy'
+        },
+        {
+          id: 2, title: 'Urban Rooftop Lingerie Editorial', status: 'active',
+          creator: { name: 'Marcus J.', type: 'client', avatar: '📸' },
+          admins: [{ name: 'Marcus J.', avatar: '📸' }],
+          desc: 'Sunset rooftop shoot overlooking the city skyline. Looking for 2-3 models for a high-fashion lingerie editorial with professional lighting crew and MUA.',
+          raised: 3500, goal: 3500, backers: 27, daysLeft: 0,
+          image: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=600&h=300&fit=crop',
+          category: 'editorial',
+          funded: true
+        },
+        {
+          id: 3, title: 'Vintage Pin-Up Calendar Series', status: 'new',
+          creator: { name: 'Jade Monroe', type: 'model', avatar: '💋' },
+          admins: [{ name: 'Jade Monroe', avatar: '💋' }, { name: 'Sasha K.', avatar: '✨' }, { name: 'Tommy R.', avatar: '🎬' }],
+          desc: '12-month pin-up calendar featuring 6 models in retro vintage costumes. Studio rental, professional retouching, and printed calendars for all backers.',
+          raised: 890, goal: 5000, backers: 11, daysLeft: 28,
+          image: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&h=300&fit=crop',
+          category: 'vintage'
+        },
+        {
+          id: 4, title: 'Neon Cyberpunk Bodysuit Series', status: 'active',
+          creator: { name: 'Derek L.', type: 'client', avatar: '🎮' },
+          admins: [{ name: 'Derek L.', avatar: '🎮' }, { name: 'Nova X.', avatar: '⚡' }],
+          desc: 'Futuristic neon-lit studio shoot with custom bodysuits, LED props, and smoke machines. Backers get exclusive digital content pack and behind-the-scenes video.',
+          raised: 2100, goal: 3000, backers: 34, daysLeft: 8,
+          image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&h=300&fit=crop',
+          category: 'creative'
+        },
+        {
+          id: 5, title: 'Beach Goddess Golden Hour', status: 'active',
+          creator: { name: 'Tessa Ray', type: 'model', avatar: '🌊' },
+          admins: [{ name: 'Tessa Ray', avatar: '🌊' }],
+          desc: 'Malibu beach shoot during golden hour. Flowing fabrics, ocean backdrop, natural beauty. All backers get the full gallery plus a signed print.',
+          raised: 450, goal: 1500, backers: 7, daysLeft: 21,
+          image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=300&fit=crop',
+          category: 'outdoor'
+        }
+      ];
+
+      const filteredCampaigns = activeTab === 'all' ? campaigns
+        : activeTab === 'funded' ? campaigns.filter(c => c.funded)
+        : activeTab === 'models' ? campaigns.filter(c => c.creator.type === 'model')
+        : activeTab === 'clients' ? campaigns.filter(c => c.creator.type === 'client')
+        : campaigns;
+
+      return (
+        <div className="ws-page">
+          <div className="ws-hero">
+            <h1><span>⚡ WeStackr</span></h1>
+            <p>Crowdfund creative shoots. Anyone can pitch. Everyone can back.</p>
+          </div>
+
+          {/* Info Box */}
+          <div className="ws-info-box">
+            <h3>💡 How WeStackr Works</h3>
+            <p>
+              <span className="ws-info-highlight">Anyone can pitch a shoot idea</span> — models, clients, photographers, creatives.
+              Create a campaign, set a funding goal, and share it with the community. Backers pledge real money toward the goal.
+            </p>
+            <p>
+              <span className="ws-info-highlight">When the goal is reached, funds are released</span> to the campaign creator.
+              If there are multiple admins, the funds are split evenly between them. Both creators and backers can be present at the shoot.
+            </p>
+            <p>
+              <span className="ws-info-highlight">Browsing, creating campaigns, and sending offers are always free.</span>{' '}
+              However, to open your messages or send direct messages about a campaign, you'll need a <strong style={{color:'#ff9800'}}>paid tier upgrade</strong>.
+              This keeps the platform high-quality and spam-free.
+            </p>
+          </div>
+
+          {/* Tabs */}
+          <div style={{ textAlign: 'center' }}>
+            <button className="ws-create-btn" onClick={() => alert('Create Campaign form coming soon! Set your shoot idea, funding goal, and invite co-admins.')}>
+              ➕ Start a Campaign
+            </button>
+          </div>
+
+          <div className="ws-tabs">
+            {['all', 'models', 'clients', 'funded'].map(tab => (
+              <button key={tab} className={'ws-tab' + (activeTab === tab ? ' active' : '')} onClick={() => setActiveTab(tab)}>
+                {tab === 'all' ? '🔥 All Campaigns' : tab === 'models' ? '🎀 Model Pitches' : tab === 'clients' ? '📸 Client Pitches' : '✅ Fully Funded'}
+              </button>
+            ))}
+          </div>
+
+          {/* Campaign Cards */}
+          <div className="ws-campaigns">
+            {filteredCampaigns.map(c => {
+              const pct = Math.min(Math.round((c.raised / c.goal) * 100), 100);
+              const splitAmount = c.admins.length > 1 ? (c.goal / c.admins.length).toFixed(0) : null;
+              return (
+                <div key={c.id} className="ws-card">
+                  <img className="ws-card-img" src={c.image} alt={c.title} />
+                  <div className="ws-card-body">
+                    <div className="ws-card-header">
+                      <div>
+                        <div className="ws-card-title">{c.title}</div>
+                        <div className="ws-card-creator">
+                          by <span>{c.creator.name}</span> • {c.creator.type === 'model' ? '🎀 Model' : '📸 Client'}
+                        </div>
+                      </div>
+                      <span className={'ws-card-badge ' + (c.funded ? 'ws-badge-funded' : c.status === 'new' ? 'ws-badge-new' : 'ws-badge-active')}>
+                        {c.funded ? '✅ Funded' : c.status === 'new' ? '🆕 New' : '🟢 Active'}
+                      </span>
+                    </div>
+
+                    <div className="ws-card-desc">{c.desc}</div>
+
+                    {/* Progress Bar */}
+                    <div className="ws-progress-wrap">
+                      <div className="ws-progress-labels">
+                        <span className="ws-progress-raised">${c.raised.toLocaleString()} raised</span>
+                        <span className="ws-progress-goal">${c.goal.toLocaleString()} goal</span>
+                      </div>
+                      <div className="ws-progress-bar">
+                        <div className="ws-progress-fill" style={{ width: pct + '%' }}></div>
+                      </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="ws-card-stats">
+                      <div className="ws-card-stat"><span>👥</span> {c.backers} backers</div>
+                      <div className="ws-card-stat"><span>📊</span> {pct}% funded</div>
+                      {c.daysLeft > 0 && <div className="ws-card-stat"><span>⏰</span> {c.daysLeft} days left</div>}
+                    </div>
+
+                    {/* Multi-Admin Display */}
+                    {c.admins.length > 1 && (
+                      <div className="ws-card-admins">
+                        <span className="ws-card-admins-label">Admins:</span>
+                        {c.admins.map((a, i) => (
+                          <div key={i} className="ws-admin-avatar" title={a.name}>{a.avatar}</div>
+                        ))}
+                        <span style={{ fontSize: '0.8em', color: '#888', marginLeft: '4px' }}>
+                          {c.admins.length} admins • funds split evenly
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Funded Banner */}
+                    {c.funded && (
+                      <div className="ws-funded-banner">
+                        <span>🎉 Goal Reached — Funds Released!</span>
+                        <p>This campaign hit its target. Funds have been distributed to the {c.admins.length > 1 ? c.admins.length + ' admins' : 'creator'}.</p>
+                      </div>
+                    )}
+
+                    {/* Multi-admin split info */}
+                    {c.funded && c.admins.length > 1 && (
+                      <div className="ws-split-info">
+                        💰 <strong>Fund split:</strong> ${splitAmount} per admin × {c.admins.length} admins = ${c.goal.toLocaleString()} total
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    {!c.funded && (
+                      <div className="ws-card-actions" style={{ marginTop: '14px' }}>
+                        <button className="ws-pledge-btn" onClick={() => alert('Pledge flow coming with Stripe integration! You\'ll be able to choose your pledge amount.')}>
+                          💰 Back This Shoot
+                        </button>
+                        <button className="ws-share-btn" onClick={() => { navigator.clipboard.writeText('https://modelbid.tech/#westackr/' + c.id); alert('Campaign link copied! Share it anywhere.'); }}>
+                          🔗 Share Link
+                        </button>
+                        <button className="ws-msg-btn" onClick={() => {
+                          if (!isUpgraded) { alert('Upgrade to a paid tier to message campaign creators!'); return; }
+                          alert('Opening conversation with ' + c.creator.name);
+                        }}>
+                          💬 Message
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Messaging Gate for free-tier users */}
+                    {!isUpgraded && !c.funded && (
+                      <div className="ws-msg-gate">
+                        <div className="ws-msg-gate-icon">🔒</div>
+                        <div className="ws-msg-gate-text">
+                          <strong>Messages Locked</strong>
+                          <span>You can browse & back campaigns for free. Upgrade to read and send messages about this campaign.</span>
+                        </div>
+                        <button className="ws-msg-gate-btn" onClick={() => alert('Upgrade tiers coming soon with Stripe!')}>Upgrade</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {filteredCampaigns.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '60px 20px', color: '#888' }}>
+              <div style={{ fontSize: '3em', marginBottom: '10px' }}>📭</div>
+              <p>No campaigns in this category yet. Be the first to start one!</p>
+            </div>
+          )}
+
+          {/* Bottom CTA */}
+          <div style={{ textAlign: 'center', marginTop: '40px', padding: '30px', background: 'rgba(0,230,118,0.05)', borderRadius: '16px', border: '1px solid rgba(0,230,118,0.15)' }}>
+            <h3 style={{ color: '#00e676', marginBottom: '8px' }}>Got a shoot idea? 💡</h3>
+            <p style={{ color: '#aaa', marginBottom: '16px', fontSize: '0.95em' }}>
+              Whether you're a model with a creative vision or a client with a concept — pitch it, fund it, make it happen.
+            </p>
+            <button className="ws-create-btn" onClick={() => alert('Create Campaign form coming soon!')}>
+              ⚡ Launch Your Campaign
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     function ContractsPage() {
       const [showProPreview, setShowProPreview] = useState(false);
       const demoClientRep = getClientRepLevel(7, 85);
@@ -7600,6 +7956,7 @@
         if (page === 'profile' && params[0]) return <ProfilePage modelId={params[0]} />;
         if (page === 'client' && params[0]) return <ClientProfilePage clientId={params[0]} />;
         if (page === 'formodels') return <ForModelsPage />;
+        if (page === 'westackr') return <WeStackrPage />;
         if (page === 'contracts') return <ContractsPage />;
         if (page === 'login') return <LoginPage />;
         if (page === 'signup') return <SignupPage />;
@@ -7621,6 +7978,7 @@
               <a className="nav-link" onClick={() => window.location.hash = 'wall'}>🏆 The Wall</a>
               <a className="nav-link" onClick={() => window.location.hash = 'invest'}>📈 Invest</a>
               <a className="nav-link" onClick={() => window.location.hash = 'reputation'}>🛡️ Reputation</a>
+              <a className="nav-link" onClick={() => window.location.hash = 'westackr'}>⚡ WeStackr</a>
               <a className="nav-link" onClick={() => window.location.hash = 'contracts'}>Contracts</a>
               <a className="nav-link" onClick={() => window.location.hash = 'formodels'}>For Models</a>
             </div>
