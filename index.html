@@ -4068,6 +4068,58 @@
         grid-template-columns: repeat(2, 1fr);
       }
     }
+
+    /* Nudge progression states */
+    .nudge-card.completed {
+      opacity: 0.4;
+      pointer-events: none;
+      filter: grayscale(0.3);
+    }
+    .nudge-card.completed .nudge-icon {
+      position: relative;
+    }
+    .nudge-card.completed .nudge-icon::after {
+      content: '✓';
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      width: 18px;
+      height: 18px;
+      background: #00c853;
+      color: #fff;
+      font-size: 0.6rem;
+      font-weight: 800;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .nudge-card.next {
+      border-color: var(--accent-pink);
+      box-shadow: 0 0 16px rgba(255,110,199,0.2), 0 0 40px rgba(255,110,199,0.06);
+      animation: nudge-glow 3s ease-in-out infinite;
+    }
+    .nudge-card.next::before {
+      content: 'START HERE';
+      position: absolute;
+      top: -1px;
+      right: -1px;
+      font-size: 0.55rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      padding: 3px 10px;
+      background: linear-gradient(135deg, var(--accent-pink), #9d4edd);
+      color: #fff;
+      border-radius: 0 14px 0 10px;
+    }
+    .nudge-card.upcoming {
+      opacity: 0.6;
+    }
+    @keyframes nudge-glow {
+      0%, 100% { box-shadow: 0 0 16px rgba(255,110,199,0.2), 0 0 40px rgba(255,110,199,0.06); }
+      50% { box-shadow: 0 0 24px rgba(255,110,199,0.35), 0 0 60px rgba(255,110,199,0.12); }
+    }
+
     .nudge-section-label {
       font-size: 0.65rem;
       font-weight: 700;
@@ -7498,12 +7550,27 @@
 
       if (shown.length === 0) return null;
 
+      // Determine progression state for each nudge
+      const featuresUsed = profile.features_used || [];
+      // Progression order: first-booking → tips → inner-circle → tokens → westackr → boost
+      let foundNext = false;
+      const withState = shown.map(nudge => {
+        if (featuresUsed.includes(nudge.id)) {
+          return { ...nudge, state: 'completed' };
+        } else if (!foundNext) {
+          foundNext = true;
+          return { ...nudge, state: 'next' };
+        } else {
+          return { ...nudge, state: 'upcoming' };
+        }
+      });
+
       return (
         <div>
           <div className="nudge-section-label">💰 Ways to earn</div>
           <div className="nudge-grid">
-            {shown.map(nudge => (
-              <div key={nudge.id} className="nudge-card" onClick={() => window.location.hash = nudge.link}>
+            {withState.map(nudge => (
+              <div key={nudge.id} className={`nudge-card ${nudge.state}`} onClick={() => nudge.state !== 'completed' && (window.location.hash = nudge.link)}>
                 <div className="nudge-icon" style={{ background: nudge.iconBg }}>
                   {nudge.icon}
                 </div>
@@ -7546,7 +7613,9 @@
       const pendingBookings = demoBookings.filter(b => b.status === 'pending');
 
       // Fake nudges inline since ModelNudges needs AuthContext
-      const nudges = [
+      // Demo: first-booking is completed, tips is "next", rest are "upcoming"
+      const demoFeaturesUsed = ['first-booking'];
+      const rawNudges = [
         {
           id: 'first-booking', icon: '📅',
           iconBg: 'linear-gradient(135deg, rgba(255,110,199,0.15), rgba(157,78,221,0.15))',
@@ -7587,6 +7656,19 @@
           link: 'westackr'
         },
       ];
+
+      // Apply progression states
+      let foundNext = false;
+      const nudges = rawNudges.map(nudge => {
+        if (demoFeaturesUsed.includes(nudge.id)) {
+          return { ...nudge, state: 'completed' };
+        } else if (!foundNext) {
+          foundNext = true;
+          return { ...nudge, state: 'next' };
+        } else {
+          return { ...nudge, state: 'upcoming' };
+        }
+      });
 
       return (
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
@@ -7636,7 +7718,7 @@
             <div className="nudge-section-label">💰 Ways to earn</div>
             <div className="nudge-grid">
               {nudges.map(nudge => (
-                <div key={nudge.id} className="nudge-card" onClick={() => window.location.hash = nudge.link}>
+                <div key={nudge.id} className={`nudge-card ${nudge.state}`} onClick={() => nudge.state !== 'completed' && (window.location.hash = nudge.link)}>
                   <div className="nudge-icon" style={{ background: nudge.iconBg }}>
                     {nudge.icon}
                   </div>
