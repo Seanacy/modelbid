@@ -115,6 +115,60 @@
       padding-bottom: 0.25rem;
     }
 
+    .nav-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    .nav-dropdown-toggle {
+      color: var(--text-secondary);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      user-select: none;
+    }
+    .nav-dropdown-toggle:hover { color: var(--accent-pink); }
+    .nav-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a1a2e;
+      border: 1px solid #2a2a3e;
+      border-radius: 12px;
+      padding: 8px 0;
+      min-width: 200px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s, visibility 0.2s;
+    }
+    .nav-dropdown:hover .nav-dropdown-menu,
+    .nav-dropdown-menu.show {
+      opacity: 1;
+      visibility: visible;
+    }
+    .nav-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 18px;
+      color: #ccc;
+      font-size: 0.9em;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      text-decoration: none;
+    }
+    .nav-dropdown-item:hover {
+      background: rgba(255,255,255,0.05);
+      color: #fff;
+    }
+    .nav-dropdown-item span.dd-icon { font-size: 1.1em; width: 22px; text-align: center; }
+    .nav-dropdown-divider { height: 1px; background: #2a2a3e; margin: 6px 0; }
+
     .user-section {
       display: flex;
       gap: 1.5rem;
@@ -7976,11 +8030,29 @@
               <a className="nav-link" onClick={() => window.location.hash = 'feed'}>Feed</a>
               <a className="nav-link" onClick={() => window.location.hash = 'browse'}>Browse</a>
               <a className="nav-link" onClick={() => window.location.hash = 'wall'}>🏆 The Wall</a>
-              <a className="nav-link" onClick={() => window.location.hash = 'invest'}>📈 Invest</a>
-              <a className="nav-link" onClick={() => window.location.hash = 'reputation'}>🛡️ Reputation</a>
-              <a className="nav-link" onClick={() => window.location.hash = 'westackr'}>⚡ WeStackr</a>
-              <a className="nav-link" onClick={() => window.location.hash = 'contracts'}>Contracts</a>
-              <a className="nav-link" onClick={() => window.location.hash = 'formodels'}>For Models</a>
+              <div className="nav-dropdown">
+                <span className="nav-dropdown-toggle">🧰 More ▾</span>
+                <div className="nav-dropdown-menu">
+                  <a className="nav-dropdown-item" onClick={() => window.location.hash = 'invest'}>
+                    <span className="dd-icon">📈</span> Invest
+                  </a>
+                  {auth.profile?.user_type === 'client' && (
+                    <a className="nav-dropdown-item" onClick={() => window.location.hash = 'reputation'}>
+                      <span className="dd-icon">🛡️</span> Reputation
+                    </a>
+                  )}
+                  <a className="nav-dropdown-item" onClick={() => window.location.hash = 'westackr'}>
+                    <span className="dd-icon">⚡</span> WeStackr
+                  </a>
+                  <a className="nav-dropdown-item" onClick={() => window.location.hash = 'contracts'}>
+                    <span className="dd-icon">📝</span> Contracts
+                  </a>
+                  <div className="nav-dropdown-divider"></div>
+                  <a className="nav-dropdown-item" onClick={() => window.location.hash = 'formodels'}>
+                    <span className="dd-icon">🎀</span> For Models
+                  </a>
+                </div>
+              </div>
             </div>
 
             <div className="nav-links">
