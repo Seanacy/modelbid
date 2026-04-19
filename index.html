@@ -4247,6 +4247,63 @@
       .suggested-card-img { height: 170px; }
     }
 
+    /* ===== CHERRY PICKER PAGE ===== */
+    .cp-page { max-width: 720px; margin: 0 auto; padding: 2rem 1rem; }
+    .cp-header { text-align: center; margin-bottom: 2rem; }
+    .cp-header h1 { font-size: 2rem; font-weight: 800; background: linear-gradient(135deg, #ff6ec7, #9d4edd); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.3rem; }
+    .cp-header p { color: #999; font-size: 0.95rem; }
+    .cp-premium-badge { display: inline-block; background: linear-gradient(135deg, #ff6ec7, #9d4edd); color: #fff; font-size: 0.65rem; font-weight: 800; letter-spacing: 1px; padding: 3px 10px; border-radius: 20px; margin-bottom: 0.75rem; }
+
+    .cp-form-section { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .cp-form-section h3 { font-size: 0.85rem; font-weight: 700; color: #ff6ec7; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1rem; }
+
+    .cp-platform-options { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .cp-platform-btn { padding: 0.5rem 1.2rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: #ccc; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .cp-platform-btn:hover { border-color: rgba(255,110,199,0.3); color: #fff; }
+    .cp-platform-btn.active { background: linear-gradient(135deg, rgba(255,110,199,0.15), rgba(157,78,221,0.15)); border-color: #ff6ec7; color: #ff6ec7; }
+
+    .cp-username-inputs { display: flex; flex-direction: column; gap: 0.6rem; }
+    .cp-username-row { display: flex; align-items: center; gap: 0.5rem; }
+    .cp-username-row input { flex: 1; padding: 0.6rem 0.9rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: #fff; font-size: 0.9rem; outline: none; transition: border-color 0.2s; }
+    .cp-username-row input::placeholder { color: #666; }
+    .cp-username-row input:focus { border-color: #ff6ec7; }
+    .cp-username-row .cp-at { color: #ff6ec7; font-weight: 700; font-size: 1rem; min-width: 16px; }
+    .cp-remove-btn { background: none; border: none; color: #666; font-size: 1.1rem; cursor: pointer; padding: 0.3rem; transition: color 0.2s; }
+    .cp-remove-btn:hover { color: #ff4444; }
+    .cp-add-btn { display: inline-flex; align-items: center; gap: 0.4rem; background: none; border: 1px dashed rgba(255,255,255,0.12); color: #999; font-size: 0.82rem; padding: 0.5rem 1rem; border-radius: 10px; cursor: pointer; transition: all 0.2s; margin-top: 0.3rem; }
+    .cp-add-btn:hover { border-color: #ff6ec7; color: #ff6ec7; }
+
+    .cp-generate-btn { width: 100%; padding: 0.85rem; border: none; border-radius: 12px; background: linear-gradient(135deg, #ff6ec7, #9d4edd); color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; transition: opacity 0.2s, transform 0.1s; margin-bottom: 1.5rem; }
+    .cp-generate-btn:hover { opacity: 0.9; }
+    .cp-generate-btn:active { transform: scale(0.98); }
+
+    .cp-prompt-output { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 1.25rem; margin-bottom: 1.5rem; position: relative; }
+    .cp-prompt-output pre { white-space: pre-wrap; word-break: break-word; font-family: 'Courier New', monospace; font-size: 0.8rem; color: #ddd; line-height: 1.6; margin: 0; }
+    .cp-copy-btn { position: absolute; top: 0.75rem; right: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: #ff6ec7; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .cp-copy-btn:hover { background: rgba(255,110,199,0.12); }
+    .cp-copy-btn.copied { background: rgba(0,200,83,0.15); color: #00c853; border-color: rgba(0,200,83,0.3); }
+
+    .cp-example { margin-bottom: 1.5rem; }
+    .cp-example h3 { font-size: 0.85rem; font-weight: 700; color: #9d4edd; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.75rem; }
+    .cp-example-box { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.25rem; }
+    .cp-example-platform { font-weight: 700; color: #9d4edd; font-size: 0.9rem; margin-bottom: 0.5rem; margin-top: 0.75rem; }
+    .cp-example-platform:first-child { margin-top: 0; }
+    .cp-example-entry { font-family: 'Courier New', monospace; font-size: 0.8rem; color: #ccc; padding: 0.15rem 0; }
+    .cp-example-entry .handle { color: #fff; font-weight: 600; }
+    .cp-example-entry .class-tags { color: #9d4edd; }
+    .cp-example-outreach { margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.06); }
+    .cp-example-outreach-label { font-size: 0.75rem; font-weight: 700; color: #ff6ec7; letter-spacing: 0.5px; margin-bottom: 0.4rem; }
+    .cp-example-outreach-msg { font-style: italic; color: #aaa; font-size: 0.85rem; line-height: 1.5; }
+
+    .cp-info-section { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.06); }
+    .cp-info-section h3 { font-size: 0.85rem; font-weight: 700; color: #ff6ec7; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.75rem; margin-top: 1.25rem; }
+    .cp-info-section h3:first-child { margin-top: 0; }
+    .cp-info-section p, .cp-info-section li { color: #999; font-size: 0.85rem; line-height: 1.6; }
+    .cp-info-section ul { padding-left: 1.2rem; margin: 0.3rem 0; }
+    .cp-class-key { display: grid; grid-template-columns: auto 1fr; gap: 0.3rem 1rem; margin-top: 0.5rem; }
+    .cp-class-key dt { font-family: 'Courier New', monospace; font-weight: 700; color: #9d4edd; font-size: 0.8rem; }
+    .cp-class-key dd { color: #999; font-size: 0.82rem; margin: 0; }
+
   </style>
 </head>
 <body>
@@ -8021,6 +8078,7 @@
             duration_days: parseInt(form.duration_days) || 30,
             backer_reward: form.backer_reward || null,
             co_admins: form.co_admins,
+            source: 'modelbid',
           }).select().single();
 
           if (error) throw error;
@@ -9054,6 +9112,260 @@
     }
 
     // ===== MAIN APP COMPONENT =====
+    // ===== CHERRY PICKER PAGE (Models Only) =====
+    function CherryPickerPage() {
+      const auth = useContext(AuthContext);
+      const [platform, setPlatform] = useState('Instagram');
+      const [usernames, setUsernames] = useState(['', '', '', '', '']);
+      const [generated, setGenerated] = useState(false);
+      const [copied, setCopied] = useState(false);
+
+      const platforms = ['Instagram', 'Twitter / X', 'TikTok', 'YouTube', 'Threads'];
+
+      const addBox = () => { if (usernames.length < 10) setUsernames([...usernames, '']); };
+      const removeBox = (i) => { if (usernames.length > 1) setUsernames(usernames.filter((_, idx) => idx !== i)); };
+      const updateUsername = (i, val) => { const u = [...usernames]; u[i] = val.replace('@', ''); setUsernames(u); };
+
+      const filledUsernames = usernames.filter(u => u.trim());
+
+      const masterPrompt = `You are a high-intent audience researcher. Your sole job is to find REPEAT ENGAGERS -- people who consistently like, comment, repost, and interact with creators in a specific niche. You are looking for fans who show up again and again, not one-time visitors.
+
+TASK
+I have pasted a list of creator accounts and their platforms in this conversation (either above or below this prompt). Find that list and use it as your targets. For each account, visit their profile, review their most recent posts, and track every person who engages. Filter for ONLY the people who repeatedly engage, classify how they engage, and return a clean list grouped by platform.
+
+STEP 1 -- VISIT EACH ACCOUNT
+For each target account in the list I provided:
+- Navigate to their profile on the specified platform
+- Open their 10 most recent public posts
+- For each post, review: the visible comments (note who commented and what they said), the visible likes (note usernames where the platform shows them), any reposts/shares/quote posts if visible, any saves or bookmarks if visible
+
+STEP 2 -- BUILD THE MASTER TRACKER
+Build ONE running master list across ALL target accounts. Do NOT start fresh for each account. For EVERY person who engages on EVERY post, add or update their entry with: their username/handle, engagement type (COMMENT, LIKE, REPOST, SHARE, SAVE, QUOTE, TAG), which target account's post it was on, how many times total they have appeared so far, and what they said if it was a comment (keep the full text).
+
+The same person appearing across multiple target accounts is the MOST VALUABLE signal. You can only detect this if you keep one unified list the entire time. Do NOT discard, summarize, or compress this list as you go.
+
+STEP 3 -- HARD FILTER: REPEATERS ONLY
+This is the most important step. Apply these rules strictly.
+
+KEEP a person ONLY if they meet at least ONE of these thresholds:
+- Engaged 3+ times total across all posts reviewed (any combination of likes, comments, reposts)
+- Appeared on posts from 2+ DIFFERENT target accounts (even if only once on each)
+- Commented 2+ times with substantive text (not just emojis or one-word reactions)
+
+REMOVE everyone who:
+- Engaged only once or twice total with no cross-account presence
+- Has a profile that appears to be a bot (generic name, no posts, spammy bio)
+- Is another creator or model (verified, large following, content creator bio)
+- Only left self-promotional comments
+- Only left emoji-only reactions with no other engagement
+
+The resulting list should contain ONLY habitual engagers. If the list is small, that is correct. Do NOT lower the threshold to fill a quota. Quality over quantity.
+
+STEP 4 -- CLASSIFY EACH REPEATER
+For every person who passed the filter, assign ALL classifications that apply:
+
+COMMENTER -- Left substantive comments on 2+ posts
+LIKER -- Liked 3+ posts across the accounts reviewed
+REPOSTER -- Reposted, shared, or quote-posted content
+QUESTIONER -- Asked questions (about rates, availability, process, future content)
+DEFENDER -- Replied to other commenters in support of the creator
+BUYER-SIGNAL -- Used language suggesting spending intent
+
+STEP 5 -- SORT
+Rank by total engagement count (highest first). Among ties, prioritize: people who appeared across the most different target accounts, people with BUYER-SIGNAL or QUESTIONER classifications, people with the most recent engagement. Keep the top 20. If fewer than 20 qualify, return however many passed. Do NOT add anyone who did not pass the filter.
+
+STEP 6 -- GENERATE ONE OUTREACH MESSAGE
+Write a single outreach message that feels personal and natural, references the prospect's interest in this type of content without being specific about how you found them, includes a soft invitation to connect, is under 50 words, and does not mention ModelBid, AI, data, or this tool.
+
+OUTPUT FORMAT
+Return ONLY the following. No commentary. No explanations. No process summary. Just this exact format:
+
+CHERRY PICK RESULTS
+--------------------
+
+"Platform Name"
+@username1 -- Classification: COMMENTER, LIKER
+@username2 -- Classification: REPOSTER, BUYER-SIGNAL
+@username3 -- Classification: COMMENTER, QUESTIONER, LIKER
+
+"Platform Name"
+@username4 -- Classification: COMMENTER, LIKER
+@username5 -- Classification: REPOSTER, QUESTIONER
+
+--------------------
+OUTREACH MESSAGE:
+
+"Your generated outreach message here"
+--------------------
+
+RULES
+- ONLY return people who are repeat engagers. Non-negotiable.
+- Only return the formatted results. Nothing else before or after.
+- Do not explain your process.
+- Do not summarize what you found.
+- Do not add tips, suggestions, or analysis.
+- If you cannot access an account (private, suspended), skip it silently.
+- If a platform requires sign-in to view comments or likes, tell the user to sign in first, then re-run.
+- Respect rate limits. Move at a natural browsing pace.
+- Group results by platform.`;
+
+      const userListText = `Here are my target accounts:\n\n${platform}:\n${filledUsernames.map(u => '@' + u).join('\n')}`;
+      const fullPromptText = userListText + '\n\n---\n\n' + masterPrompt;
+
+      const handleGenerate = () => {
+        if (filledUsernames.length === 0) return;
+        setGenerated(true);
+      };
+
+      const handleCopy = () => {
+        navigator.clipboard.writeText(fullPromptText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      };
+
+      // Gate: models only
+      if (!auth.currentUser || auth.profile?.user_type !== 'model') {
+        return (
+          <div className="cp-page" style={{ textAlign: 'center', paddingTop: '4rem' }}>
+            <h2 style={{ color: '#ff6ec7' }}>Cherry Picker</h2>
+            <p style={{ color: '#999' }}>This feature is available for model accounts only.</p>
+            <button className="btn glow-btn" onClick={() => window.location.hash = 'home'} style={{ marginTop: '1rem' }}>Go Home</button>
+          </div>
+        );
+      }
+
+      return (
+        <div className="cp-page">
+          <div className="cp-header">
+            <div className="cp-premium-badge">PREMIUM TOOL</div>
+            <h1>Cherry Picker</h1>
+            <p>Find your highest-intent audience from competitor accounts</p>
+          </div>
+
+          {/* Platform Selection */}
+          <div className="cp-form-section">
+            <h3>Select Platform</h3>
+            <div className="cp-platform-options">
+              {platforms.map(p => (
+                <button key={p} className={`cp-platform-btn ${platform === p ? 'active' : ''}`} onClick={() => setPlatform(p)}>
+                  {p === 'Instagram' ? '📷' : p === 'Twitter / X' ? '𝕏' : p === 'TikTok' ? '🎵' : p === 'YouTube' ? '▶️' : '🧵'} {p}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Username Inputs */}
+          <div className="cp-form-section">
+            <h3>Target Accounts ({filledUsernames.length} of {usernames.length})</h3>
+            <div className="cp-username-inputs">
+              {usernames.map((u, i) => (
+                <div key={i} className="cp-username-row">
+                  <span className="cp-at">@</span>
+                  <input
+                    type="text"
+                    placeholder={`competitor${i + 1}`}
+                    value={u}
+                    onChange={e => updateUsername(i, e.target.value)}
+                  />
+                  {usernames.length > 1 && (
+                    <button className="cp-remove-btn" onClick={() => removeBox(i)}>✕</button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {usernames.length < 10 && (
+              <button className="cp-add-btn" onClick={addBox}>+ Add Account</button>
+            )}
+          </div>
+
+          {/* Generate Button */}
+          <button
+            className="cp-generate-btn"
+            onClick={handleGenerate}
+            disabled={filledUsernames.length === 0}
+            style={{ opacity: filledUsernames.length === 0 ? 0.4 : 1, cursor: filledUsernames.length === 0 ? 'not-allowed' : 'pointer' }}
+          >
+            Generate Master Prompt
+          </button>
+
+          {/* Generated Prompt Output */}
+          {generated && (
+            <div className="cp-prompt-output">
+              <button className={`cp-copy-btn ${copied ? 'copied' : ''}`} onClick={handleCopy}>
+                {copied ? '✓ Copied' : 'Copy All'}
+              </button>
+              <pre>{fullPromptText}</pre>
+            </div>
+          )}
+
+          {/* Example Output */}
+          <div className="cp-example">
+            <h3>Example Results</h3>
+            <div className="cp-example-box">
+              <div className="cp-example-platform">"Instagram"</div>
+              <div className="cp-example-entry"><span className="handle">@jake_photog</span> — Classification: <span className="class-tags">COMMENTER, LIKER, BUYER-SIGNAL</span></div>
+              <div className="cp-example-entry"><span className="handle">@marcus_stylez</span> — Classification: <span className="class-tags">COMMENTER, QUESTIONER, LIKER</span></div>
+              <div className="cp-example-entry"><span className="handle">@realtone_dc</span> — Classification: <span className="class-tags">LIKER, REPOSTER, COMMENTER</span></div>
+              <div className="cp-example-entry"><span className="handle">@fly_visuals_</span> — Classification: <span className="class-tags">COMMENTER, DEFENDER, LIKER</span></div>
+              <div className="cp-example-entry"><span className="handle">@dmv_creative1</span> — Classification: <span className="class-tags">QUESTIONER, BUYER-SIGNAL</span></div>
+              <div className="cp-example-entry"><span className="handle">@king.lenss</span> — Classification: <span className="class-tags">LIKER, COMMENTER, REPOSTER</span></div>
+              <div className="cp-example-entry"><span className="handle">@shootwithray</span> — Classification: <span className="class-tags">QUESTIONER, COMMENTER, LIKER</span></div>
+              <div className="cp-example-entry"><span className="handle">@classic_fits_atl</span> — Classification: <span className="class-tags">BUYER-SIGNAL, COMMENTER</span></div>
+
+              <div className="cp-example-platform">"Twitter"</div>
+              <div className="cp-example-entry"><span className="handle">@lenscap_marcus</span> — Classification: <span className="class-tags">COMMENTER, REPOSTER, BUYER-SIGNAL</span></div>
+              <div className="cp-example-entry"><span className="handle">@dc_shooters</span> — Classification: <span className="class-tags">REPOSTER, LIKER, COMMENTER</span></div>
+              <div className="cp-example-entry"><span className="handle">@modelscout_east</span> — Classification: <span className="class-tags">QUESTIONER, COMMENTER</span></div>
+              <div className="cp-example-entry"><span className="handle">@bookwithsean</span> — Classification: <span className="class-tags">BUYER-SIGNAL, COMMENTER, LIKER</span></div>
+              <div className="cp-example-entry"><span className="handle">@framez_daily</span> — Classification: <span className="class-tags">COMMENTER, LIKER, REPOSTER</span></div>
+
+              <div className="cp-example-outreach">
+                <div className="cp-example-outreach-label">OUTREACH MESSAGE:</div>
+                <div className="cp-example-outreach-msg">"Hey! I came across your page and love your taste in creative content. I'm working on something I think you'd really vibe with — would love for you to check it out and connect."</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Info Sections (formerly the PDF content) */}
+          <div className="cp-info-section">
+            <h3>How It Works</h3>
+            <p>1. Select a platform and enter 5–10 competitor handles above.</p>
+            <p>2. Click "Generate Master Prompt" — this creates a custom AI prompt with your targets baked in.</p>
+            <p>3. Copy the prompt and paste it into Claude (claude.ai) with computer use enabled.</p>
+            <p>4. Make sure you're signed into the platform in your browser. The AI uses your browser to scan.</p>
+            <p>5. Wait 15–30 minutes. The AI visits each account, scans posts, and collects engagers.</p>
+            <p>6. Results appear as a simple list — just handles, platform, and classification tags.</p>
+
+            <h3>What You Need</h3>
+            <ul>
+              <li>Claude with computer use enabled (claude.ai)</li>
+              <li>Be signed into the platform you want to scan in your browser</li>
+              <li>5–10 competitor account handles</li>
+              <li>15–30 minutes for the AI to complete the scan</li>
+            </ul>
+
+            <h3>Classification Key</h3>
+            <dl className="cp-class-key">
+              <dt>COMMENTER</dt><dd>Left substantive comments on 2+ posts</dd>
+              <dt>LIKER</dt><dd>Liked 3+ posts across the accounts scanned</dd>
+              <dt>REPOSTER</dt><dd>Reposted, shared, or quote-posted content</dd>
+              <dt>QUESTIONER</dt><dd>Asked questions (rates, availability, process)</dd>
+              <dt>DEFENDER</dt><dd>Replied to support the creator in comments</dd>
+              <dt>BUYER-SIGNAL</dt><dd>Used spending-intent language</dd>
+            </dl>
+
+            <h3>Important Notes</h3>
+            <ul>
+              <li>This tool only finds repeat engagers — one-time visitors are filtered out automatically.</li>
+              <li>The AI will never interact with any account — it only reads public data.</li>
+              <li>Results are for your use only. Reach out to prospects on your own terms.</li>
+              <li>Do not close your browser while the scan is running.</li>
+            </ul>
+          </div>
+        </div>
+      );
+    }
+
     function App() {
       const auth = useContext(AuthContext);
       const [currentPage, setCurrentPage] = useState('home');
@@ -9097,6 +9409,7 @@
         if (page === 'login') return <LoginPage />;
         if (page === 'signup') return <SignupPage />;
         if (page === 'model-demo') return <ModelDemoPage />;
+        if (page === 'cherry-picker') return auth.currentUser ? <CherryPickerPage /> : <LoginPage />;
         if (page === 'dashboard') return auth.currentUser ? <DashboardPage /> : <LoginPage />;
         if (page === 'messages' && params[0]) return auth.currentUser ? <MessagesPage conversationId={params[0]} /> : <LoginPage />;
         if (page === 'messages') return auth.currentUser ? <MessagesPage conversationId={null} /> : <LoginPage />;
@@ -9154,6 +9467,9 @@
                 <div className="user-section">
                   <a className="nav-link" onClick={() => window.location.hash = 'messages'}>📬 Messages</a>
                   <a className="nav-link" onClick={() => window.location.hash = 'dashboard'}>Dashboard</a>
+                  {auth.profile?.user_type === 'model' && (
+                    <a className="nav-link" onClick={() => window.location.hash = 'cherry-picker'} style={{ color: '#ff6ec7' }}>🍒 Cherry Picker</a>
+                  )}
                   <a className="nav-link" onClick={() => window.location.hash = 'edit-profile'}>⚙️ Profile</a>
                   <div className="user-info">
                     <div className="avatar">{auth.profile?.avatar_emoji || '👤'}</div>
