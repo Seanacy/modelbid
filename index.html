@@ -9249,16 +9249,16 @@ RULES
         setTimeout(() => setCopied(false), 2000);
       };
 
-      // Gate: models only
-      if (!auth.currentUser || auth.profile?.user_type !== 'model') {
-        return (
-          <div className="cp-page" style={{ textAlign: 'center', paddingTop: '4rem' }}>
-            <h2 style={{ color: '#ff6ec7' }}>Cherry Picker</h2>
-            <p style={{ color: '#999' }}>This feature is available for model accounts only.</p>
-            <button className="btn glow-btn" onClick={() => window.location.hash = 'home'} style={{ marginTop: '1rem' }}>Go Home</button>
-          </div>
-        );
-      }
+      const isModel = auth.currentUser && auth.profile?.user_type === 'model';
+
+      const handleGenerateGated = () => {
+        if (!isModel) {
+          alert('Sign up as a model to use Cherry Picker!');
+          window.location.hash = 'signup';
+          return;
+        }
+        handleGenerate();
+      };
 
       return (
         <div className="cp-page">
@@ -9315,7 +9315,7 @@ RULES
           {/* Generate Button */}
           <button
             className="cp-generate-btn"
-            onClick={handleGenerate}
+            onClick={handleGenerateGated}
             disabled={totalHandleCount === 0}
             style={{ opacity: totalHandleCount === 0 ? 0.4 : 1, cursor: totalHandleCount === 0 ? 'not-allowed' : 'pointer' }}
           >
@@ -9443,7 +9443,7 @@ RULES
         if (page === 'login') return <LoginPage />;
         if (page === 'signup') return <SignupPage />;
         if (page === 'model-demo') return <ModelDemoPage />;
-        if (page === 'cherry-picker') return auth.currentUser ? <CherryPickerPage /> : <LoginPage />;
+        if (page === 'cherry-picker') return <CherryPickerPage />;
         if (page === 'dashboard') return auth.currentUser ? <DashboardPage /> : <LoginPage />;
         if (page === 'messages' && params[0]) return auth.currentUser ? <MessagesPage conversationId={params[0]} /> : <LoginPage />;
         if (page === 'messages') return auth.currentUser ? <MessagesPage conversationId={null} /> : <LoginPage />;
