@@ -7530,6 +7530,168 @@
       );
     }
 
+    // ===== MODEL DEMO PAGE — preview of what a model sees =====
+    function ModelDemoPage() {
+      const demoProfile = {
+        role: 'model',
+        display_name: 'Aria Valentina',
+        avatar_emoji: '👩',
+        earnings: 8750,
+        rating: 4.9,
+        review_count: 47,
+        sessions_completed: 0, // 0 to trigger "first booking" nudge
+        tags: ['Lingerie', 'Glamour', 'Boudoir', 'Pin-Up', 'Luxury'],
+      };
+
+      const demoBookings = [
+        { id: 'b1', status: 'pending', session_date: 'Apr 25, 2026', duration_hours: 2, rate: 250, contract_type: 'Standard', client_name: 'Marcus T.' },
+        { id: 'b2', status: 'pending', session_date: 'Apr 28, 2026', duration_hours: 3, rate: 250, contract_type: 'Pro', client_name: 'David R.' },
+        { id: 'b3', status: 'accepted', session_date: 'Apr 20, 2026', duration_hours: 1.5, rate: 250, contract_type: 'Standard', client_name: 'James K.' },
+        { id: 'b4', status: 'accepted', session_date: 'Apr 18, 2026', duration_hours: 2, rate: 250, contract_type: 'Pro', client_name: 'Tommy R.' },
+      ];
+
+      const pendingBookings = demoBookings.filter(b => b.status === 'pending');
+
+      // Fake nudges inline since ModelNudges needs AuthContext
+      const nudges = [
+        {
+          id: 'first-booking', icon: '📅',
+          iconBg: 'linear-gradient(135deg, rgba(255,110,199,0.15), rgba(157,78,221,0.15))',
+          title: 'Get your first booking',
+          desc: 'Complete your profile and post on the Feed so clients can find you. Your first session is the start of everything.',
+          earn: null, link: 'edit-profile'
+        },
+        {
+          id: 'tips', icon: '💸',
+          iconBg: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,152,0,0.15))',
+          title: 'Earn tips on your posts',
+          desc: 'Every post you share on the Feed has a tip button. Behind-the-scenes shots and session previews earn the most.',
+          earn: 'Passive income', earnBg: 'rgba(255,215,0,0.1)', earnColor: '#ffd700',
+          link: 'feed'
+        },
+        {
+          id: 'inner-circle', icon: '💎',
+          iconBg: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,110,199,0.15))',
+          title: 'Launch your Inner Circle',
+          desc: 'Fans pay monthly for exclusive content, early booking access, and discounts. Recurring income that grows with your audience.',
+          earn: 'Recurring revenue', earnBg: 'rgba(157,78,221,0.1)', earnColor: '#c44dff',
+          link: 'edit-profile'
+        },
+        {
+          id: 'tokens', icon: '📈',
+          iconBg: 'linear-gradient(135deg, rgba(0,217,255,0.15), rgba(0,217,163,0.15))',
+          title: 'Your brand is an investment',
+          desc: 'As your sessions and reviews grow, your token price rises. Investors buy in early — and your value compounds.',
+          earn: 'Token appreciation', earnBg: 'rgba(0,217,255,0.1)', earnColor: '#00d9ff',
+          link: 'invest'
+        },
+        {
+          id: 'westackr', icon: '⚡',
+          iconBg: 'linear-gradient(135deg, rgba(0,230,118,0.15), rgba(0,188,212,0.15))',
+          title: 'Crowdfund your dream shoot',
+          desc: 'Got a creative idea that needs funding? Pitch it on WeStackr and let your fans and the community make it happen.',
+          earn: 'Community-funded', earnBg: 'rgba(0,230,118,0.1)', earnColor: '#00e676',
+          link: 'westackr'
+        },
+      ];
+
+      return (
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+          {/* Demo banner */}
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(255,110,199,0.08), rgba(157,78,221,0.08))',
+            border: '1px solid rgba(255,110,199,0.25)',
+            borderRadius: '12px', padding: '0.75rem 1rem', marginBottom: '1.5rem',
+            display: 'flex', alignItems: 'center', gap: '0.75rem'
+          }}>
+            <div style={{ fontSize: '1.3rem' }}>👁️</div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--accent-pink)' }}>Model View Preview</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                This is what a model sees when she signs in. All data below is demo.
+              </div>
+            </div>
+          </div>
+
+          <h2 style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontSize: '1.5rem' }}>{demoProfile.avatar_emoji}</span>
+            Model Dashboard
+          </h2>
+
+          {/* Stats Grid */}
+          <div className="dashboard-grid">
+            <div className="stat-card gradient">
+              <div className="stat-value">${demoProfile.earnings.toLocaleString()}</div>
+              <div className="stat-label">Total Earnings</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">{pendingBookings.length}</div>
+              <div className="stat-label">Pending Requests</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">{demoProfile.rating}★</div>
+              <div className="stat-label">Rating</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">{demoProfile.review_count}</div>
+              <div className="stat-label">Total Reviews</div>
+            </div>
+          </div>
+
+          {/* Revenue Nudges */}
+          <div>
+            <div className="nudge-section-label">💰 Ways to earn</div>
+            <div className="nudge-grid">
+              {nudges.map(nudge => (
+                <div key={nudge.id} className="nudge-card" onClick={() => window.location.hash = nudge.link}>
+                  <div className="nudge-icon" style={{ background: nudge.iconBg }}>
+                    {nudge.icon}
+                  </div>
+                  <div className="nudge-content">
+                    <div className="nudge-title">{nudge.title}</div>
+                    <div className="nudge-desc">{nudge.desc}</div>
+                    {nudge.earn && (
+                      <div className="nudge-earn" style={{ background: nudge.earnBg, color: nudge.earnColor }}>
+                        {nudge.earn}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Booking Requests */}
+          <h3 style={{ marginBottom: '1rem' }}>Booking Requests</h3>
+          <div className="grid">
+            {demoBookings.map(booking => (
+              <div key={booking.id} className="card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
+                  <div>
+                    <div style={{ fontWeight: '700' }}>{booking.client_name}</div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{booking.session_date} • {booking.duration_hours}h</div>
+                  </div>
+                  <div className={`badge ${booking.status === 'pending' ? 'badge-pending' : 'badge-success'}`}>
+                    {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                  </div>
+                </div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                  <strong>Rate:</strong> ${booking.rate}<br />
+                  <strong>Contract:</strong> {booking.contract_type}
+                </div>
+                {booking.status === 'pending' && (
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button className="btn glow-btn btn-small" onClick={() => alert('Demo: Booking accepted!')}>Accept</button>
+                    <button className="btn btn-secondary btn-small" onClick={() => alert('Demo: Booking declined')}>Decline</button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
     function DashboardPage() {
       const auth = useContext(AuthContext);
       const [bookings, setBookings] = useState([]);
@@ -8859,6 +9021,7 @@
         if (page === 'contracts') return <ContractsPage />;
         if (page === 'login') return <LoginPage />;
         if (page === 'signup') return <SignupPage />;
+        if (page === 'model-demo') return <ModelDemoPage />;
         if (page === 'dashboard') return auth.currentUser ? <DashboardPage /> : <LoginPage />;
         if (page === 'messages' && params[0]) return auth.currentUser ? <MessagesPage conversationId={params[0]} /> : <LoginPage />;
         if (page === 'messages') return auth.currentUser ? <MessagesPage conversationId={null} /> : <LoginPage />;
