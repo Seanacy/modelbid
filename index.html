@@ -4007,6 +4007,92 @@
       border: 1px solid var(--border-color); margin-top: 0.5rem;
     }
 
+    /* ===== Model Revenue Nudges ===== */
+    .nudge-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 1.1rem 1.25rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      transition: border-color 0.3s, transform 0.2s;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .nudge-card:hover {
+      border-color: var(--accent-pink);
+      transform: translateY(-2px);
+    }
+    .nudge-card::after {
+      content: '→';
+      position: absolute;
+      right: 1.25rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      opacity: 0;
+      transition: opacity 0.2s, right 0.2s;
+    }
+    .nudge-card:hover::after {
+      opacity: 1;
+      right: 1rem;
+    }
+    .nudge-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+    .nudge-content { flex: 1; padding-right: 1.5rem; }
+    .nudge-title {
+      font-weight: 700;
+      font-size: 0.88rem;
+      margin-bottom: 0.2rem;
+    }
+    .nudge-desc {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+    .nudge-earn {
+      display: inline-block;
+      margin-top: 0.4rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+    .nudge-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+      margin: 1.25rem 0;
+    }
+    .nudge-section-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-secondary);
+      margin-bottom: 0.6rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nudge-section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-color);
+    }
+
     /* ===== Suggested / Boost ===== */
     .suggested-section {
       margin: 20px 0 28px 0;
@@ -4570,6 +4656,9 @@
           </div>
 
           <SuggestedModels />
+
+          {/* Revenue nudges for models on Browse — 1 max, subtle */}
+          <ModelNudges context="browse" limit={1} />
 
           <div className="grid grid-3">
             {/* Demo model card - always visible for preview */}
@@ -6865,6 +6954,9 @@
 
           <SuggestedModels />
 
+          {/* Revenue nudges for models — 2 max so Feed isn't cluttered */}
+          <ModelNudges context="feed" limit={2} />
+
           {/* Feed Tabs */}
           <div className="feed-tabs">
             {[
@@ -7300,6 +7392,144 @@
       );
     }
 
+    // ===== MODEL REVENUE NUDGES =====
+    // Contextual cards that guide models toward their next revenue stream
+    // Ordered by progression: Bookings → Tips → Inner Circle → Tokens → WeStackr
+    function ModelNudges({ context, limit }) {
+      const auth = useContext(AuthContext);
+      if (!auth.profile || auth.profile.role !== 'model') return null;
+
+      const profile = auth.profile;
+      const sessions = profile.sessions_completed || 0;
+      const hasInnerCircle = false; // will check DB later
+      const hasToken = false; // will check DB later
+      const hasCampaign = false; // will check DB later
+
+      // Build nudge list based on what she hasn't unlocked yet — progression order
+      const allNudges = [];
+
+      // 1. Bookings — if she has 0 sessions, this is the #1 priority
+      if (sessions === 0) {
+        allNudges.push({
+          id: 'first-booking',
+          icon: '📅',
+          iconBg: 'linear-gradient(135deg, rgba(255,110,199,0.15), rgba(157,78,221,0.15))',
+          title: 'Get your first booking',
+          desc: 'Complete your profile and post on the Feed so clients can find you. Your first session is the start of everything.',
+          earn: null,
+          earnColor: null,
+          link: 'edit-profile',
+          contexts: ['dashboard', 'feed', 'browse']
+        });
+      }
+
+      // 2. Tips — if she hasn't posted much on the Feed
+      allNudges.push({
+        id: 'tips',
+        icon: '💸',
+        iconBg: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,152,0,0.15))',
+        title: 'Earn tips on your posts',
+        desc: 'Every post you share on the Feed has a tip button. Behind-the-scenes shots and session previews earn the most.',
+        earn: 'Passive income',
+        earnBg: 'rgba(255,215,0,0.1)',
+        earnColor: '#ffd700',
+        link: 'feed',
+        contexts: ['dashboard', 'browse']
+      });
+
+      // 3. Inner Circle — the subscription play
+      if (!hasInnerCircle) {
+        allNudges.push({
+          id: 'inner-circle',
+          icon: '💎',
+          iconBg: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,110,199,0.15))',
+          title: 'Launch your Inner Circle',
+          desc: 'Fans pay monthly for exclusive content, early booking access, and discounts. Recurring income that grows with your audience.',
+          earn: 'Recurring revenue',
+          earnBg: 'rgba(157,78,221,0.1)',
+          earnColor: '#c44dff',
+          link: 'edit-profile',
+          contexts: ['dashboard', 'feed']
+        });
+      }
+
+      // 4. Tokens — the investment play
+      if (!hasToken) {
+        allNudges.push({
+          id: 'tokens',
+          icon: '📈',
+          iconBg: 'linear-gradient(135deg, rgba(0,217,255,0.15), rgba(0,217,163,0.15))',
+          title: 'Your brand is an investment',
+          desc: 'As your sessions and reviews grow, your token price rises. Investors buy in early — and your value compounds.',
+          earn: 'Token appreciation',
+          earnBg: 'rgba(0,217,255,0.1)',
+          earnColor: '#00d9ff',
+          link: 'invest',
+          contexts: ['dashboard', 'feed', 'browse']
+        });
+      }
+
+      // 5. WeStackr — the crowdfunding play
+      if (!hasCampaign) {
+        allNudges.push({
+          id: 'westackr',
+          icon: '⚡',
+          iconBg: 'linear-gradient(135deg, rgba(0,230,118,0.15), rgba(0,188,212,0.15))',
+          title: 'Crowdfund your dream shoot',
+          desc: 'Got a creative idea that needs funding? Pitch it on WeStackr and let your fans and the community make it happen.',
+          earn: 'Community-funded',
+          earnBg: 'rgba(0,230,118,0.1)',
+          earnColor: '#00e676',
+          link: 'westackr',
+          contexts: ['dashboard', 'feed']
+        });
+      }
+
+      // Always show the boost nudge
+      allNudges.push({
+        id: 'boost',
+        icon: '🚀',
+        iconBg: 'linear-gradient(135deg, rgba(255,110,199,0.15), rgba(255,215,0,0.15))',
+        title: 'Boost your visibility',
+        desc: 'Get featured in the Suggested Models strip on Browse and Feed. More eyes on your profile means more bookings.',
+        earn: 'More bookings',
+        earnBg: 'rgba(255,110,199,0.1)',
+        earnColor: '#ff6ec7',
+        link: 'edit-profile',
+        contexts: ['dashboard', 'browse']
+      });
+
+      // Filter by context and limit
+      const filtered = allNudges.filter(n => n.contexts.includes(context));
+      const shown = limit ? filtered.slice(0, limit) : filtered;
+
+      if (shown.length === 0) return null;
+
+      return (
+        <div>
+          <div className="nudge-section-label">💰 Ways to earn</div>
+          <div className="nudge-grid">
+            {shown.map(nudge => (
+              <div key={nudge.id} className="nudge-card" onClick={() => window.location.hash = nudge.link}>
+                <div className="nudge-icon" style={{ background: nudge.iconBg }}>
+                  {nudge.icon}
+                </div>
+                <div className="nudge-content">
+                  <div className="nudge-title">{nudge.title}</div>
+                  <div className="nudge-desc">{nudge.desc}</div>
+                  {nudge.earn && (
+                    <div className="nudge-earn" style={{ background: nudge.earnBg, color: nudge.earnColor }}>
+                      {nudge.earn}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
     function DashboardPage() {
       const auth = useContext(AuthContext);
       const [bookings, setBookings] = useState([]);
@@ -7363,6 +7593,9 @@
                 <div className="stat-label">Total Reviews</div>
               </div>
             </div>
+
+            {/* Revenue nudges — contextual, progression-ordered */}
+            <ModelNudges context="dashboard" limit={3} />
 
             <h3 style={{ marginBottom: '1rem' }}>Booking Requests</h3>
             <div className="grid">
