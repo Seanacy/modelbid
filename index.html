@@ -9115,18 +9115,41 @@
     // ===== CHERRY PICKER PAGE (Models Only) =====
     function CherryPickerPage() {
       const auth = useContext(AuthContext);
-      const [platform, setPlatform] = useState('Instagram');
-      const [usernames, setUsernames] = useState(['', '', '', '', '']);
+      const [platformGroups, setPlatformGroups] = useState([
+        { platform: 'Instagram', usernames: ['', '', '', '', ''] }
+      ]);
       const [generated, setGenerated] = useState(false);
       const [copied, setCopied] = useState(false);
 
       const platforms = ['Instagram', 'Twitter / X', 'TikTok', 'YouTube', 'Threads'];
 
-      const addBox = () => { if (usernames.length < 10) setUsernames([...usernames, '']); };
-      const removeBox = (i) => { if (usernames.length > 1) setUsernames(usernames.filter((_, idx) => idx !== i)); };
-      const updateUsername = (i, val) => { const u = [...usernames]; u[i] = val.replace('@', ''); setUsernames(u); };
+      const updateGroupPlatform = (gi, p) => {
+        const g = [...platformGroups]; g[gi] = { ...g[gi], platform: p }; setPlatformGroups(g);
+      };
+      const addBoxToGroup = (gi) => {
+        const g = [...platformGroups];
+        if (g[gi].usernames.length < 10) { g[gi] = { ...g[gi], usernames: [...g[gi].usernames, ''] }; setPlatformGroups(g); }
+      };
+      const removeBoxFromGroup = (gi, ui) => {
+        const g = [...platformGroups];
+        if (g[gi].usernames.length > 1) { g[gi] = { ...g[gi], usernames: g[gi].usernames.filter((_, idx) => idx !== ui) }; setPlatformGroups(g); }
+      };
+      const updateUsernameInGroup = (gi, ui, val) => {
+        const g = [...platformGroups]; const u = [...g[gi].usernames]; u[ui] = val.replace('@', ''); g[gi] = { ...g[gi], usernames: u }; setPlatformGroups(g);
+      };
+      const addPlatformGroup = () => {
+        const usedPlatforms = platformGroups.map(g => g.platform);
+        const next = platforms.find(p => !usedPlatforms.includes(p));
+        if (next && platformGroups.length < platforms.length) {
+          setPlatformGroups([...platformGroups, { platform: next, usernames: ['', '', '', '', ''] }]);
+        }
+      };
+      const removePlatformGroup = (gi) => {
+        if (platformGroups.length > 1) setPlatformGroups(platformGroups.filter((_, idx) => idx !== gi));
+      };
 
-      const filledUsernames = usernames.filter(u => u.trim());
+      const allFilledUsernames = platformGroups.flatMap(g => g.usernames.filter(u => u.trim()));
+      const totalHandleCount = allFilledUsernames.length;
 
       const masterPrompt = `You are a high-intent audience researcher. Your sole job is to find REPEAT ENGAGERS -- people who consistently like, comment, repost, and interact with creators in a specific niche. You are looking for fans who show up again and again, not one-time visitors.
 
@@ -9209,11 +9232,14 @@ RULES
 - Respect rate limits. Move at a natural browsing pace.
 - Group results by platform.`;
 
-      const userListText = `Here are my target accounts:\n\n${platform}:\n${filledUsernames.map(u => '@' + u).join('\n')}`;
+      const userListText = `Here are my target accounts:\n\n${platformGroups.map(g => {
+        const filled = g.usernames.filter(u => u.trim());
+        return filled.length > 0 ? `${g.platform}:\n${filled.map(u => '@' + u).join('\n')}` : '';
+      }).filter(Boolean).join('\n\n')}`;
       const fullPromptText = userListText + '\n\n---\n\n' + masterPrompt;
 
       const handleGenerate = () => {
-        if (filledUsernames.length === 0) return;
+        if (totalHandleCount === 0) return;
         setGenerated(true);
       };
 
@@ -9242,48 +9268,56 @@ RULES
             <p>Find your highest-intent audience from competitor accounts</p>
           </div>
 
-          {/* Platform Selection */}
-          <div className="cp-form-section">
-            <h3>Select Platform</h3>
-            <div className="cp-platform-options">
-              {platforms.map(p => (
-                <button key={p} className={`cp-platform-btn ${platform === p ? 'active' : ''}`} onClick={() => setPlatform(p)}>
-                  {p === 'Instagram' ? '📷' : p === 'Twitter / X' ? '𝕏' : p === 'TikTok' ? '🎵' : p === 'YouTube' ? '▶️' : '🧵'} {p}
-                </button>
-              ))}
+          {/* Platform Groups */}
+          {platformGroups.map((group, gi) => (
+            <div key={gi} className="cp-form-section" style={{ position: 'relative' }}>
+              {platformGroups.length > 1 && (
+                <button className="cp-remove-btn" onClick={() => removePlatformGroup(gi)} style={{ position: 'absolute', top: '1rem', right: '1rem', fontSize: '1.2rem' }} title="Remove this platform">✕</button>
+              )}
+              <h3>Platform {platformGroups.length > 1 ? `#${gi + 1}` : ''}</h3>
+              <div className="cp-platform-options" style={{ marginBottom: '1.2rem' }}>
+                {platforms.map(p => (
+                  <button key={p} className={`cp-platform-btn ${group.platform === p ? 'active' : ''}`} onClick={() => updateGroupPlatform(gi, p)}>
+                    {p === 'Instagram' ? '📷' : p === 'Twitter / X' ? '𝕏' : p === 'TikTok' ? '🎵' : p === 'YouTube' ? '▶️' : '🧵'} {p}
+                  </button>
+                ))}
+              </div>
+              <h3 style={{ marginTop: '0.5rem' }}>Target Accounts</h3>
+              <div className="cp-username-inputs">
+                {group.usernames.map((u, ui) => (
+                  <div key={ui} className="cp-username-row">
+                    <span className="cp-at">@</span>
+                    <input
+                      type="text"
+                      placeholder={`competitor${ui + 1}`}
+                      value={u}
+                      onChange={e => updateUsernameInGroup(gi, ui, e.target.value)}
+                    />
+                    {group.usernames.length > 1 && (
+                      <button className="cp-remove-btn" onClick={() => removeBoxFromGroup(gi, ui)}>✕</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {group.usernames.length < 10 && (
+                <button className="cp-add-btn" onClick={() => addBoxToGroup(gi)}>+ Add Account</button>
+              )}
             </div>
-          </div>
+          ))}
 
-          {/* Username Inputs */}
-          <div className="cp-form-section">
-            <h3>Target Accounts ({filledUsernames.length} of {usernames.length})</h3>
-            <div className="cp-username-inputs">
-              {usernames.map((u, i) => (
-                <div key={i} className="cp-username-row">
-                  <span className="cp-at">@</span>
-                  <input
-                    type="text"
-                    placeholder={`competitor${i + 1}`}
-                    value={u}
-                    onChange={e => updateUsername(i, e.target.value)}
-                  />
-                  {usernames.length > 1 && (
-                    <button className="cp-remove-btn" onClick={() => removeBox(i)}>✕</button>
-                  )}
-                </div>
-              ))}
-            </div>
-            {usernames.length < 10 && (
-              <button className="cp-add-btn" onClick={addBox}>+ Add Account</button>
-            )}
-          </div>
+          {/* Add Platform Button */}
+          {platformGroups.length < platforms.length && (
+            <button className="cp-add-btn" onClick={addPlatformGroup} style={{ width: '100%', justifyContent: 'center', padding: '0.75rem', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+              + Add Another Platform
+            </button>
+          )}
 
           {/* Generate Button */}
           <button
             className="cp-generate-btn"
             onClick={handleGenerate}
-            disabled={filledUsernames.length === 0}
-            style={{ opacity: filledUsernames.length === 0 ? 0.4 : 1, cursor: filledUsernames.length === 0 ? 'not-allowed' : 'pointer' }}
+            disabled={totalHandleCount === 0}
+            style={{ opacity: totalHandleCount === 0 ? 0.4 : 1, cursor: totalHandleCount === 0 ? 'not-allowed' : 'pointer' }}
           >
             Generate Master Prompt
           </button>
@@ -9329,7 +9363,7 @@ RULES
           {/* Info Sections (formerly the PDF content) */}
           <div className="cp-info-section">
             <h3>How It Works</h3>
-            <p>1. Select a platform and enter 5–10 competitor handles above.</p>
+            <p>1. Select one or more platforms and enter 5–10 competitor handles per platform above.</p>
             <p>2. Click "Generate Master Prompt" — this creates a custom AI prompt with your targets baked in.</p>
             <p>3. Copy the prompt and paste it into Claude (claude.ai) with computer use enabled.</p>
             <p>4. Make sure you're signed into the platform in your browser. The AI uses your browser to scan.</p>
