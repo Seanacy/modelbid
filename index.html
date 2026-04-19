@@ -3932,6 +3932,81 @@
       .ws-card-stats { gap: 12px; }
     }
 
+    /* ===== WeStackr Create Campaign Form ===== */
+    .ws-form-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+      z-index: 1000; display: flex; align-items: center; justify-content: center;
+      padding: 1rem;
+    }
+    .ws-form-modal {
+      background: var(--bg-card); border: 1px solid var(--border-color);
+      border-radius: 16px; width: 100%; max-width: 580px; max-height: 90vh;
+      overflow-y: auto; padding: 2rem; position: relative;
+    }
+    .ws-form-modal::-webkit-scrollbar { width: 6px; }
+    .ws-form-modal::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+    .ws-form-close {
+      position: absolute; top: 1rem; right: 1rem; background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15); color: white; width: 36px; height: 36px;
+      border-radius: 50%; font-size: 1.1rem; cursor: pointer; display: flex;
+      align-items: center; justify-content: center; transition: background 0.2s;
+    }
+    .ws-form-close:hover { background: rgba(255,255,255,0.15); }
+    .ws-form-title {
+      font-size: 1.4rem; font-weight: 800; margin-bottom: 0.25rem;
+      background: linear-gradient(135deg, #00e676, #00bcd4);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .ws-form-subtitle { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    .ws-field { margin-bottom: 1.25rem; }
+    .ws-field label {
+      display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.4rem; color: var(--text-primary);
+    }
+    .ws-field label span.ws-req { color: var(--accent-pink); margin-left: 2px; }
+    .ws-field input, .ws-field textarea, .ws-field select {
+      width: 100%; padding: 0.7rem 0.85rem; background: var(--bg-dark);
+      border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-primary);
+      font-size: 0.9rem; font-family: inherit; transition: border-color 0.2s;
+    }
+    .ws-field input:focus, .ws-field textarea:focus, .ws-field select:focus {
+      outline: none; border-color: var(--accent-teal);
+    }
+    .ws-field textarea { min-height: 90px; resize: vertical; }
+    .ws-field .ws-hint { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.3rem; }
+    .ws-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .ws-cat-grid {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .ws-cat-chip {
+      padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border-color);
+      background: transparent; color: var(--text-secondary); font-size: 0.82rem;
+      cursor: pointer; transition: all 0.2s; font-family: inherit;
+    }
+    .ws-cat-chip:hover { border-color: var(--accent-teal); color: var(--text-primary); }
+    .ws-cat-chip.selected {
+      border-color: var(--accent-teal); background: rgba(0,217,255,0.1);
+      color: var(--accent-teal); font-weight: 600;
+    }
+    .ws-admin-input-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .ws-admin-input-row input { flex: 1; }
+    .ws-admin-add {
+      padding: 6px 14px; border-radius: 8px; border: 1px dashed var(--border-color);
+      background: transparent; color: var(--text-secondary); font-size: 0.8rem;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .ws-admin-add:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
+    .ws-submit-btn {
+      width: 100%; padding: 0.85rem; border: none; border-radius: 12px; font-size: 1rem;
+      font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.3s;
+      background: linear-gradient(135deg, #00e676, #00bcd4); color: #000;
+    }
+    .ws-submit-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,230,118,0.3); }
+    .ws-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+    .ws-img-preview {
+      width: 100%; height: 140px; border-radius: 10px; object-fit: cover;
+      border: 1px solid var(--border-color); margin-top: 0.5rem;
+    }
+
     /* ===== Suggested / Boost ===== */
     .suggested-section {
       margin: 20px 0 28px 0;
@@ -7423,14 +7498,233 @@
       );
     }
 
+    function CreateCampaignForm({ onClose, onCreated }) {
+      const auth = useContext(AuthContext);
+      const [loading, setLoading] = useState(false);
+      const [form, setForm] = useState({
+        title: '', description: '', goal: '', category: '',
+        image_url: '', duration_days: 30, backer_reward: '', co_admins: []
+      });
+      const [adminInput, setAdminInput] = useState('');
+
+      const categories = [
+        { id: 'lingerie', label: 'Lingerie', icon: '👙' },
+        { id: 'editorial', label: 'Editorial', icon: '📰' },
+        { id: 'fantasy', label: 'Fantasy', icon: '🧚' },
+        { id: 'vintage', label: 'Vintage', icon: '🎞️' },
+        { id: 'outdoor', label: 'Outdoor', icon: '🌊' },
+        { id: 'creative', label: 'Creative', icon: '🎨' },
+        { id: 'boudoir', label: 'Boudoir', icon: '🌹' },
+        { id: 'cosplay', label: 'Cosplay', icon: '🎭' },
+      ];
+
+      const addAdmin = () => {
+        const name = adminInput.trim();
+        if (name && !form.co_admins.includes(name)) {
+          setForm({ ...form, co_admins: [...form.co_admins, name] });
+          setAdminInput('');
+        }
+      };
+
+      const removeAdmin = (name) => {
+        setForm({ ...form, co_admins: form.co_admins.filter(a => a !== name) });
+      };
+
+      const handleSubmit = async () => {
+        if (!auth.currentUser) {
+          auth.showToast('Please sign in to create a campaign', 'error');
+          return;
+        }
+        if (!form.title || !form.description || !form.goal || !form.category) {
+          auth.showToast('Please fill in all required fields', 'error');
+          return;
+        }
+        setLoading(true);
+        try {
+          const { data, error } = await supabase.from('campaigns').insert({
+            creator_id: auth.currentUser.id,
+            title: form.title,
+            description: form.description,
+            goal: parseFloat(form.goal),
+            category: form.category,
+            image_url: form.image_url || null,
+            duration_days: parseInt(form.duration_days) || 30,
+            backer_reward: form.backer_reward || null,
+            co_admins: form.co_admins,
+          }).select().single();
+
+          if (error) throw error;
+          auth.showToast('Campaign launched!', 'success');
+          onCreated(data);
+          onClose();
+        } catch (err) {
+          console.error('Create campaign error:', err);
+          auth.showToast('Failed to create campaign: ' + err.message, 'error');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      return (
+        <div className="ws-form-overlay" onClick={onClose}>
+          <div className="ws-form-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="ws-form-close" onClick={onClose}>✕</button>
+            <div className="ws-form-title">Launch a Campaign</div>
+            <div className="ws-form-subtitle">Pitch your shoot idea and let the community fund it.</div>
+
+            <div className="ws-field">
+              <label>Campaign Title <span className="ws-req">*</span></label>
+              <input type="text" placeholder="e.g. Ethereal Forest Fairy Shoot" value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })} maxLength={80} />
+              <div className="ws-hint">{form.title.length}/80 characters</div>
+            </div>
+
+            <div className="ws-field">
+              <label>Description <span className="ws-req">*</span></label>
+              <textarea placeholder="Describe your shoot concept — location, vibe, how many models, what backers get..."
+                value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={500} />
+              <div className="ws-hint">{form.description.length}/500 characters</div>
+            </div>
+
+            <div className="ws-field">
+              <label>Category <span className="ws-req">*</span></label>
+              <div className="ws-cat-grid">
+                {categories.map(cat => (
+                  <button key={cat.id} type="button"
+                    className={'ws-cat-chip' + (form.category === cat.id ? ' selected' : '')}
+                    onClick={() => setForm({ ...form, category: cat.id })}>
+                    {cat.icon} {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="ws-field-row">
+              <div className="ws-field">
+                <label>Funding Goal ($) <span className="ws-req">*</span></label>
+                <input type="number" placeholder="2000" min="100" value={form.goal}
+                  onChange={(e) => setForm({ ...form, goal: e.target.value })} />
+                <div className="ws-hint">Minimum $100</div>
+              </div>
+              <div className="ws-field">
+                <label>Duration (days)</label>
+                <select value={form.duration_days} onChange={(e) => setForm({ ...form, duration_days: e.target.value })}>
+                  <option value="7">7 days</option>
+                  <option value="14">14 days</option>
+                  <option value="21">21 days</option>
+                  <option value="30">30 days</option>
+                  <option value="45">45 days</option>
+                  <option value="60">60 days</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="ws-field">
+              <label>Cover Image URL</label>
+              <input type="url" placeholder="https://images.unsplash.com/..." value={form.image_url}
+                onChange={(e) => setForm({ ...form, image_url: e.target.value })} />
+              <div className="ws-hint">Paste an image link — Unsplash, Imgur, etc. Landscape works best.</div>
+              {form.image_url && <img className="ws-img-preview" src={form.image_url} alt="Preview"
+                onError={(e) => e.target.style.display = 'none'} onLoad={(e) => e.target.style.display = 'block'} />}
+            </div>
+
+            <div className="ws-field">
+              <label>Backer Reward</label>
+              <textarea placeholder="What do backers get? e.g. Full gallery access, signed prints, behind-the-scenes video, invite to the shoot..."
+                value={form.backer_reward} onChange={(e) => setForm({ ...form, backer_reward: e.target.value })}
+                style={{ minHeight: '60px' }} maxLength={300} />
+              <div className="ws-hint">Optional — describe what backers receive when the goal is met</div>
+            </div>
+
+            <div className="ws-field">
+              <label>Co-Admins</label>
+              <div className="ws-hint" style={{ marginBottom: '0.5rem', marginTop: 0 }}>
+                Add collaborators who will split the funds evenly when the goal is reached.
+              </div>
+              {form.co_admins.map((admin, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px',
+                  background: 'rgba(0,217,255,0.06)', border: '1px solid rgba(0,217,255,0.15)',
+                  borderRadius: '8px', padding: '6px 10px', fontSize: '0.85rem' }}>
+                  <span style={{ flex: 1 }}>👤 {admin}</span>
+                  <button onClick={() => removeAdmin(admin)} style={{
+                    background: 'none', border: 'none', color: 'var(--danger-red)',
+                    cursor: 'pointer', fontSize: '1rem', padding: '0 4px'
+                  }}>✕</button>
+                </div>
+              ))}
+              <div className="ws-admin-input-row">
+                <input type="text" placeholder="Name of co-admin" value={adminInput}
+                  onChange={(e) => setAdminInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addAdmin(); }}} />
+                <button type="button" className="ws-admin-add" onClick={addAdmin}>+ Add</button>
+              </div>
+            </div>
+
+            <button className="ws-submit-btn" onClick={handleSubmit} disabled={loading || !form.title || !form.description || !form.goal || !form.category}>
+              {loading ? 'Launching...' : '⚡ Launch Campaign'}
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     function WeStackrPage() {
+      const auth = useContext(AuthContext);
       const [activeTab, setActiveTab] = useState('all');
       const [showCreate, setShowCreate] = useState(false);
+      const [dbCampaigns, setDbCampaigns] = useState([]);
+      const [loadingDb, setLoadingDb] = useState(true);
       const isUpgraded = false; // demo: free-tier client
 
-      const campaigns = [
+      // Fetch real campaigns from Supabase
+      useEffect(() => {
+        const fetchCampaigns = async () => {
+          try {
+            const { data, error } = await supabase
+              .from('campaigns')
+              .select('*, creator:profiles!creator_id(display_name, role, avatar_emoji)')
+              .order('created_at', { ascending: false });
+            if (!error && data) setDbCampaigns(data);
+          } catch (e) { console.error('Fetch campaigns:', e); }
+          finally { setLoadingDb(false); }
+        };
+        fetchCampaigns();
+      }, []);
+
+      // Convert DB campaigns to display format
+      const realCampaigns = dbCampaigns.map(c => {
+        const createdAt = new Date(c.created_at);
+        const now = new Date();
+        const elapsed = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
+        const daysLeft = Math.max(0, c.duration_days - elapsed);
+        return {
+          id: c.id, title: c.title, status: c.funded ? 'funded' : daysLeft === 0 ? 'expired' : 'active',
+          creator: {
+            name: c.creator?.display_name || 'Anonymous',
+            type: c.creator?.role || 'client',
+            avatar: c.creator?.avatar_emoji || '👤'
+          },
+          admins: [
+            { name: c.creator?.display_name || 'Creator', avatar: c.creator?.avatar_emoji || '👤' },
+            ...(c.co_admins || []).map(a => ({ name: a, avatar: '👤' }))
+          ],
+          desc: c.description,
+          raised: Number(c.raised) || 0,
+          goal: Number(c.goal),
+          backers: c.backers || 0,
+          daysLeft,
+          image: c.image_url || 'https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=600&h=300&fit=crop',
+          category: c.category,
+          funded: c.funded,
+          backer_reward: c.backer_reward,
+          isReal: true
+        };
+      });
+
+      // Demo campaigns as fallback/seed data
+      const demoCampaigns = [
         {
-          id: 1, title: 'Ethereal Forest Fairy Shoot', status: 'active',
+          id: 'demo-1', title: 'Ethereal Forest Fairy Shoot', status: 'active',
           creator: { name: 'Aria Belle', type: 'model', avatar: '🧚' },
           admins: [{ name: 'Aria Belle', avatar: '🧚' }, { name: 'Luna Noir', avatar: '🌙' }],
           desc: 'A magical woodland photoshoot with flowing gowns, fairy wings, and natural lighting through ancient trees. Two models, one photographer, enchanted forest location.',
@@ -7439,17 +7733,16 @@
           category: 'fantasy'
         },
         {
-          id: 2, title: 'Urban Rooftop Lingerie Editorial', status: 'active',
+          id: 'demo-2', title: 'Urban Rooftop Lingerie Editorial', status: 'active',
           creator: { name: 'Marcus J.', type: 'client', avatar: '📸' },
           admins: [{ name: 'Marcus J.', avatar: '📸' }],
           desc: 'Sunset rooftop shoot overlooking the city skyline. Looking for 2-3 models for a high-fashion lingerie editorial with professional lighting crew and MUA.',
           raised: 3500, goal: 3500, backers: 27, daysLeft: 0,
           image: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=600&h=300&fit=crop',
-          category: 'editorial',
-          funded: true
+          category: 'editorial', funded: true
         },
         {
-          id: 3, title: 'Vintage Pin-Up Calendar Series', status: 'new',
+          id: 'demo-3', title: 'Vintage Pin-Up Calendar Series', status: 'new',
           creator: { name: 'Jade Monroe', type: 'model', avatar: '💋' },
           admins: [{ name: 'Jade Monroe', avatar: '💋' }, { name: 'Sasha K.', avatar: '✨' }, { name: 'Tommy R.', avatar: '🎬' }],
           desc: '12-month pin-up calendar featuring 6 models in retro vintage costumes. Studio rental, professional retouching, and printed calendars for all backers.',
@@ -7458,7 +7751,7 @@
           category: 'vintage'
         },
         {
-          id: 4, title: 'Neon Cyberpunk Bodysuit Series', status: 'active',
+          id: 'demo-4', title: 'Neon Cyberpunk Bodysuit Series', status: 'active',
           creator: { name: 'Derek L.', type: 'client', avatar: '🎮' },
           admins: [{ name: 'Derek L.', avatar: '🎮' }, { name: 'Nova X.', avatar: '⚡' }],
           desc: 'Futuristic neon-lit studio shoot with custom bodysuits, LED props, and smoke machines. Backers get exclusive digital content pack and behind-the-scenes video.',
@@ -7467,7 +7760,7 @@
           category: 'creative'
         },
         {
-          id: 5, title: 'Beach Goddess Golden Hour', status: 'active',
+          id: 'demo-5', title: 'Beach Goddess Golden Hour', status: 'active',
           creator: { name: 'Tessa Ray', type: 'model', avatar: '🌊' },
           admins: [{ name: 'Tessa Ray', avatar: '🌊' }],
           desc: 'Malibu beach shoot during golden hour. Flowing fabrics, ocean backdrop, natural beauty. All backers get the full gallery plus a signed print.',
@@ -7477,11 +7770,27 @@
         }
       ];
 
-      const filteredCampaigns = activeTab === 'all' ? campaigns
-        : activeTab === 'funded' ? campaigns.filter(c => c.funded)
-        : activeTab === 'models' ? campaigns.filter(c => c.creator.type === 'model')
-        : activeTab === 'clients' ? campaigns.filter(c => c.creator.type === 'client')
-        : campaigns;
+      // Merge: real campaigns first, then demo
+      const allCampaigns = [...realCampaigns, ...demoCampaigns];
+
+      const filteredCampaigns = activeTab === 'all' ? allCampaigns
+        : activeTab === 'funded' ? allCampaigns.filter(c => c.funded)
+        : activeTab === 'models' ? allCampaigns.filter(c => c.creator.type === 'model')
+        : activeTab === 'clients' ? allCampaigns.filter(c => c.creator.type === 'client')
+        : allCampaigns;
+
+      const handleCampaignCreated = (newCampaign) => {
+        setDbCampaigns(prev => [newCampaign, ...prev]);
+      };
+
+      const handleStartCampaign = () => {
+        if (!auth.currentUser) {
+          auth.showToast('Please sign in to create a campaign', 'error');
+          window.location.hash = 'login';
+          return;
+        }
+        setShowCreate(true);
+      };
 
       return (
         <div className="ws-page">
@@ -7508,9 +7817,9 @@
             </p>
           </div>
 
-          {/* Tabs */}
+          {/* Create Button */}
           <div style={{ textAlign: 'center' }}>
-            <button className="ws-create-btn" onClick={() => alert('Create Campaign form coming soon! Set your shoot idea, funding goal, and invite co-admins.')}>
+            <button className="ws-create-btn" onClick={handleStartCampaign}>
               ➕ Start a Campaign
             </button>
           </div>
@@ -7545,6 +7854,15 @@
                     </div>
 
                     <div className="ws-card-desc">{c.desc}</div>
+
+                    {/* Backer reward */}
+                    {c.backer_reward && (
+                      <div style={{ background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.15)',
+                        borderRadius: '8px', padding: '8px 12px', marginTop: '8px', fontSize: '0.82rem' }}>
+                        <span style={{ color: 'var(--accent-gold)', fontWeight: 600 }}>🎁 Backer Reward:</span>{' '}
+                        <span style={{ color: 'var(--text-secondary)' }}>{c.backer_reward}</span>
+                      </div>
+                    )}
 
                     {/* Progress Bar */}
                     <div className="ws-progress-wrap">
@@ -7640,10 +7958,13 @@
             <p style={{ color: '#aaa', marginBottom: '16px', fontSize: '0.95em' }}>
               Whether you're a model with a creative vision or a client with a concept — pitch it, fund it, make it happen.
             </p>
-            <button className="ws-create-btn" onClick={() => alert('Create Campaign form coming soon!')}>
+            <button className="ws-create-btn" onClick={handleStartCampaign}>
               ⚡ Launch Your Campaign
             </button>
           </div>
+
+          {/* Create Campaign Modal */}
+          {showCreate && <CreateCampaignForm onClose={() => setShowCreate(false)} onCreated={handleCampaignCreated} />}
         </div>
       );
     }
