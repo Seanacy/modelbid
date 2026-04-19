@@ -4330,13 +4330,55 @@
     // ===== PAGE COMPONENTS =====
     function HomePage() {
       return (
-        <div className="hero">
-          <div className="hero-content">
-            <h1>Book Private Photo Sessions</h1>
-            <p>Connect with verified models for lingerie, costume, and glamour photography. Secure, professional, and discreet.</p>
-            <div className="hero-buttons">
-              <button className="btn glow-btn" onClick={() => window.location.hash = 'browse'}>Browse Models</button>
-              <button className="btn btn-secondary" onClick={() => window.location.hash = 'formodels'}>For Models</button>
+        <div>
+          <div className="hero">
+            <div className="hero-content">
+              <h1>Book Private Photo Sessions</h1>
+              <p>Connect with verified models for lingerie, costume, and glamour photography. Secure, professional, and discreet.</p>
+              <div className="hero-buttons">
+                <button className="btn glow-btn" onClick={() => window.location.hash = 'browse'}>Browse Models</button>
+                <button className="btn btn-secondary" onClick={() => window.location.hash = 'formodels'}>For Models</button>
+              </div>
+            </div>
+          </div>
+
+          {/* Suggested Models — immediate social proof */}
+          <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 1rem' }}>
+            <SuggestedModels />
+          </div>
+
+          {/* How It Works — guides the user journey */}
+          <div style={{ maxWidth: '900px', margin: '2.5rem auto 0', padding: '0 1rem 3rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+              <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', color: 'var(--accent-pink)', marginBottom: '0.5rem' }}>How it works</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 800 }}>From Discovery to Session in Minutes</div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem' }}>
+              {[
+                { step: '01', icon: '🔍', title: 'Browse', desc: 'Explore verified models by style, rate, and rating. Filter by 18+ categories.' },
+                { step: '02', icon: '👤', title: 'Preview', desc: 'View portfolios, 360° outfits, reviews, and availability before committing.' },
+                { step: '03', icon: '📅', title: 'Book', desc: 'Pick a date, describe your vision, and request a session — directly and securely.' },
+                { step: '04', icon: '💬', title: 'Connect', desc: 'Message your model to coordinate details. Everything stays on-platform.' },
+              ].map(s => (
+                <div key={s.step} style={{
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '14px',
+                  padding: '1.5rem 1.25rem',
+                  position: 'relative',
+                  transition: 'border-color 0.3s',
+                }}>
+                  <div style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--accent-pink)', opacity: 0.5, marginBottom: '0.75rem', letterSpacing: '1px' }}>STEP {s.step}</div>
+                  <div style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>{s.icon}</div>
+                  <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.35rem' }}>{s.title}</div>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{s.desc}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+              <button className="btn glow-btn" onClick={() => window.location.hash = 'signup'} style={{ padding: '0.75rem 2.5rem', fontSize: '1rem' }}>
+                Get Started Free
+              </button>
             </div>
           </div>
         </div>
@@ -5394,25 +5436,21 @@
                 </div>
               </div>
 
-              {/* Inner Circle CTA */}
-              <div style={{
-                background: 'linear-gradient(135deg, rgba(255,215,0,0.06), rgba(255,215,0,0.02))',
-                border: '1px solid rgba(255,215,0,0.2)',
-                borderRadius: '10px',
-                padding: '0.85rem 1rem',
-                marginBottom: '0.75rem',
-                display: 'flex',
-                gap: '0.75rem',
-                alignItems: 'flex-start'
-              }}>
-                <div style={{ fontSize: '1.3rem', flexShrink: 0, marginTop: '2px' }}>ℹ️</div>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--accent-gold)', marginBottom: '0.25rem' }}>What is Inner Circle?</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                    A paid membership that gives you behind-the-scenes content, early booking access, session discounts, group chat with the model, and exclusive content drops. Pick a tier that fits your budget.
+              {/* Step 4: Book — primary CTA comes first in sidebar */}
+              <div className="profile-section" style={{ background: 'linear-gradient(135deg, rgba(255,110,199,0.1), rgba(157,78,221,0.1))', borderColor: 'rgba(255,110,199,0.3)' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>✨</div>
+                  <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>Ready to book?</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                    Secure your session with {model.display_name?.split(' ')[0] || 'this model'} today
                   </div>
+                  <button className="btn glow-btn btn-block" onClick={() => setShowBookingModal(true)}>
+                    Book Now — ${model.rate || 0}
+                  </button>
                 </div>
               </div>
+
+              {/* Step 6: Deepen — Inner Circle (after booking) */}
               <div className="profile-section" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,110,199,0.08))', borderColor: 'rgba(255,215,0,0.25)' }}>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>💎</div>
@@ -5430,7 +5468,7 @@
                 </div>
               </div>
 
-              {/* Invest in Model Token CTA */}
+              {/* Step 6-8: Invest — deepest engagement */}
               <div className="profile-section" style={{ background: 'linear-gradient(135deg, rgba(0,217,255,0.08), rgba(0,217,163,0.08))', borderColor: 'rgba(0,217,255,0.25)' }}>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📈</div>
@@ -5451,20 +5489,6 @@
                   <button className="btn glow-btn btn-block" style={{ background: 'linear-gradient(135deg, var(--accent-teal), #0099cc)', fontSize: '0.85rem' }}
                     onClick={() => window.location.hash = 'token/demo'}>
                     View Token →
-                  </button>
-                </div>
-              </div>
-
-              {/* Quick Book CTA */}
-              <div className="profile-section" style={{ background: 'linear-gradient(135deg, rgba(255,110,199,0.1), rgba(157,78,221,0.1))', borderColor: 'rgba(255,110,199,0.3)' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>✨</div>
-                  <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>Ready to book?</div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-                    Secure your session with {model.display_name?.split(' ')[0] || 'this model'} today
-                  </div>
-                  <button className="btn glow-btn btn-block" onClick={() => setShowBookingModal(true)}>
-                    Book Now — ${model.rate || 0}
                   </button>
                 </div>
               </div>
@@ -8294,29 +8318,35 @@
             <div className="nav-brand" onClick={() => window.location.hash = 'home'}>🎀 ModelBid</div>
 
             <div className="nav-links">
-              <a className="nav-link" onClick={() => window.location.hash = 'feed'}>Feed</a>
               <a className="nav-link" onClick={() => window.location.hash = 'browse'}>Browse</a>
-              <a className="nav-link" onClick={() => window.location.hash = 'wall'}>🏆 The Wall</a>
+              <a className="nav-link" onClick={() => window.location.hash = 'feed'}>Feed</a>
               <div className="nav-dropdown">
-                <span className="nav-dropdown-toggle">🧰 More ▾</span>
+                <span className="nav-dropdown-toggle">More ▾</span>
                 <div className="nav-dropdown-menu">
-                  <a className="nav-dropdown-item" onClick={() => window.location.hash = 'invest'}>
-                    <span className="dd-icon">📈</span> Invest
+                  {/* Early journey — discovery & context */}
+                  <a className="nav-dropdown-item" onClick={() => window.location.hash = 'formodels'}>
+                    <span className="dd-icon">🎀</span> For Models
+                  </a>
+                  <a className="nav-dropdown-item" onClick={() => window.location.hash = 'contracts'}>
+                    <span className="dd-icon">📝</span> Contracts
+                  </a>
+                  <div className="nav-dropdown-divider"></div>
+                  {/* Mid journey — engagement & community */}
+                  <a className="nav-dropdown-item" onClick={() => window.location.hash = 'wall'}>
+                    <span className="dd-icon">🏆</span> The Wall
+                  </a>
+                  <a className="nav-dropdown-item" onClick={() => window.location.hash = 'westackr'}>
+                    <span className="dd-icon">⚡</span> WeStackr
                   </a>
                   {auth.profile?.user_type === 'client' && (
                     <a className="nav-dropdown-item" onClick={() => window.location.hash = 'reputation'}>
                       <span className="dd-icon">🛡️</span> Reputation
                     </a>
                   )}
-                  <a className="nav-dropdown-item" onClick={() => window.location.hash = 'westackr'}>
-                    <span className="dd-icon">⚡</span> WeStackr
-                  </a>
-                  <a className="nav-dropdown-item" onClick={() => window.location.hash = 'contracts'}>
-                    <span className="dd-icon">📝</span> Contracts
-                  </a>
                   <div className="nav-dropdown-divider"></div>
-                  <a className="nav-dropdown-item" onClick={() => window.location.hash = 'formodels'}>
-                    <span className="dd-icon">🎀</span> For Models
+                  {/* Deep journey — investment */}
+                  <a className="nav-dropdown-item" onClick={() => window.location.hash = 'invest'}>
+                    <span className="dd-icon">📈</span> Invest
                   </a>
                 </div>
               </div>
