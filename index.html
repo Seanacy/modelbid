@@ -4664,17 +4664,18 @@
           {/* Buy/Sell Panel — Reputation-Gated */}
           {(() => {
             const demoClientRep = getClientRepLevel(7, 85);
-            const canTrade = demoClientRep.level >= 2;
-            if (!canTrade) {
+            if (demoClientRep.level >= 2) {
               return (
-                <div className="rep-gated-overlay" style={{ marginBottom: '1rem' }}>
-                  <div className="lock-icon">🔒</div>
-                  <div className="lock-text">Token trading requires <strong>Bronze Member</strong> status (Level 2+)</div>
-                  <div className="lock-action" onClick={() => window.location.hash = 'reputation'}>Complete {demoClientRep.sessionsNeeded} more session{demoClientRep.sessionsNeeded > 1 ? 's' : ''} to unlock →</div>
+                <div style={{ background: 'rgba(0,217,163,0.06)', border: '1px solid rgba(0,217,163,0.15)', borderRadius: '8px', padding: '0.5rem 0.75rem', marginBottom: '0.75rem', fontSize: '0.8em', color: 'var(--success-green)', textAlign: 'center' }}>
+                  ✅ <strong>{demoClientRep.name}</strong> — you get early access to new token drops
                 </div>
               );
             }
-            return null;
+            return (
+              <div style={{ background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.15)', borderRadius: '8px', padding: '0.5rem 0.75rem', marginBottom: '0.75rem', fontSize: '0.8em', color: '#aaa', textAlign: 'center' }}>
+                ⭐ <span style={{ color: '#ffd700' }}>Reach Bronze Member</span> for early access to new token drops and lower fees
+              </div>
+            );
           })()}
           <div className="token-trade-panel">
             <div className="token-trade-tabs">
@@ -5199,28 +5200,25 @@
             </div>
           </div>
 
-          {/* Action Buttons — with Reputation Gating for elite models */}
+          {/* Action Buttons — booking always open, reputation adds perks */}
           {(() => {
             const isElite = model.sessions_completed > 100;
-            const demoClientRep = getClientRepLevel(7, 85); // demo client: 7 sessions, 85 trust
-            const canBook = !isElite || demoClientRep.level >= 3;
+            const demoClientRep = getClientRepLevel(7, 85);
             return (
               <div>
-                {isElite && !canBook && (
-                  <div className="rep-gated-overlay">
-                    <div className="lock-icon">🔒</div>
-                    <div className="lock-text">{model.display_name} is a <strong>Premium Model</strong> — Silver Pro (Level 3+) required to book</div>
-                    <div className="lock-action" onClick={() => window.location.hash = 'reputation'}>View My Reputation →</div>
+                {isElite && demoClientRep.level >= 3 && (
+                  <div style={{ background: 'rgba(0,217,163,0.06)', border: '1px solid rgba(0,217,163,0.2)', borderRadius: '8px', padding: '0.5rem 0.75rem', marginBottom: '0.75rem', fontSize: '0.8rem', color: 'var(--success-green)', textAlign: 'center' }}>
+                    ✅ Your <strong>{demoClientRep.name}</strong> status gives you priority booking with top models
                   </div>
                 )}
-                {isElite && canBook && (
-                  <div style={{ background: 'rgba(0,217,163,0.06)', border: '1px solid rgba(0,217,163,0.2)', borderRadius: '8px', padding: '0.5rem 0.75rem', marginBottom: '0.75rem', fontSize: '0.8rem', color: 'var(--success-green)', textAlign: 'center' }}>
-                    ✅ Your <strong>{demoClientRep.name}</strong> reputation unlocks booking with premium models
+                {isElite && demoClientRep.level < 3 && (
+                  <div style={{ background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.15)', borderRadius: '8px', padding: '0.5rem 0.75rem', marginBottom: '0.75rem', fontSize: '0.8em', color: '#aaa', textAlign: 'center' }}>
+                    ⭐ <span style={{ color: '#ffd700' }}>Level up to Silver Pro</span> for priority booking and discounts with top models
                   </div>
                 )}
                 <div className="profile-actions">
-                  <button className="btn glow-btn" onClick={() => canBook ? setShowBookingModal(true) : null} style={{ flex: 1, opacity: canBook ? 1 : 0.4, cursor: canBook ? 'pointer' : 'not-allowed' }}>
-                    {canBook ? '📅 Book a Session' : '🔒 Unlock at Silver Pro'}
+                  <button className="btn glow-btn" onClick={() => setShowBookingModal(true)} style={{ flex: 1 }}>
+                    📅 Book a Session
                   </button>
                   <button className="btn btn-secondary" onClick={handleMessage} style={{ flex: 1 }}>
                     💬 Send Message
@@ -8022,26 +8020,26 @@
       const rep = getClientRepLevel(demoStats.sessions, demoStats.trustScore);
 
       const tiers = [
-        { level: 1, name: 'Newcomer', icon: '🌱', reqSessions: 0, reqTrust: 0, perks: 'Browse models, view profiles, basic booking access' },
-        { level: 2, name: 'Bronze Member', icon: '🥉', reqSessions: 3, reqTrust: 70, perks: 'Featured on The Wall, leave public reviews, basic token purchases' },
-        { level: 3, name: 'Silver Pro', icon: '🥈', reqSessions: 10, reqTrust: 80, perks: 'Access premium models, early token launches, Inner Circle discounts (5%)' },
-        { level: 4, name: 'Gold VIP', icon: '👑', reqSessions: 15, reqTrust: 85, perks: 'Priority booking, exclusive model access, Inner Circle discounts (10%), VIP token drops' },
-        { level: 5, name: 'Platinum Elite', icon: '💎', reqSessions: 25, reqTrust: 90, perks: 'Elite-only models, max Inner Circle discount (15%), first access to new features, Platinum badge on profile' },
+        { level: 1, name: 'Newcomer', icon: '🌱', reqSessions: 0, reqTrust: 0, perks: 'Browse and book any model, view profiles, send messages' },
+        { level: 2, name: 'Bronze Member', icon: '🥉', reqSessions: 3, reqTrust: 70, perks: 'Featured on The Wall, leave public reviews, early token drop access' },
+        { level: 3, name: 'Silver Pro', icon: '🥈', reqSessions: 10, reqTrust: 80, perks: 'Priority booking with top models, lower token fees, Inner Circle discounts (5%)' },
+        { level: 4, name: 'Gold VIP', icon: '👑', reqSessions: 15, reqTrust: 85, perks: 'Priority booking queue, Inner Circle discounts (10%), VIP token drops' },
+        { level: 5, name: 'Platinum Elite', icon: '💎', reqSessions: 25, reqTrust: 90, perks: 'Max Inner Circle discount (15%), first access to new features, Platinum profile badge' },
       ];
 
       const unlocks = [
-        { feature: 'Browse & Book Models', reqLevel: 1, icon: '📸' },
+        { feature: 'Browse & Book Any Model', reqLevel: 1, icon: '📸' },
         { feature: 'The Wall Placement', reqLevel: 2, icon: '🏆' },
         { feature: 'Leave Public Reviews', reqLevel: 2, icon: '⭐' },
-        { feature: 'Buy Model Tokens', reqLevel: 2, icon: '📈' },
-        { feature: 'Access Premium Models', reqLevel: 3, icon: '💃' },
-        { feature: 'Early Token Launches', reqLevel: 3, icon: '🚀' },
-        { feature: 'Inner Circle Discounts', reqLevel: 3, icon: '🎯' },
+        { feature: 'Early Access to Token Drops', reqLevel: 2, icon: '📈' },
+        { feature: 'Priority Booking with Top Models', reqLevel: 3, icon: '💃' },
+        { feature: 'Lower Token Trading Fees', reqLevel: 3, icon: '🚀' },
+        { feature: 'Inner Circle Discounts (5%)', reqLevel: 3, icon: '🎯' },
         { feature: 'Priority Booking Queue', reqLevel: 4, icon: '⚡' },
-        { feature: 'Exclusive Model Access', reqLevel: 4, icon: '🔓' },
+        { feature: 'Inner Circle Discounts (10%)', reqLevel: 4, icon: '🔓' },
         { feature: 'VIP Token Drops', reqLevel: 4, icon: '💰' },
-        { feature: 'Elite-Only Models', reqLevel: 5, icon: '💎' },
-        { feature: 'Max Inner Circle Discount (15%)', reqLevel: 5, icon: '🎪' },
+        { feature: 'Max Inner Circle Discount (15%)', reqLevel: 5, icon: '💎' },
+        { feature: 'First Access to New Features', reqLevel: 5, icon: '🎪' },
         { feature: 'Platinum Profile Badge', reqLevel: 5, icon: '🏅' },
       ];
 
