@@ -2303,6 +2303,65 @@
       margin-top: 0.5rem;
     }
 
+    .viewer360-promo {
+      background: linear-gradient(135deg, rgba(0,217,255,0.08), rgba(157,78,221,0.08));
+      border: 1px solid rgba(0,217,255,0.25);
+      border-radius: 14px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .viewer360-promo::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(0,217,255,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .viewer360-promo-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(0,217,255,0.2), rgba(157,78,221,0.2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      border: 1px solid rgba(0,217,255,0.3);
+    }
+    .viewer360-promo-text h4 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--accent-teal);
+      margin-bottom: 0.2rem;
+    }
+    .viewer360-promo-text p {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+    .viewer360-promo-new {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      background: linear-gradient(135deg, var(--accent-teal), var(--accent-purple));
+      color: white;
+      font-size: 0.6rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
     .viewer360-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -2315,13 +2374,14 @@
       border-radius: 12px;
       overflow: hidden;
       cursor: pointer;
-      transition: transform 0.2s, border-color 0.2s;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
       position: relative;
     }
 
     .viewer360-card:hover {
-      transform: translateY(-2px);
+      transform: translateY(-3px);
       border-color: var(--accent-teal);
+      box-shadow: 0 8px 24px rgba(0,217,255,0.12);
     }
 
     .viewer360-card-preview {
@@ -5246,6 +5306,20 @@
                 <div className="profile-about-text">{model.bio || 'No bio available.'}</div>
               </div>
 
+              {/* 360° Outfit Viewer — shows on all profiles, prominent placement */}
+              <div className="profile-section">
+                <div className="profile-section-title"><span>🔄</span> 360° Outfit Viewer</div>
+                <div className="viewer360-promo">
+                  <div className="viewer360-promo-icon">🔄</div>
+                  <div className="viewer360-promo-text">
+                    <h4>See every angle before you book</h4>
+                    <p>Drag or swipe to rotate outfits in 360°. Models upload 8 photos per look from every angle — so you know exactly what you're getting.</p>
+                  </div>
+                  <div className="viewer360-promo-new">New</div>
+                </div>
+                <OutfitViewer360 outfits={model.outfits360 || demo360Outfits} />
+              </div>
+
               {/* Portfolio Gallery */}
               <div className="profile-section">
                 <div className="profile-section-title"><span>📸</span> Portfolio</div>
@@ -5261,32 +5335,6 @@
                   Tap any photo to enlarge • Models upload their own portfolio images
                 </div>
               </div>
-
-              {/* 360° Outfit Viewer */}
-              {useDemo && (
-                <div className="profile-section">
-                  <div className="profile-section-title"><span>🔄</span> 360° Outfit Viewer</div>
-                  <div style={{
-                    background: 'linear-gradient(135deg, rgba(0,217,255,0.06), rgba(0,217,255,0.02))',
-                    border: '1px solid rgba(0,217,255,0.2)',
-                    borderRadius: '10px',
-                    padding: '0.85rem 1rem',
-                    marginBottom: '1rem',
-                    display: 'flex',
-                    gap: '0.75rem',
-                    alignItems: 'flex-start'
-                  }}>
-                    <div style={{ fontSize: '1.3rem', flexShrink: 0, marginTop: '2px' }}>ℹ️</div>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--accent-teal)', marginBottom: '0.25rem' }}>What is this?</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                        Drag or swipe to rotate and view outfits from every angle before you book. This helps you see exactly what you're getting — no surprises. Models upload 8 photos per outfit from different angles.
-                      </div>
-                    </div>
-                  </div>
-                  <OutfitViewer360 outfits={demo360Outfits} />
-                </div>
-              )}
 
               {/* Reviews */}
               <div className="profile-section">
@@ -7989,6 +8037,41 @@
                     onChange={(e) => setData({ ...data, availability: e.target.value })}
                     placeholder="e.g., Mon-Fri, Weekends"
                   />
+                </div>
+
+                {/* 360 Outfit Upload Teaser */}
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(0,217,255,0.06), rgba(157,78,221,0.06))',
+                  border: '1px solid rgba(0,217,255,0.2)',
+                  borderRadius: '12px',
+                  padding: '1rem 1.1rem',
+                  marginTop: '0.5rem',
+                  display: 'flex',
+                  gap: '0.75rem',
+                  alignItems: 'center'
+                }}>
+                  <div style={{ fontSize: '1.5rem', flexShrink: 0 }}>🔄</div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--accent-teal)', marginBottom: '0.15rem' }}>
+                      360° Outfit Viewer
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                      Upload 8 photos of each outfit from different angles so clients can see exactly what they're booking. This shows up on your profile.
+                    </div>
+                    <div style={{
+                      display: 'inline-block',
+                      marginTop: '0.5rem',
+                      padding: '4px 12px',
+                      borderRadius: '20px',
+                      background: 'rgba(0,217,255,0.1)',
+                      border: '1px solid rgba(0,217,255,0.25)',
+                      color: 'var(--accent-teal)',
+                      fontSize: '0.7rem',
+                      fontWeight: 600,
+                    }}>
+                      Photo upload coming soon — demo outfits shown for now
+                    </div>
+                  </div>
                 </div>
               </>
             )}
