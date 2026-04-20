@@ -9699,6 +9699,11 @@ REMEMBER:
       }
 
       const handleSave = async () => {
+        const linkPattern = /https?:\/\/\S+|www\.\S+|\S+\.(com|net|org|io|co|me|info|biz|xyz|app|dev|link|ly|to)\b/gi;
+        if (data.bio && linkPattern.test(data.bio)) {
+          alert('Links are not allowed in bios. Please remove any URLs before saving.');
+          return;
+        }
         setLoading(true);
         const success = await updateProfile(data);
         setLoading(false);
@@ -9830,8 +9835,19 @@ REMEMBER:
               <label>Bio</label>
               <textarea
                 value={data.bio || ''}
-                onChange={(e) => setData({ ...data, bio: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const linkPattern = /https?:\/\/\S+|www\.\S+|\S+\.(com|net|org|io|co|me|info|biz|xyz|app|dev|link|ly|to)\b/gi;
+                  if (linkPattern.test(val)) {
+                    setData({ ...data, bio: val.replace(linkPattern, '').replace(/\s{2,}/g, ' ').trim() });
+                  } else {
+                    setData({ ...data, bio: val });
+                  }
+                }}
               />
+              <div style={{ fontSize: '0.75rem', color: '#ff6ec7', marginTop: '6px', padding: '8px 12px', background: 'rgba(255,110,199,0.06)', border: '1px solid rgba(255,110,199,0.15)', borderRadius: '8px', lineHeight: 1.5 }}>
+                <strong>No links allowed.</strong> To keep ModelBid safe and fair for everyone, we don't allow links in bios. This prevents spam, scams, and keeps traffic where it belongs — on your profile. Your work speaks for itself.
+              </div>
             </div>
 
             {isModel && (
