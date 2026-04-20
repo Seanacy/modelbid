@@ -9640,6 +9640,22 @@ REMEMBER:
                   Model ($29/mo)
                 </label>
               </div>
+
+              {role === 'model' && (
+                <div style={{
+                  marginTop: '12px', padding: '12px 14px', borderRadius: '10px',
+                  background: 'linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,110,199,0.05))',
+                  border: '1px solid rgba(255,215,0,0.2)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '1.1rem' }}>🚀</span>
+                    <span style={{ fontWeight: 800, fontSize: '0.85rem', color: '#ffd700' }}>Want it free?</span>
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#ccc', lineHeight: 1.6 }}>
+                    Place your unique ModelBid link in your social bio and your subscription is waived — no charge, ever. After you sign up, go to your <strong style={{ color: '#ff6ec7' }}>Profile Settings</strong> to set it up. It takes 30 seconds.
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="form-group">
