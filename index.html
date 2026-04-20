@@ -10933,8 +10933,8 @@ RULES
             </div>
           </div>
 
-          {/* Tasks Info Box — for team members */}
-          {isClient && (
+          {/* Tasks Info Box — for team members (always visible, not role-gated to prevent flicker) */}
+          {auth?.profile?.role !== 'model' && (
             <div style={{ background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.15)',
               borderRadius: '12px', padding: '14px 16px', marginBottom: '1.2rem' }}>
               <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#ffd700', marginBottom: '8px' }}>
