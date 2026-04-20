@@ -10788,7 +10788,7 @@ RULES
         if (page === 'login') return <LoginPage />;
         if (page === 'signup') return <SignupPage />;
         if (page === 'model-demo') return <ModelDemoPage />;
-        if (page === 'cherry-picker') return <CherryPickerPage />;
+        if (page === 'cherry-picker') return auth.profile?.role === 'client' ? <FeedPage /> : <CherryPickerPage />;
         if (page === 'bidboard') return <BidBoardPage />;
         if (page === 'dashboard') return auth.currentUser ? <DashboardPage /> : <LoginPage />;
         if (page === 'messages' && params[0]) return auth.currentUser ? <MessagesPage conversationId={params[0]} /> : <LoginPage />;
