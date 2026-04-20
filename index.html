@@ -4739,14 +4739,14 @@
         setRound(prev => prev + 1);
       };
 
-      const handleFollow = async (model) => {
+      const handleFollow = async (model, advanceRound = true) => {
         setFollowing(prev => ({ ...prev, [model.id]: true }));
         if (auth?.profile?.id) {
           try {
             await supabase.from('follows').insert({ follower_id: auth.profile.id, following_id: model.id }).select();
           } catch (err) { /* demo models won't have real IDs, that's fine */ }
         }
-        nextRound(true);
+        if (advanceRound) nextRound(true);
       };
 
       const left = models[leftIdx];
@@ -4790,12 +4790,18 @@
                 fontWeight: 700, color: '#ffd700', letterSpacing: '0.5px' }}>
                 📍 {left.state}
               </div>
-              {/* Follow badge if following */}
-              {following[left.id] && (
-                <div style={{ position: 'absolute', top: '10px', right: '10px',
-                  background: 'rgba(255,215,0,0.9)', color: '#1a1a2e', padding: '2px 8px',
-                  borderRadius: '10px', fontSize: '0.65rem', fontWeight: 800 }}>Following</div>
-              )}
+              {/* Follow button */}
+              <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 2 }}
+                onClick={(e) => { e.stopPropagation(); if (!following[left.id]) handleFollow(left, false); }}>
+                {following[left.id] ? (
+                  <div style={{ background: 'rgba(255,215,0,0.9)', color: '#1a1a2e', padding: '3px 10px',
+                    borderRadius: '12px', fontSize: '0.65rem', fontWeight: 800 }}>Following</div>
+                ) : (
+                  <div style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', color: '#ffd700',
+                    padding: '3px 10px', borderRadius: '12px', fontSize: '0.65rem', fontWeight: 700,
+                    cursor: 'pointer', border: '1px solid rgba(255,215,0,0.3)' }}>+ Follow</div>
+                )}
+              </div>
               {picked === 'left' && (
                 <div style={{ position: 'absolute', top: '50%', left: '50%',
                   transform: 'translate(-50%, -50%)', fontSize: '3rem',
@@ -4827,11 +4833,18 @@
                 fontWeight: 700, color: '#ffd700', letterSpacing: '0.5px' }}>
                 📍 {right.state}
               </div>
-              {following[right.id] && (
-                <div style={{ position: 'absolute', top: '10px', right: '10px',
-                  background: 'rgba(255,215,0,0.9)', color: '#1a1a2e', padding: '2px 8px',
-                  borderRadius: '10px', fontSize: '0.65rem', fontWeight: 800 }}>Following</div>
-              )}
+              {/* Follow button */}
+              <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 2 }}
+                onClick={(e) => { e.stopPropagation(); if (!following[right.id]) handleFollow(right, false); }}>
+                {following[right.id] ? (
+                  <div style={{ background: 'rgba(255,215,0,0.9)', color: '#1a1a2e', padding: '3px 10px',
+                    borderRadius: '12px', fontSize: '0.65rem', fontWeight: 800 }}>Following</div>
+                ) : (
+                  <div style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', color: '#ffd700',
+                    padding: '3px 10px', borderRadius: '12px', fontSize: '0.65rem', fontWeight: 700,
+                    cursor: 'pointer', border: '1px solid rgba(255,215,0,0.3)' }}>+ Follow</div>
+                )}
+              </div>
               {picked === 'right' && (
                 <div style={{ position: 'absolute', top: '50%', left: '50%',
                   transform: 'translate(-50%, -50%)', fontSize: '3rem',
