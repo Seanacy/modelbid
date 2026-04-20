@@ -4687,6 +4687,8 @@
 
     function ThisOrThat() {
       const auth = useContext(AuthContext);
+      // Only visible to clients (and logged-out visitors)
+      if (auth?.profile?.role === 'model') return null;
       const [following, setFollowing] = useState({});
       const [showFollowPrompt, setShowFollowPrompt] = useState(null);
       const [round, setRound] = useState(0);
