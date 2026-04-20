@@ -7169,7 +7169,20 @@
         return then.toLocaleDateString();
       };
 
-      useEffect(() => { fetchPosts(); }, []);
+      // Fetch follows (private — only the logged-in user's follows)
+      const fetchFollows = async () => {
+        if (!auth?.profile?.id) return;
+        try {
+          const { data } = await supabase.from('follows').select('following_id').eq('follower_id', auth.profile.id);
+          if (data) {
+            const followMap = {};
+            data.forEach(f => { followMap[f.following_id] = true; });
+            setFollowing(followMap);
+          }
+        } catch (err) { console.error('Follows fetch error:', err); }
+      };
+
+      useEffect(() => { fetchPosts(); fetchFollows(); }, []);
 
       // === CREATE POST ===
       const submitPost = async () => {
@@ -7357,8 +7370,18 @@
         } catch (err) { console.error('Bookmark error:', err); }
       };
 
-      const toggleFollow = (userName) => {
-        setFollowing(prev => ({ ...prev, [userName]: !prev[userName] }));
+      const toggleFollow = async (userId) => {
+        if (!auth?.profile?.id || !userId) return;
+        if (userId === auth.profile.id) return; // Can't follow yourself
+        const wasFollowing = following[userId];
+        setFollowing(prev => ({ ...prev, [userId]: !prev[userId] }));
+        try {
+          if (wasFollowing) {
+            await supabase.from('follows').delete().eq('follower_id', auth.profile.id).eq('following_id', userId);
+          } else {
+            await supabase.from('follows').insert({ follower_id: auth.profile.id, following_id: userId });
+          }
+        } catch (err) { console.error('Follow error:', err); }
       };
 
       const toggleComments = (postId) => {
@@ -7403,8 +7426,14 @@
       };
 
       // Merge real posts (on top) with demo posts (as fallback content)
+      // For "For You" — prioritize posts from followed users
       const allPosts = [...realPosts, ...demoPosts];
-      const filteredPosts = feedTab === 'foryou' ? allPosts :
+      const forYouPosts = (() => {
+        const followedPosts = allPosts.filter(p => following[p.userId]);
+        const otherPosts = allPosts.filter(p => !following[p.userId]);
+        return [...followedPosts, ...otherPosts];
+      })();
+      const filteredPosts = feedTab === 'foryou' ? forYouPosts :
         feedTab === 'models' ? allPosts.filter(p => p.userType === 'model') :
         feedTab === 'clients' ? allPosts.filter(p => p.userType === 'client') :
         feedTab === 'booking' ? allPosts.filter(p => p.type === 'availability' || p.type === 'session-preview') :
@@ -7674,10 +7703,10 @@
                   </div>
                 </div>
                 <button
-                  className={`post-follow-btn ${following[post.userName] ? 'following' : ''}`}
-                  onClick={() => toggleFollow(post.userName)}
+                  className={`post-follow-btn ${following[post.userId] ? 'following' : ''}`}
+                  onClick={() => toggleFollow(post.userId)}
                 >
-                  {following[post.userName] ? 'Following' : 'Follow'}
+                  {following[post.userId] ? 'Following' : 'Follow'}
                 </button>
               </div>
 
