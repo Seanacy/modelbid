@@ -11268,6 +11268,376 @@ RULES
       );
     }
 
+    function BidBoardPage() {
+      const auth = useContext(AuthContext);
+      const isClient = auth?.profile?.role === 'client';
+      const isModel = auth?.profile?.role === 'model';
+      const [posts, setPosts] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [showCreateForm, setShowCreateForm] = useState(false);
+      const [concept, setConcept] = useState('');
+      const [budgetMin, setBudgetMin] = useState('');
+      const [budgetMax, setBudgetMax] = useState('');
+      const [styleTag, setStyleTag] = useState('');
+      const [location, setLocation] = useState('');
+      const [committed, setCommitted] = useState(false);
+      const [submitting, setSubmitting] = useState(false);
+      // Bid state
+      const [activeBidPost, setActiveBidPost] = useState(null);
+      const [bidAmount, setBidAmount] = useState('');
+      const [bidMessage, setBidMessage] = useState('');
+      const [bidSubmitting, setBidSubmitting] = useState(false);
+      const [userBids, setUserBids] = useState({}); // { postId: true } tracks which posts this model already bid on
+
+      const styleTags = ['Boudoir', 'Cosplay', 'Fantasy', 'Glamour', 'Artistic', 'Pin-Up', 'Editorial', 'Luxury', 'Lingerie', 'Fitness', 'Other'];
+
+      const fetchPosts = async () => {
+        setLoading(true);
+        try {
+          const { data: boardPosts, error } = await supabase
+            .from('bid_board_posts')
+            .select('*, profiles:user_id(display_name, avatar_emoji)')
+            .order('created_at', { ascending: false });
+          if (error) throw error;
+
+          // Fetch bid counts for all posts
+          const postIds = (boardPosts || []).map(p => p.id);
+          let bidCounts = {};
+          let myBids = {};
+          if (postIds.length > 0) {
+            const { data: bids } = await supabase
+              .from('bid_board_bids')
+              .select('post_id, user_id');
+            if (bids) {
+              bids.forEach(b => {
+                bidCounts[b.post_id] = (bidCounts[b.post_id] || 0) + 1;
+                if (b.user_id === auth?.profile?.id) myBids[b.post_id] = true;
+              });
+            }
+          }
+          setUserBids(myBids);
+
+          const enriched = (boardPosts || []).map(p => ({
+            ...p,
+            displayName: p.profiles?.display_name || 'Anonymous',
+            avatarEmoji: p.profiles?.avatar_emoji || '👤',
+            bidCount: bidCounts[p.id] || 0,
+          }));
+          setPosts(enriched);
+        } catch (err) {
+          console.error('Bid board fetch error:', err);
+          // Show demo data as fallback
+          setPosts([
+            { id: 'demo1', displayName: 'Marcus T.', avatarEmoji: '📷', concept: 'Looking for a high-end boudoir shoot with a vintage Hollywood vibe. Think silk robes, champagne glasses, soft warm lighting. Must be comfortable with implied nudity.', budget_min: 300, budget_max: 500, style_tag: 'Boudoir', location: 'Minneapolis, MN', bidCount: 7, created_at: new Date(Date.now() - 3600000).toISOString() },
+            { id: 'demo2', displayName: 'David R.', avatarEmoji: '🎬', concept: 'Cosplay shoot — I have full costume sets for 3 anime characters. Need a model who can embody the character energy, not just wear the outfit. Studio provided.', budget_min: 200, budget_max: 350, style_tag: 'Cosplay', location: 'Austin, TX', bidCount: 12, created_at: new Date(Date.now() - 7200000).toISOString() },
+            { id: 'demo3', displayName: 'James K.', avatarEmoji: '🖤', concept: 'Dark fantasy editorial — think Game of Thrones meets high fashion. Outdoor forest location, dramatic lighting, flowing fabrics. Need someone who can do fierce.', budget_min: 400, budget_max: 600, style_tag: 'Fantasy', location: 'Open to Travel', bidCount: 15, created_at: new Date(Date.now() - 14400000).toISOString() },
+          ]);
+        }
+        setLoading(false);
+      };
+
+      useEffect(() => { fetchPosts(); }, []);
+
+      const submitPost = async () => {
+        if (!concept.trim() || !budgetMin || !budgetMax || !styleTag || !committed) return;
+        setSubmitting(true);
+        try {
+          const { error } = await supabase.from('bid_board_posts').insert({
+            user_id: auth.profile.id,
+            concept: concept.trim(),
+            budget_min: parseInt(budgetMin),
+            budget_max: parseInt(budgetMax),
+            style_tag: styleTag,
+            location: location.trim() || 'Flexible',
+          });
+          if (error) throw error;
+          setConcept(''); setBudgetMin(''); setBudgetMax(''); setStyleTag(''); setLocation(''); setCommitted(false);
+          setShowCreateForm(false);
+          fetchPosts();
+          if (auth.showToast) auth.showToast('Shoot idea posted to the Bid Board!', 'success');
+        } catch (err) {
+          console.error('Post error:', err);
+          if (auth.showToast) auth.showToast('Failed to post. Try again.', 'error');
+        }
+        setSubmitting(false);
+      };
+
+      const submitBid = async (postId) => {
+        if (!bidAmount || !bidMessage.trim() || bidSubmitting) return;
+        setBidSubmitting(true);
+        try {
+          const { error } = await supabase.from('bid_board_bids').insert({
+            post_id: postId,
+            user_id: auth.profile.id,
+            amount: parseInt(bidAmount),
+            message: bidMessage.trim(),
+          });
+          if (error) throw error;
+          setActiveBidPost(null); setBidAmount(''); setBidMessage('');
+          setUserBids(prev => ({ ...prev, [postId]: true }));
+          fetchPosts();
+          if (auth.showToast) auth.showToast('Bid submitted!', 'success');
+        } catch (err) {
+          console.error('Bid error:', err);
+          if (auth.showToast) auth.showToast('Failed to submit bid.', 'error');
+        }
+        setBidSubmitting(false);
+      };
+
+      const timeAgo = (dateStr) => {
+        const diff = Date.now() - new Date(dateStr).getTime();
+        const mins = Math.floor(diff / 60000);
+        if (mins < 60) return `${mins}m ago`;
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return `${hrs}h ago`;
+        return `${Math.floor(hrs / 24)}d ago`;
+      };
+
+      return (
+        <div className="page-content" style={{ maxWidth: '700px', margin: '0 auto', padding: '1rem' }}>
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ fontSize: '1.6rem', fontWeight: 900 }}>
+              <span style={{ color: '#ffd700' }}>Bid</span> Board
+            </div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '6px', maxWidth: '440px', margin: '6px auto 0', lineHeight: 1.5 }}>
+              Clients post shoot ideas they're ready to fund. Models browse and bid to bring them to life. Dream shoots meet real talent.
+            </div>
+          </div>
+
+          {/* Heart = Bids info box */}
+          <div style={{ background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.15)',
+            borderRadius: '10px', padding: '10px 14px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '1.3rem' }}>💛</span>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+              The <span style={{ color: '#ffd700', fontWeight: 700 }}>heart count</span> on each post shows how many models have bid. Individual bids are private — only the client who posted can see them.
+            </div>
+          </div>
+
+          {/* Create Post Button — clients only */}
+          {isClient && !showCreateForm && (
+            <button onClick={() => setShowCreateForm(true)}
+              style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '2px dashed rgba(255,215,0,0.3)',
+                background: 'rgba(255,215,0,0.04)', color: '#ffd700', fontWeight: 700, fontSize: '0.9rem',
+                cursor: 'pointer', marginBottom: '1.5rem', transition: 'all 0.2s' }}>
+              + Post a Shoot Idea
+            </button>
+          )}
+
+          {/* Create Form */}
+          {isClient && showCreateForm && (
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+              borderRadius: '14px', padding: '18px', marginBottom: '1.5rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '12px' }}>Describe Your Dream Shoot</div>
+
+              <textarea value={concept} onChange={e => setConcept(e.target.value)}
+                placeholder="Describe the shoot you have in mind — vibe, style, wardrobe, setting, anything that helps a model picture it..."
+                style={{ width: '100%', minHeight: '100px', padding: '12px', borderRadius: '10px',
+                  border: '1px solid var(--border-color)', background: 'var(--bg-card-light)',
+                  color: 'var(--text-primary)', fontSize: '0.85rem', resize: 'vertical', boxSizing: 'border-box' }} />
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Budget Min ($)</label>
+                  <input type="number" value={budgetMin} onChange={e => setBudgetMin(e.target.value)}
+                    placeholder="200" style={{ width: '100%', padding: '8px 10px', borderRadius: '8px',
+                      border: '1px solid var(--border-color)', background: 'var(--bg-card-light)',
+                      color: 'var(--text-primary)', fontSize: '0.85rem', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Budget Max ($)</label>
+                  <input type="number" value={budgetMax} onChange={e => setBudgetMax(e.target.value)}
+                    placeholder="500" style={{ width: '100%', padding: '8px 10px', borderRadius: '8px',
+                      border: '1px solid var(--border-color)', background: 'var(--bg-card-light)',
+                      color: 'var(--text-primary)', fontSize: '0.85rem', boxSizing: 'border-box' }} />
+                </div>
+              </div>
+
+              <div style={{ marginTop: '10px' }}>
+                <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Style</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
+                  {styleTags.map(tag => (
+                    <button key={tag} onClick={() => setStyleTag(tag)}
+                      style={{ padding: '5px 12px', borderRadius: '16px', fontSize: '0.78rem', fontWeight: 600,
+                        cursor: 'pointer', transition: 'all 0.2s', border: 'none',
+                        background: styleTag === tag ? 'linear-gradient(135deg, #ffd700, #ffaa00)' : 'var(--bg-card-light)',
+                        color: styleTag === tag ? '#1a1a2e' : 'var(--text-secondary)' }}>
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ marginTop: '10px' }}>
+                <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Location Preference</label>
+                <input type="text" value={location} onChange={e => setLocation(e.target.value)}
+                  placeholder="e.g. Minneapolis, MN or 'Open to Travel'"
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', marginTop: '4px',
+                    border: '1px solid var(--border-color)', background: 'var(--bg-card-light)',
+                    color: 'var(--text-primary)', fontSize: '0.85rem', boxSizing: 'border-box' }} />
+              </div>
+
+              {/* Commitment checkbox */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '14px',
+                padding: '10px 12px', background: 'rgba(255,215,0,0.04)', borderRadius: '8px',
+                border: '1px solid rgba(255,215,0,0.1)' }}
+                onClick={() => setCommitted(!committed)}>
+                <div style={{ width: '20px', height: '20px', borderRadius: '4px', flexShrink: 0, marginTop: '1px',
+                  border: committed ? 'none' : '2px solid rgba(255,255,255,0.2)',
+                  background: committed ? 'linear-gradient(135deg, #ffd700, #ffaa00)' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                  {committed && <span style={{ color: '#1a1a2e', fontSize: '0.8rem', fontWeight: 900 }}>✓</span>}
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4, cursor: 'pointer' }}>
+                  I'm serious about this shoot and ready to book & pay when I find the right model. I'm not here to waste anyone's time.
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+                <button onClick={submitPost}
+                  disabled={!concept.trim() || !budgetMin || !budgetMax || !styleTag || !committed || submitting}
+                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', fontWeight: 700,
+                    fontSize: '0.88rem', cursor: 'pointer',
+                    background: (!concept.trim() || !budgetMin || !budgetMax || !styleTag || !committed) ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #ffd700, #ffaa00)',
+                    color: (!concept.trim() || !budgetMin || !budgetMax || !styleTag || !committed) ? '#666' : '#1a1a2e' }}>
+                  {submitting ? 'Posting...' : 'Post to Bid Board'}
+                </button>
+                <button onClick={() => setShowCreateForm(false)}
+                  style={{ padding: '10px 18px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'transparent', color: 'var(--text-secondary)', fontWeight: 600, cursor: 'pointer' }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Not logged in prompt */}
+          {!auth.currentUser && (
+            <div style={{ textAlign: 'center', padding: '2rem', background: 'var(--bg-card)',
+              borderRadius: '14px', border: '1px solid var(--border-color)', marginBottom: '1.5rem' }}>
+              <div style={{ fontSize: '0.9rem', marginBottom: '10px' }}>Sign in to post shoot ideas or bid on them</div>
+              <button className="btn glow-btn" onClick={() => window.location.hash = 'signup'}>Get Started</button>
+            </div>
+          )}
+
+          {/* Posts Feed */}
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '2rem' }}><div className="loading-spinner"></div></div>
+          ) : posts.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-secondary)' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📋</div>
+              <div>No shoot ideas yet. Be the first to post one!</div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {posts.map(post => (
+                <div key={post.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                  borderRadius: '14px', padding: '16px', transition: 'border-color 0.2s' }}>
+                  {/* Post header */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #ffd700, #ffaa00)', display: 'flex',
+                      alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>
+                      {post.avatarEmoji}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>{post.displayName}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{timeAgo(post.created_at)}</div>
+                    </div>
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ fontSize: '1.1rem' }}>💛</span>
+                      <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#ffd700' }}>{post.bidCount}</span>
+                    </div>
+                  </div>
+
+                  {/* Concept */}
+                  <div style={{ fontSize: '0.88rem', lineHeight: 1.55, marginBottom: '12px', color: 'var(--text-primary)' }}>
+                    {post.concept}
+                  </div>
+
+                  {/* Tags row */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+                    <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 700,
+                      background: 'linear-gradient(135deg, #ffd700, #ffaa00)', color: '#1a1a2e' }}>
+                      ${post.budget_min}–${post.budget_max}
+                    </span>
+                    <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 600,
+                      background: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      {post.style_tag}
+                    </span>
+                    {post.location && (
+                      <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 600,
+                        background: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        📍 {post.location}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Bid button — models only */}
+                  {isModel && !userBids[post.id] && activeBidPost !== post.id && (
+                    <button onClick={() => setActiveBidPost(post.id)}
+                      style={{ width: '100%', padding: '9px', borderRadius: '10px', border: '1px solid rgba(255,215,0,0.3)',
+                        background: 'rgba(255,215,0,0.06)', color: '#ffd700', fontWeight: 700, fontSize: '0.85rem',
+                        cursor: 'pointer' }}>
+                      Place a Bid
+                    </button>
+                  )}
+
+                  {/* Already bid indicator */}
+                  {isModel && userBids[post.id] && (
+                    <div style={{ textAlign: 'center', padding: '8px', fontSize: '0.8rem', color: '#ffd700', fontWeight: 600 }}>
+                      ✓ Bid Submitted
+                    </div>
+                  )}
+
+                  {/* Bid form */}
+                  {isModel && activeBidPost === post.id && (
+                    <div style={{ marginTop: '4px', padding: '12px', background: 'rgba(255,215,0,0.04)',
+                      border: '1px solid rgba(255,215,0,0.12)', borderRadius: '10px' }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px' }}>Your Bid</div>
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                        <div style={{ flex: '0 0 100px' }}>
+                          <label style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Your Rate ($)</label>
+                          <input type="number" value={bidAmount} onChange={e => setBidAmount(e.target.value)}
+                            placeholder="350"
+                            style={{ width: '100%', padding: '7px 8px', borderRadius: '8px',
+                              border: '1px solid var(--border-color)', background: 'var(--bg-card-light)',
+                              color: 'var(--text-primary)', fontSize: '0.85rem', boxSizing: 'border-box' }} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Short Message</label>
+                          <input type="text" value={bidMessage} onChange={e => setBidMessage(e.target.value)}
+                            placeholder="Why you're perfect for this shoot..."
+                            style={{ width: '100%', padding: '7px 8px', borderRadius: '8px',
+                              border: '1px solid var(--border-color)', background: 'var(--bg-card-light)',
+                              color: 'var(--text-primary)', fontSize: '0.85rem', boxSizing: 'border-box' }} />
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button onClick={() => submitBid(post.id)}
+                          disabled={!bidAmount || !bidMessage.trim() || bidSubmitting}
+                          style={{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none', fontWeight: 700,
+                            fontSize: '0.82rem', cursor: 'pointer',
+                            background: (!bidAmount || !bidMessage.trim()) ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #ffd700, #ffaa00)',
+                            color: (!bidAmount || !bidMessage.trim()) ? '#666' : '#1a1a2e' }}>
+                          {bidSubmitting ? 'Submitting...' : 'Submit Bid'}
+                        </button>
+                        <button onClick={() => { setActiveBidPost(null); setBidAmount(''); setBidMessage(''); }}
+                          style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)',
+                            background: 'transparent', color: 'var(--text-secondary)', fontWeight: 600, cursor: 'pointer', fontSize: '0.82rem' }}>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     function App() {
       const auth = useContext(AuthContext);
       const [currentPage, setCurrentPage] = useState('home');
@@ -11312,6 +11682,7 @@ RULES
         if (page === 'signup') return <SignupPage />;
         if (page === 'model-demo') return <ModelDemoPage />;
         if (page === 'cherry-picker') return <CherryPickerPage />;
+        if (page === 'bidboard') return <BidBoardPage />;
         if (page === 'dashboard') return auth.currentUser ? <DashboardPage /> : <LoginPage />;
         if (page === 'messages' && params[0]) return auth.currentUser ? <MessagesPage conversationId={params[0]} /> : <LoginPage />;
         if (page === 'messages') return auth.currentUser ? <MessagesPage conversationId={null} /> : <LoginPage />;
@@ -11339,6 +11710,9 @@ RULES
                   </a>
                   <div className="nav-dropdown-divider"></div>
                   {/* Mid journey — engagement & community */}
+                  <a className="nav-dropdown-item" onClick={() => window.location.hash = 'bidboard'}>
+                    <span className="dd-icon">📋</span> Bid Board
+                  </a>
                   <a className="nav-dropdown-item" onClick={() => window.location.hash = 'wall'}>
                     <span className="dd-icon">🏆</span> The Wall
                   </a>
