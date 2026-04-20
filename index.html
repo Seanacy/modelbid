@@ -6958,6 +6958,10 @@
       const [showCreatePost, setShowCreatePost] = useState(false);
       const [newPostText, setNewPostText] = useState('');
       const [newPostType, setNewPostType] = useState('portfolio');
+      const [tippingPost, setTippingPost] = useState(null);
+      const [tipAmount, setTipAmount] = useState('');
+      const [tipMessage, setTipMessage] = useState('');
+      const [tipProcessing, setTipProcessing] = useState(false);
 
       const stories = [
         { id: 's1', name: 'Your Story', emoji: auth?.profile?.avatar_emoji || '➕', isOwn: true, items: [] },
@@ -7231,8 +7235,11 @@
                   Save
                 </button>
                 {post.userType === 'model' && (
-                  <button className="post-tip-btn" onClick={() => auth?.showToast?.('Tips coming soon with Stripe!', 'info') || alert('Tips coming soon!')}>
-                    💰 Tip
+                  <button className="post-tip-btn" onClick={() => setTippingPost(post)}
+                    style={{ background: 'linear-gradient(135deg, #ff6ec7, #9d4edd)', color: '#fff',
+                      border: 'none', borderRadius: '20px', padding: '4px 14px', fontSize: '0.82rem',
+                      fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    💖 Tip Her
                   </button>
                 )}
               </div>
@@ -7280,6 +7287,130 @@
               )}
             </div>
           ))}
+
+          {/* Tip Modal */}
+          {tippingPost && (
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, backdropFilter: 'blur(4px)' }}
+              onClick={() => { setTippingPost(null); setTipAmount(''); setTipMessage(''); }}>
+              <div onClick={(e) => e.stopPropagation()} style={{
+                background: 'var(--bg-card)', border: '1px solid rgba(255,110,199,0.3)', borderRadius: '20px',
+                padding: '28px', maxWidth: '400px', width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+
+                {/* Header */}
+                <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>{tippingPost.userEmoji}</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    Tip {tippingPost.userName}
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: '#888', marginTop: '4px' }}>
+                    Show your appreciation for this post
+                  </div>
+                </div>
+
+                {/* Quick tip amounts */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '14px' }}>
+                  {['2', '5', '10', '25'].map(amt => (
+                    <button key={amt} onClick={() => setTipAmount(amt)}
+                      style={{
+                        padding: '10px 0', borderRadius: '10px', border: tipAmount === amt ? '2px solid #ff6ec7' : '1px solid rgba(255,255,255,0.1)',
+                        background: tipAmount === amt ? 'rgba(255,110,199,0.15)' : 'rgba(255,255,255,0.03)',
+                        color: tipAmount === amt ? '#ff6ec7' : 'var(--text-primary)',
+                        fontWeight: 700, fontSize: '1rem', cursor: 'pointer', transition: 'all 0.15s'
+                      }}>
+                      ${amt}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Custom amount */}
+                <div style={{ marginBottom: '14px' }}>
+                  <label style={{ fontSize: '0.8rem', color: '#888', display: 'block', marginBottom: '4px' }}>Custom amount</label>
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)',
+                      color: '#888', fontSize: '1rem', fontWeight: 600 }}>$</span>
+                    <input type="number" min="1" step="1" placeholder="0.00" value={tipAmount}
+                      onChange={(e) => setTipAmount(e.target.value)}
+                      style={{ width: '100%', paddingLeft: '28px', fontSize: '1rem', background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 12px 10px 28px',
+                        color: 'var(--text-primary)' }} />
+                  </div>
+                </div>
+
+                {/* Optional message */}
+                <div style={{ marginBottom: '18px' }}>
+                  <label style={{ fontSize: '0.8rem', color: '#888', display: 'block', marginBottom: '4px' }}>Message (optional)</label>
+                  <input type="text" placeholder="You're amazing! Keep it up..." value={tipMessage}
+                    onChange={(e) => setTipMessage(e.target.value)} maxLength={120}
+                    style={{ width: '100%', fontSize: '0.85rem', background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 12px',
+                      color: 'var(--text-primary)' }} />
+                </div>
+
+                {/* Fee breakdown */}
+                {tipAmount && parseFloat(tipAmount) > 0 && (
+                  <div style={{ background: 'rgba(0,230,118,0.06)', border: '1px solid rgba(0,230,118,0.15)',
+                    borderRadius: '10px', padding: '10px 14px', marginBottom: '16px', fontSize: '0.8rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#888' }}>
+                      <span>Tip amount</span>
+                      <span>${parseFloat(tipAmount).toFixed(2)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#888', marginTop: '4px' }}>
+                      <span>Processing fee</span>
+                      <span>${(parseFloat(tipAmount) * 0.029 + 0.30).toFixed(2)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, marginTop: '6px',
+                      paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.08)', color: '#00e676' }}>
+                      <span>{tippingPost.userName} receives</span>
+                      <span>${(parseFloat(tipAmount) - (parseFloat(tipAmount) * 0.029 + 0.30)).toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Send tip button */}
+                <button onClick={() => {
+                    if (!tipAmount || parseFloat(tipAmount) < 1) {
+                      auth?.showToast?.('Please enter a tip amount ($1 minimum)', 'error');
+                      return;
+                    }
+                    if (!auth?.currentUser) {
+                      auth?.showToast?.('Please sign in to send a tip', 'error');
+                      window.location.hash = 'login';
+                      return;
+                    }
+                    setTipProcessing(true);
+                    // Simulate Stripe redirect — real integration uses Stripe Checkout
+                    setTimeout(() => {
+                      setTipProcessing(false);
+                      auth?.showToast?.('Tip of $' + parseFloat(tipAmount).toFixed(2) + ' sent to ' + tippingPost.userName + '! 💖', 'success');
+                      setTippingPost(null);
+                      setTipAmount('');
+                      setTipMessage('');
+                    }, 1500);
+                  }}
+                  disabled={tipProcessing || !tipAmount || parseFloat(tipAmount) < 1}
+                  style={{
+                    width: '100%', padding: '12px', borderRadius: '12px', border: 'none',
+                    background: tipAmount && parseFloat(tipAmount) >= 1
+                      ? 'linear-gradient(135deg, #ff6ec7, #9d4edd)' : 'rgba(255,255,255,0.06)',
+                    color: tipAmount && parseFloat(tipAmount) >= 1 ? '#fff' : '#666',
+                    fontWeight: 700, fontSize: '1rem', cursor: tipAmount && parseFloat(tipAmount) >= 1 ? 'pointer' : 'not-allowed',
+                    transition: 'all 0.2s'
+                  }}>
+                  {tipProcessing ? 'Processing...' : tipAmount && parseFloat(tipAmount) >= 1
+                    ? `💖 Send $${parseFloat(tipAmount).toFixed(2)} Tip` : '💖 Enter an amount'}
+                </button>
+
+                {/* Cancel */}
+                <button onClick={() => { setTippingPost(null); setTipAmount(''); setTipMessage(''); }}
+                  style={{ width: '100%', marginTop: '8px', padding: '8px', borderRadius: '10px',
+                    border: '1px solid rgba(255,255,255,0.08)', background: 'none', color: '#888',
+                    cursor: 'pointer', fontSize: '0.85rem' }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Story Viewer Overlay */}
           {viewingStory && (
