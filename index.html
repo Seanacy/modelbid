@@ -4562,6 +4562,23 @@
         }
       };
 
+      const subscribeToCherryPicker = async () => {
+        try {
+          const { error } = await supabase
+            .from('profiles')
+            .update({ cherry_picker_active: true })
+            .eq('id', currentUser.id);
+
+          if (error) throw error;
+          setProfile(prev => ({ ...prev, cherry_picker_active: true }));
+          showToast('Cherry Picker activated!', 'success');
+          return true;
+        } catch (error) {
+          showToast(error.message, 'error');
+          return false;
+        }
+      };
+
       const showToast = (message, type) => {
         setToast({ message, type });
       };
@@ -4579,6 +4596,7 @@
         createBooking,
         updateBooking,
         upgradeToPremium,
+        subscribeToCherryPicker,
         showToast,
       };
 
@@ -9250,14 +9268,28 @@ RULES
       };
 
       const isModel = auth.currentUser && auth.profile?.user_type === 'model';
+      const hasCherryPicker = isModel && auth.profile?.cherry_picker_active;
 
       const handleGenerateGated = () => {
-        if (!isModel) {
-          alert('Sign up as a model to use Cherry Picker!');
+        if (!auth.currentUser) {
           window.location.hash = 'signup';
           return;
         }
+        if (!isModel) {
+          auth.showToast('Cherry Picker is for model accounts only.', 'error');
+          return;
+        }
+        if (!hasCherryPicker) {
+          auth.showToast('Subscribe to Cherry Picker to generate prompts.', 'error');
+          return;
+        }
         handleGenerate();
+      };
+
+      const handleSubscribe = async () => {
+        if (!auth.currentUser) { window.location.hash = 'signup'; return; }
+        if (!isModel) { auth.showToast('Cherry Picker is for model accounts only.', 'error'); return; }
+        await auth.subscribeToCherryPicker();
       };
 
       return (
@@ -9267,6 +9299,27 @@ RULES
             <h1>Cherry Picker</h1>
             <p>Find your highest-intent audience from competitor accounts</p>
           </div>
+
+          {/* Info Box */}
+          <div style={{ background: 'linear-gradient(135deg, rgba(255,110,199,0.08), rgba(157,78,221,0.08))', border: '1px solid rgba(255,110,199,0.2)', borderRadius: '14px', padding: '1.1rem 1.3rem', marginBottom: '1.5rem', fontSize: '0.85rem', color: '#ccc', lineHeight: '1.6' }}>
+            <span style={{ fontWeight: 700, color: '#ff6ec7' }}>How it works:</span> Enter competitor handles below, hit Generate, and copy the Master Prompt into a <span style={{ color: '#fff', fontWeight: 600 }}>FREE Claude account</span> with computer use. The AI scans their followers, finds repeat engagers, and delivers a ready-to-DM list — sorted by intent. <span style={{ color: '#9d4edd', fontWeight: 600 }}>$9.99/mo</span>
+          </div>
+
+          {/* Subscribe CTA for non-subscribers */}
+          {isModel && !hasCherryPicker && (
+            <div style={{ background: 'linear-gradient(135deg, rgba(157,78,221,0.15), rgba(255,110,199,0.15))', border: '1px solid rgba(157,78,221,0.3)', borderRadius: '14px', padding: '1.25rem', marginBottom: '1.5rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', marginBottom: '0.4rem' }}>Unlock Cherry Picker</div>
+              <div style={{ fontSize: '0.85rem', color: '#999', marginBottom: '1rem' }}>$9.99/mo — Cancel anytime. Find your highest-intent fans automatically.</div>
+              <button onClick={handleSubscribe} style={{ padding: '0.7rem 2rem', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #ff6ec7, #9d4edd)', color: '#fff', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer' }}>Subscribe Now</button>
+            </div>
+          )}
+
+          {!auth.currentUser && (
+            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '1.25rem', marginBottom: '1.5rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.9rem', color: '#999', marginBottom: '0.75rem' }}>Sign up as a model to use Cherry Picker</div>
+              <button onClick={() => window.location.hash = 'signup'} className="btn glow-btn" style={{ fontSize: '0.9rem' }}>Sign Up</button>
+            </div>
+          )}
 
           {/* Platform Groups */}
           {platformGroups.map((group, gi) => (
