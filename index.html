@@ -4695,6 +4695,9 @@
       const [picked, setPicked] = useState(null); // 'left' or 'right'
       const [totalPicks, setTotalPicks] = useState(0);
       const [winCounts, setWinCounts] = useState({}); // { modelId: wins }
+      const [passCounts, setPassCounts] = useState({}); // { modelId: times passed }
+      const [seenCounts, setSeenCounts] = useState({}); // { modelId: times shown }
+      const [totalPasses, setTotalPasses] = useState(0);
 
       const models = [
         { id: 'tot1', name: 'Aria Valentina', rate: '$280', style: 'Boudoir', state: 'MN', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=500&fit=crop' },
@@ -4750,6 +4753,17 @@
       };
 
       const handlePass = (side) => {
+        const passedModel = side === 'left' ? models[leftIdx] : models[rightIdx];
+        const survivorModel = side === 'left' ? models[rightIdx] : models[leftIdx];
+        // Track the pass
+        setPassCounts(prev => ({ ...prev, [passedModel.id]: (prev[passedModel.id] || 0) + 1 }));
+        // Track that survivor was seen and survived
+        setSeenCounts(prev => ({
+          ...prev,
+          [passedModel.id]: (prev[passedModel.id] || 0) + 1,
+          [survivorModel.id]: (prev[survivorModel.id] || 0) + 1,
+        }));
+        setTotalPasses(prev => prev + 1);
         // Swap out the passed model for a random new one
         const currentIndices = [leftIdx, rightIdx];
         const available = models.map((_, i) => i).filter(i => !currentIndices.includes(i));
@@ -4911,15 +4925,23 @@
 
           {/* Round counter */}
           <div style={{ textAlign: 'center', marginTop: '8px', fontSize: '0.72rem', color: '#666' }}>
-            Round {round + 1} {totalPicks > 0 && `• ${totalPicks} picks`}
+            {totalPasses > 0 ? `${totalPasses} pass${totalPasses !== 1 ? 'es' : ''}` : 'Tap ✕ to pass, + Follow to keep'}
           </div>
 
-          {/* Your Top 3 — shows after 3+ picks */}
-          {totalPicks >= 3 && (() => {
-            const top3 = Object.entries(winCounts)
-              .sort((a, b) => b[1] - a[1])
-              .slice(0, 3)
-              .map(([id, wins]) => ({ ...models.find(m => m.id === id), wins }));
+          {/* Your Top 3 — shows after 3+ passes, ranked by survival (seen most, passed least) */}
+          {totalPasses >= 3 && (() => {
+            // Rank by: seen count minus pass count = survival score
+            const scored = models
+              .filter(m => (seenCounts[m.id] || 0) > 0)
+              .map(m => ({
+                ...m,
+                seen: seenCounts[m.id] || 0,
+                passed: passCounts[m.id] || 0,
+                survived: (seenCounts[m.id] || 0) - (passCounts[m.id] || 0),
+              }))
+              .sort((a, b) => b.survived - a.survived || a.passed - b.passed)
+              .slice(0, 3);
+            const top3 = scored;
             const medals = ['🥇', '🥈', '🥉'];
             return (
               <div style={{ marginTop: '14px', padding: '14px', background: 'rgba(255,215,0,0.04)',
@@ -4950,7 +4972,7 @@
                         <div style={{ fontSize: '0.78rem', fontWeight: 700, whiteSpace: 'nowrap',
                           overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</div>
                         <div style={{ fontSize: '0.68rem', color: '#ffd700' }}>
-                          {m.wins} win{m.wins !== 1 ? 's' : ''} • {m.style}
+                          {m.survived} survive{m.survived !== 1 ? 's' : ''} • {m.style}
                         </div>
                         {!following[m.id] ? (
                           <button onClick={(e) => { e.stopPropagation(); handleFollow(m); }}
