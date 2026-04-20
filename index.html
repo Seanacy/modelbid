@@ -7329,11 +7329,18 @@
       const [selectedConvId, setSelectedConvId] = useState(conversationId);
       const [newMessage, setNewMessage] = useState('');
       const [loading, setLoading] = useState(true);
-      const [viewingPinned, setViewingPinned] = useState(!conversationId && auth.profile?.cherry_picker_active);
+      const [viewingPinned, setViewingPinned] = useState(false);
       const [pinnedCopied, setPinnedCopied] = useState(false);
       const messageEndRef = useRef(null);
 
       const hasCherryPicker = auth.profile?.role === 'model' && auth.profile?.cherry_picker_active;
+
+      // Auto-select pinned message when profile loads and cherry picker is active
+      useEffect(() => {
+        if (hasCherryPicker && !conversationId && !selectedConvId) {
+          setViewingPinned(true);
+        }
+      }, [hasCherryPicker]);
 
       const cherryPickerPrompt = `You are a high-intent audience researcher. Your sole job is to find REPEAT ENGAGERS -- people who consistently like, comment, repost, and interact with creators in a specific niche. You are looking for fans who show up again and again, not one-time visitors.
 
