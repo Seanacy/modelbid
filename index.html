@@ -4345,6 +4345,11 @@
 
       // Initialize auth state on mount
       useEffect(() => {
+        const authTimeout = setTimeout(() => {
+          console.warn('Auth init timeout — forcing app to render');
+          setLoading(false);
+        }, 3000);
+
         const initAuth = async () => {
           try {
             const { data: { session } } = await supabase.auth.getSession();
@@ -4356,6 +4361,7 @@
             console.error('Auth init error:', error);
           } finally {
             setLoading(false);
+            clearTimeout(authTimeout);
           }
         };
 
@@ -4372,21 +4378,28 @@
           }
         });
 
-        return () => subscription?.unsubscribe();
+        return () => { subscription?.unsubscribe(); clearTimeout(authTimeout); };
       }, []);
 
       const fetchProfile = async (userId) => {
         try {
-          const { data, error } = await supabase
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
+          );
+          const fetchPromise = supabase
             .from('profiles')
             .select('*')
             .eq('id', userId)
             .single();
 
+          const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+
           if (error) throw error;
           setProfile(data);
         } catch (error) {
           console.error('Profile fetch error:', error);
+          // Set a minimal profile so the app doesn't hang
+          setProfile({ id: userId, display_name: '', role: 'model' });
         }
       };
 
@@ -4732,18 +4745,15 @@
           }
         };
 
-        fetchModels();
+        const timeout = setTimeout(() => setLoading(false), 2000);
+        fetchModels().then(() => clearTimeout(timeout));
       }, []);
 
       const filtered = models.filter(m => {
-        const matchesSearch = m.display_name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = m.display_name?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesTag = !selectedTag || (m.tags && m.tags.includes(selectedTag));
         return matchesSearch && matchesTag;
       });
-
-      if (loading) {
-        return <div className="text-center" style={{ padding: '2rem' }}>Loading models...</div>;
-      }
 
       return (
         <div>
@@ -5439,6 +5449,11 @@
       ];
 
       useEffect(() => {
+        const timeout = setTimeout(() => {
+          setLoading(false);
+          if (!model) { setModel(demoModel); setReviews(demoReviews); setUseDemo(true); }
+        }, 3000);
+
         const fetchData = async () => {
           try {
             if (modelId === 'demo') {
@@ -5446,6 +5461,7 @@
               setReviews(demoReviews);
               setUseDemo(true);
               setLoading(false);
+              clearTimeout(timeout);
               return;
             }
 
@@ -5469,16 +5485,17 @@
             }
           } catch (error) {
             console.error('Fetch error:', error);
-            // Fall back to demo mode
             setModel(demoModel);
             setReviews(demoReviews);
             setUseDemo(true);
           } finally {
             setLoading(false);
+            clearTimeout(timeout);
           }
         };
 
         fetchData();
+        return () => clearTimeout(timeout);
       }, [modelId]);
 
       if (loading) {
@@ -5936,6 +5953,11 @@
       ];
 
       useEffect(() => {
+        const timeout = setTimeout(() => {
+          setLoading(false);
+          if (!client) { setClient(demoClient); setFeedback(demoFeedback); setUseDemo(true); }
+        }, 3000);
+
         const fetchData = async () => {
           try {
             if (clientId === 'demo-client') {
@@ -5943,6 +5965,7 @@
               setFeedback(demoFeedback);
               setUseDemo(true);
               setLoading(false);
+              clearTimeout(timeout);
               return;
             }
 
@@ -5971,10 +5994,12 @@
             setUseDemo(true);
           } finally {
             setLoading(false);
+            clearTimeout(timeout);
           }
         };
 
         fetchData();
+        return () => clearTimeout(timeout);
       }, [clientId]);
 
       if (loading) {
@@ -8074,11 +8099,16 @@ REMEMBER:
         };
 
         if (auth.currentUser && auth.profile) {
-          fetchBookings();
+          const timeout = setTimeout(() => setLoading(false), 2000);
+          fetchBookings().then(() => clearTimeout(timeout));
+        } else if (auth.currentUser) {
+          // Profile hasn't loaded yet — wait briefly then show page anyway
+          const timeout = setTimeout(() => setLoading(false), 2000);
+          return () => clearTimeout(timeout);
         }
       }, [auth.currentUser, auth.profile]);
 
-      if (loading) {
+      if (loading && !auth.currentUser) {
         return <div className="text-center" style={{ padding: '2rem' }}>Loading dashboard...</div>;
       }
 
@@ -8428,6 +8458,7 @@ REMEMBER:
 
       // Fetch real campaigns from Supabase
       useEffect(() => {
+        const timeout = setTimeout(() => setLoadingDb(false), 3000);
         const fetchCampaigns = async () => {
           try {
             const { data, error } = await supabase
@@ -8436,9 +8467,10 @@ REMEMBER:
               .order('created_at', { ascending: false });
             if (!error && data) setDbCampaigns(data);
           } catch (e) { console.error('Fetch campaigns:', e); }
-          finally { setLoadingDb(false); }
+          finally { setLoadingDb(false); clearTimeout(timeout); }
         };
         fetchCampaigns();
+        return () => clearTimeout(timeout);
       }, []);
 
       // Convert DB campaigns to display format
