@@ -11518,6 +11518,11 @@ RULES
                       <span className="dd-icon">🛡️</span> Reputation
                     </a>
                   )}
+                  {auth.profile?.role !== 'client' && (
+                    <a className="nav-dropdown-item" onClick={() => window.location.hash = 'cherry-picker'} style={{ color: '#ff6ec7' }}>
+                      <span className="dd-icon">🍒</span> Cherry Picker
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
@@ -11532,9 +11537,6 @@ RULES
                 <div className="user-section">
                   <a className="nav-link" onClick={() => window.location.hash = 'messages'}>📬 Messages</a>
                   <a className="nav-link" onClick={() => window.location.hash = 'dashboard'}>Dashboard</a>
-                  {auth.profile?.role === 'model' && (
-                    <a className="nav-link" onClick={() => window.location.hash = 'cherry-picker'} style={{ color: '#ff6ec7' }}>🍒 Cherry Picker</a>
-                  )}
                   <a className="nav-link" onClick={() => window.location.hash = 'edit-profile'}>⚙️ Profile</a>
                   <div className="user-info">
                     <div className="avatar">{auth.profile?.avatar_emoji || '👤'}</div>
