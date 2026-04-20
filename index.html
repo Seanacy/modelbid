@@ -9693,6 +9693,9 @@ REMEMBER:
       const [loading, setLoading] = useState(false);
       const [uploadingProfile, setUploadingProfile] = useState(false);
       const [uploadingCover, setUploadingCover] = useState(false);
+      const [promoSocialUrl, setPromoSocialUrl] = useState(profile?.promo_social_url || '');
+      const [verifying, setVerifying] = useState(false);
+      const [verifyStatus, setVerifyStatus] = useState(profile?.promo_verified ? 'verified' : (profile?.promo_social_url ? 'pending' : null));
 
       if (!profile) {
         return <div>Loading...</div>;
@@ -9737,6 +9740,100 @@ REMEMBER:
           alert('Upload failed: ' + err.message);
         }
         isProfilePic ? setUploadingProfile(false) : setUploadingCover(false);
+      };
+
+      const myPromoLink = `modelbid.tech/#profile/${currentUser.id}`;
+
+      const handlePromoSubmit = async () => {
+        if (!promoSocialUrl.trim()) {
+          alert('Please paste the link to your social page.');
+          return;
+        }
+        // Basic URL validation
+        const urlPattern = /^https?:\/\/.+/i;
+        if (!urlPattern.test(promoSocialUrl.trim())) {
+          alert('Please enter a valid URL starting with http:// or https://');
+          return;
+        }
+        setVerifying(true);
+        setVerifyStatus('checking');
+        try {
+          // Helper: fetch a page via proxy and return HTML or null
+          const fetchPage = async (url) => {
+            try {
+              const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+              const resp = await fetch(proxyUrl);
+              if (resp.ok) return await resp.text();
+            } catch (e) { console.log('Fetch failed for:', url, e); }
+            return null;
+          };
+
+          // Helper: check if HTML contains our unique link
+          const hasOurLink = (html) => {
+            if (!html) return false;
+            return html.includes(`profile/${currentUser.id}`) || html.includes(myPromoLink);
+          };
+
+          // Helper: extract link hub URLs from a page
+          const findLinkHubs = (html) => {
+            const hubPatterns = [
+              /https?:\/\/(linktr\.ee|linktree\.com)\/[^\s"'<>]+/gi,
+              /https?:\/\/(linkinhub|beacons\.ai|bio\.link|lnk\.bio|tap\.bio|campsite\.bio|hoo\.be|solo\.to|carrd\.co|about\.me|snipfeed\.co|allmylinks\.com|contactinbio\.com|withkoji\.com|flowpage\.com|milkshake\.app|shorby\.com)\/[^\s"'<>]+/gi,
+              /https?:\/\/[^\s"'<>]*link[^\s"'<>]*\.[^\s"'<>]+/gi,
+            ];
+            const hubs = new Set();
+            hubPatterns.forEach(pattern => {
+              const matches = html.match(pattern) || [];
+              matches.forEach(m => hubs.add(m.replace(/['">;,)]+$/, '')));
+            });
+            return [...hubs];
+          };
+
+          let found = false;
+
+          // Step 1: Scan the submitted page directly
+          const mainHtml = await fetchPage(promoSocialUrl.trim());
+          found = hasOurLink(mainHtml);
+
+          // Step 2: If not found, look for link hubs on the page and scan those
+          if (!found && mainHtml) {
+            const hubs = findLinkHubs(mainHtml);
+            for (const hubUrl of hubs.slice(0, 5)) { // cap at 5 to avoid spam
+              const hubHtml = await fetchPage(hubUrl);
+              if (hasOurLink(hubHtml)) {
+                found = true;
+                break;
+              }
+            }
+          }
+
+          if (found) {
+            // Link verified!
+            await supabase.from('profiles').update({
+              promo_social_url: promoSocialUrl.trim(),
+              promo_verified: true,
+              promo_verified_at: new Date().toISOString(),
+              promo_last_checked: new Date().toISOString(),
+              subscription_waived: true,
+              promo_grace_deadline: null,
+            }).eq('id', currentUser.id);
+            setVerifyStatus('verified');
+            setData(prev => ({ ...prev, promo_verified: true, subscription_waived: true, promo_social_url: promoSocialUrl.trim() }));
+          } else {
+            // Could not find the link
+            await supabase.from('profiles').update({
+              promo_social_url: promoSocialUrl.trim(),
+              promo_verified: false,
+              promo_last_checked: new Date().toISOString(),
+            }).eq('id', currentUser.id);
+            setVerifyStatus('not_found');
+            setData(prev => ({ ...prev, promo_verified: false, promo_social_url: promoSocialUrl.trim() }));
+          }
+        } catch (err) {
+          console.error('Verification error:', err);
+          setVerifyStatus('error');
+        }
+        setVerifying(false);
       };
 
       const isModel = profile.role === 'model';
@@ -9950,6 +10047,148 @@ REMEMBER:
                   </div>
                 </div>
               </>
+            )}
+
+            {/* GROWTH ENGINE — WAIVE SUBSCRIPTION */}
+            {isModel && (
+              <div style={{
+                marginTop: '1.5rem', marginBottom: '1.5rem', padding: '1.2rem',
+                background: 'linear-gradient(135deg, rgba(255,215,0,0.06), rgba(255,110,199,0.04))',
+                border: '1px solid rgba(255,215,0,0.2)', borderRadius: '14px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '1.4rem' }}>🚀</span>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: '1rem', color: '#ffd700' }}>Waive Your Subscription</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Place your unique ModelBid link in your social bio and your subscription is free.</div>
+                  </div>
+                </div>
+
+                {/* Step 1: Your unique link */}
+                <div style={{ marginBottom: '14px' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                    Step 1: Copy your unique link
+                  </div>
+
+                  {/* Option A: Raw URL */}
+                  <div style={{ marginBottom: '10px' }}>
+                    <div style={{ fontSize: '0.72rem', color: '#888', marginBottom: '5px', fontWeight: 600 }}>
+                      Option A — Raw link (for social bios)
+                    </div>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.3)',
+                      borderRadius: '10px', padding: '10px 12px', border: '1px solid rgba(255,215,0,0.15)'
+                    }}>
+                      <code style={{ flex: 1, fontSize: '0.8rem', color: '#ffd700', wordBreak: 'break-all' }}>{myPromoLink}</code>
+                      <button onClick={() => { navigator.clipboard.writeText(myPromoLink); alert('Link copied!'); }}
+                        style={{
+                          padding: '5px 14px', borderRadius: '8px', border: '1px solid rgba(255,215,0,0.3)',
+                          background: 'rgba(255,215,0,0.1)', color: '#ffd700', fontWeight: 700,
+                          fontSize: '0.75rem', cursor: 'pointer', flexShrink: 0
+                        }}>Copy</button>
+                    </div>
+                  </div>
+
+                  {/* Option B: Embedded hyperlink */}
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: '#888', marginBottom: '5px', fontWeight: 600 }}>
+                      Option B — Embedded link (for Linktree, websites, blogs)
+                    </div>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.3)',
+                      borderRadius: '10px', padding: '10px 12px', border: '1px solid rgba(255,215,0,0.15)'
+                    }}>
+                      <code style={{ flex: 1, fontSize: '0.8rem', color: '#ff6ec7', wordBreak: 'break-all' }}>
+                        {`<a href="https://${myPromoLink}">ModelBid</a>`}
+                      </code>
+                      <button onClick={() => { navigator.clipboard.writeText(`<a href="https://${myPromoLink}">ModelBid</a>`); alert('Embedded link copied!'); }}
+                        style={{
+                          padding: '5px 14px', borderRadius: '8px', border: '1px solid rgba(255,110,199,0.3)',
+                          background: 'rgba(255,110,199,0.1)', color: '#ff6ec7', fontWeight: 700,
+                          fontSize: '0.75rem', cursor: 'pointer', flexShrink: 0
+                        }}>Copy</button>
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: '#666', marginTop: '6px', lineHeight: 1.5 }}>
+                      This creates a clickable "ModelBid" text link. Use this on personal websites, Linktree, blogs, or anywhere that supports HTML. Most social bios (Instagram, Twitter, TikTok) don't support embedded links — use Option A for those.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 2: Place it */}
+                <div style={{ marginBottom: '14px' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
+                    Step 2: Place this link in your social bio
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#888', lineHeight: 1.5 }}>
+                    Add it to your Instagram, Twitter, TikTok, Linktree, or any link hub — wherever your audience is. If your link is in a Linktree or link hub linked from your bio, we'll find it there too. It must stay up to keep your subscription waived.
+                  </div>
+                </div>
+
+                {/* Step 3: Verify */}
+                <div style={{ marginBottom: '10px' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                    Step 3: Paste the link to your social page so we can verify
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      type="url"
+                      placeholder="https://instagram.com/yourname"
+                      value={promoSocialUrl}
+                      onChange={(e) => setPromoSocialUrl(e.target.value)}
+                      style={{
+                        flex: 1, padding: '10px 12px', borderRadius: '10px',
+                        border: '1px solid var(--border-color)', background: 'var(--bg-card)',
+                        color: 'var(--text-primary)', fontSize: '0.85rem'
+                      }}
+                    />
+                    <button onClick={handlePromoSubmit} disabled={verifying}
+                      style={{
+                        padding: '10px 20px', borderRadius: '10px', border: 'none',
+                        background: verifying ? '#555' : 'linear-gradient(135deg, #ff6ec7, #c44dff)',
+                        color: '#fff', fontWeight: 700, fontSize: '0.82rem', cursor: verifying ? 'wait' : 'pointer',
+                        flexShrink: 0
+                      }}>
+                      {verifying ? 'Verifying...' : 'Verify'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Status messages */}
+                {verifyStatus === 'verified' && (
+                  <div style={{
+                    padding: '10px 14px', borderRadius: '10px', background: 'rgba(0,200,83,0.1)',
+                    border: '1px solid rgba(0,200,83,0.3)', fontSize: '0.82rem', color: '#00c853'
+                  }}>
+                    <strong>✓ Verified!</strong> Your link was found. Your subscription fee is waived. We'll check weekly to make sure it stays active.
+                  </div>
+                )}
+                {verifyStatus === 'not_found' && (
+                  <div style={{
+                    padding: '10px 14px', borderRadius: '10px', background: 'rgba(255,60,60,0.08)',
+                    border: '1px solid rgba(255,60,60,0.25)', fontSize: '0.82rem', color: '#ff4444'
+                  }}>
+                    <strong>✕ Link not found.</strong> We couldn't find your unique ModelBid link on that page. Make sure it's in your bio and visible publicly, then try again.
+                  </div>
+                )}
+                {verifyStatus === 'error' && (
+                  <div style={{
+                    padding: '10px 14px', borderRadius: '10px', background: 'rgba(255,165,0,0.08)',
+                    border: '1px solid rgba(255,165,0,0.25)', fontSize: '0.82rem', color: '#ffa500'
+                  }}>
+                    <strong>⚠ Verification issue.</strong> We had trouble checking that page. Try again in a moment, or contact support if it keeps happening.
+                  </div>
+                )}
+                {verifyStatus === 'checking' && (
+                  <div style={{ fontSize: '0.82rem', color: '#888', padding: '10px 0' }}>
+                    Scanning page for your link...
+                  </div>
+                )}
+
+                {/* Fine print */}
+                <div style={{ marginTop: '12px', fontSize: '0.68rem', color: '#666', lineHeight: 1.6 }}>
+                  We scan your social page weekly. If your ModelBid link is removed, you'll receive an email and have 48 hours to put it back before your subscription fee resumes.
+                </div>
+              </div>
             )}
 
             <div style={{ display: 'flex', gap: '1rem' }}>
