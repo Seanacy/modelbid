@@ -4571,7 +4571,8 @@
 
           if (error) throw error;
           setProfile(prev => ({ ...prev, cherry_picker_active: true }));
-          showToast('Cherry Picker activated!', 'success');
+          showToast('Cherry Picker activated! Your Master Prompt has been saved to Messages.', 'success');
+          window.location.hash = 'messages';
           return true;
         } catch (error) {
           showToast(error.message, 'error');
@@ -7328,7 +7329,123 @@
       const [selectedConvId, setSelectedConvId] = useState(conversationId);
       const [newMessage, setNewMessage] = useState('');
       const [loading, setLoading] = useState(true);
+      const [viewingPinned, setViewingPinned] = useState(!conversationId && auth.profile?.cherry_picker_active);
+      const [pinnedCopied, setPinnedCopied] = useState(false);
       const messageEndRef = useRef(null);
+
+      const hasCherryPicker = auth.profile?.role === 'model' && auth.profile?.cherry_picker_active;
+
+      const cherryPickerPrompt = `You are a high-intent audience researcher. Your sole job is to find REPEAT ENGAGERS -- people who consistently like, comment, repost, and interact with creators in a specific niche. You are looking for fans who show up again and again, not one-time visitors.
+
+TASK
+I have pasted a list of creator accounts and their platforms in this conversation (either above or below this prompt). Find that list and use it as your targets. For each account, visit their profile, review their most recent posts, and track every person who engages. Filter for ONLY the people who repeatedly engage, classify how they engage, and return a clean list grouped by platform.
+
+STEP 1 -- VISIT EACH ACCOUNT
+For each target account in the list I provided:
+- Navigate to their profile on the specified platform
+- Open their 10 most recent public posts
+- For each post, review: the visible comments (note who commented and what they said), the visible likes (note usernames where the platform shows them), any reposts/shares/quote posts if visible, any saves or bookmarks if visible
+
+STEP 2 -- BUILD THE MASTER TRACKER
+Build ONE running master list across ALL target accounts. Do NOT start fresh for each account. For EVERY person who engages on EVERY post, add or update their entry with: their username/handle, engagement type (COMMENT, LIKE, REPOST, SHARE, SAVE, QUOTE, TAG), which target account's post it was on, how many times total they have appeared so far, and what they said if it was a comment (keep the full text).
+
+The same person appearing across multiple target accounts is the MOST VALUABLE signal. You can only detect this if you keep one unified list the entire time. Do NOT discard, summarize, or compress this list as you go.
+
+STEP 3 -- HARD FILTER: REPEATERS ONLY
+This is the most important step. Apply these rules strictly.
+
+KEEP a person ONLY if they meet at least ONE of these thresholds:
+- Engaged 3+ times total across all posts reviewed (any combination of likes, comments, reposts)
+- Appeared on posts from 2+ DIFFERENT target accounts (even if only once on each)
+- Commented 2+ times with substantive text (not just emojis or one-word reactions)
+
+REMOVE everyone who:
+- Engaged only once or twice total with no cross-account presence
+- Has a profile that appears to be a bot (generic name, no posts, spammy bio)
+- Is another creator or model (verified, large following, content creator bio)
+- Only left self-promotional comments
+- Only left emoji-only reactions with no other engagement
+
+The resulting list should contain ONLY habitual engagers. If the list is small, that is correct. Do NOT lower the threshold to fill a quota. Quality over quantity.
+
+STEP 4 -- CLASSIFY EACH REPEATER
+For every person who passed the filter, assign ALL classifications that apply:
+
+COMMENTER -- Left substantive comments on 2+ posts
+LIKER -- Liked 3+ posts across the accounts reviewed
+REPOSTER -- Reposted, shared, or quote-posted content
+QUESTIONER -- Asked questions (about rates, availability, process, future content)
+DEFENDER -- Replied to other commenters in support of the creator
+BUYER-SIGNAL -- Used language suggesting spending intent
+
+STEP 5 -- SORT
+Rank by total engagement count (highest first). Among ties, prioritize: people who appeared across the most different target accounts, people with BUYER-SIGNAL or QUESTIONER classifications, people with the most recent engagement. Keep the top 20. If fewer than 20 qualify, return however many passed. Do NOT add anyone who did not pass the filter.
+
+STEP 6 -- GENERATE ONE OUTREACH MESSAGE
+Write a single DM-style outreach message from a female model to a male fan. It should feel flirty and direct, reference his interest in boudoir, kink, or fantasy photography, and invite him to check out her work or book a private session. Keep it under 50 words. Do not mention ModelBid, AI, data, or this tool.
+
+OUTPUT FORMAT
+Return ONLY the following. No commentary. No explanations. No process summary. Just this exact format:
+
+CHERRY PICK RESULTS
+--------------------
+
+"Platform Name"
+@username1 -- Classification: COMMENTER, LIKER
+@username2 -- Classification: REPOSTER, BUYER-SIGNAL
+@username3 -- Classification: COMMENTER, QUESTIONER, LIKER
+
+"Platform Name"
+@username4 -- Classification: COMMENTER, LIKER
+@username5 -- Classification: REPOSTER, QUESTIONER
+
+--------------------
+OUTREACH MESSAGE:
+
+"Your generated outreach message here"
+--------------------
+
+RULES
+- ONLY return people who are repeat engagers. Non-negotiable.
+- Only return the formatted results. Nothing else before or after.
+- Do not explain your process.
+- Do not summarize what you found.
+- Do not add tips, suggestions, or analysis.
+- If you cannot access an account (private, suspended), skip it silently.
+- If a platform requires sign-in to view comments or likes, tell the user to sign in first, then re-run.
+- Respect rate limits. Move at a natural browsing pace.
+- Group results by platform.`;
+
+      const cherryPickerInstructions = `HOW TO USE THIS PROMPT:
+
+1. Go to claude.ai and sign into your free Claude account.
+
+2. Turn on "Computer Use" — look for the computer/monitor icon below the chat box and click it so it's ON.
+
+3. Open new tabs in the SAME browser and log into every social media platform you want to scan (Instagram, Twitter, etc.).
+
+4. Go to the Cherry Picker page on ModelBid, enter your competitor handles, and click "Generate Master Prompt."
+
+5. Copy the generated prompt, go back to Claude, paste it in the message box (Ctrl+V or Cmd+V), and press Enter.
+
+6. Claude will ask for permission to use your computer — click "Allow."
+
+7. Sit back and wait 15–30 minutes. Claude will open your browser, visit each account, scroll through posts, and collect the data for you.
+
+8. When Claude is done, you'll see a clean list of usernames grouped by platform with classification tags, plus a ready-to-send outreach DM.
+
+REMEMBER:
+- Stay logged into your social accounts the entire time
+- Keep your browser open — don't minimize or close it
+- Let Claude finish completely before touching your browser
+- Don't use a private/incognito window — your logins won't carry over
+- If Claude gets stuck, just tell it to try again`;
+
+      const handleCopyPinnedPrompt = () => {
+        navigator.clipboard.writeText(cherryPickerPrompt);
+        setPinnedCopied(true);
+        setTimeout(() => setPinnedCopied(false), 2000);
+      };
 
       const scrollToBottom = () => {
         messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -7424,7 +7541,102 @@
         return <div className="text-center" style={{ padding: '2rem' }}>Loading messages...</div>;
       }
 
-      if (conversations.length === 0) {
+      const hasContent = conversations.length > 0 || hasCherryPicker;
+
+      const renderPinnedMessageView = () => (
+        <div className="message-thread">
+          <div className="message-thread-header" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span>🍒</span> Cherry Picker — Master Prompt & Instructions
+            <span style={{ marginLeft: 'auto', fontSize: '0.7rem', background: 'rgba(255,110,199,0.15)', color: '#ff6ec7', padding: '2px 8px', borderRadius: 8, fontWeight: 700 }}>PINNED</span>
+          </div>
+          <div className="message-thread-scroll" style={{ padding: '1.5rem' }}>
+            <div style={{ background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 12, padding: '1.2rem', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                <span style={{ fontSize: '1.2rem' }}>📌</span>
+                <span style={{ fontWeight: 700, color: '#ffd700', fontSize: '0.95rem' }}>This message is permanently pinned and cannot be deleted.</span>
+              </div>
+              <p style={{ color: '#aaa', fontSize: '0.85rem', margin: 0 }}>Your Cherry Picker subscription includes this saved prompt and setup guide. It will always be here whenever you need it.</p>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                <h3 style={{ margin: 0, color: '#ff6ec7' }}>Quick Setup Instructions</h3>
+              </div>
+              <div style={{ background: 'rgba(157,78,221,0.08)', border: '1px solid rgba(157,78,221,0.2)', borderRadius: 10, padding: '1rem 1.2rem', color: '#ccc', fontSize: '0.88rem', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                {cherryPickerInstructions}
+              </div>
+            </div>
+
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                <h3 style={{ margin: 0, color: '#ff6ec7' }}>Master Prompt</h3>
+                <button onClick={handleCopyPinnedPrompt} style={{ padding: '0.4rem 1rem', borderRadius: 8, border: 'none', background: pinnedCopied ? '#00e676' : 'linear-gradient(135deg, #ff6ec7, #9d4edd)', color: '#fff', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
+                  {pinnedCopied ? '✓ Copied!' : '📋 Copy Prompt'}
+                </button>
+              </div>
+              <div style={{ background: 'rgba(30,30,40,0.8)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '1rem 1.2rem', color: '#bbb', fontSize: '0.82rem', lineHeight: 1.6, whiteSpace: 'pre-wrap', maxHeight: '500px', overflowY: 'auto', fontFamily: 'monospace' }}>
+                {cherryPickerPrompt}
+              </div>
+              <p style={{ color: '#666', fontSize: '0.75rem', marginTop: '0.75rem', fontStyle: 'italic' }}>Note: Go to the Cherry Picker page to generate a prompt with your specific competitor handles baked in.</p>
+            </div>
+          </div>
+        </div>
+      );
+
+      const renderConversationView = () => {
+        const currentConversation = conversations.find(c => c.id === selectedConvId);
+        if (!currentConversation) {
+          return (
+            <div className="message-thread">
+              <div className="message-thread-header">Conversation</div>
+              <div className="message-thread-scroll">
+                <div className="empty-state">
+                  <div className="empty-state-icon">💬</div>
+                  <div className="empty-state-title">Select a conversation</div>
+                </div>
+              </div>
+            </div>
+          );
+        }
+        return (
+          <div className="message-thread">
+            <div className="message-thread-header">Conversation</div>
+            <div className="message-thread-scroll">
+              {messages.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state-icon">👋</div>
+                  <div className="empty-state-title">No messages yet</div>
+                  <div className="empty-state-text">Start the conversation!</div>
+                </div>
+              ) : (
+                <>
+                  {messages.map(msg => (
+                    <div key={msg.id} className={`message-bubble ${msg.sender_id === auth.currentUser.id ? 'sent' : 'received'}`}>
+                      <div className="message-content">{msg.content}</div>
+                      <div className="message-time">
+                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={messageEndRef} />
+                </>
+              )}
+            </div>
+            <div className="message-input-section">
+              <input
+                type="text"
+                placeholder="Type your message..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              />
+              <button onClick={handleSendMessage}>Send</button>
+            </div>
+          </div>
+        );
+      };
+
+      if (!hasContent) {
         return (
           <div>
             <h2 style={{ marginBottom: '1.5rem' }}>Messages</h2>
@@ -7437,20 +7649,6 @@
         );
       }
 
-      const currentConversation = conversations.find(c => c.id === selectedConvId);
-
-      if (!currentConversation) {
-        return (
-          <div>
-            <h2 style={{ marginBottom: '1.5rem' }}>Messages</h2>
-            <div className="empty-state">
-              <div className="empty-state-icon">💬</div>
-              <div className="empty-state-title">Select a conversation</div>
-            </div>
-          </div>
-        );
-      }
-
       return (
         <div>
           <h2 style={{ marginBottom: '1.5rem' }}>Messages</h2>
@@ -7458,11 +7656,25 @@
             <div className="conversations-list">
               <div className="conversations-list-header">Conversations</div>
               <div className="conversations-list-scroll">
+                {hasCherryPicker && (
+                  <div
+                    className={`conversation-item ${viewingPinned ? 'active' : ''}`}
+                    onClick={() => { setViewingPinned(true); setSelectedConvId(null); }}
+                    style={{ borderLeft: '3px solid #ff6ec7', position: 'relative' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <span style={{ fontSize: '0.85rem' }}>📌</span>
+                      <div className="conversation-name" style={{ color: '#ff6ec7' }}>🍒 Cherry Picker</div>
+                    </div>
+                    <div className="conversation-preview">Master Prompt & Setup Guide</div>
+                    <span style={{ position: 'absolute', top: 8, right: 8, fontSize: '0.6rem', background: 'rgba(255,110,199,0.15)', color: '#ff6ec7', padding: '1px 6px', borderRadius: 6, fontWeight: 700 }}>LOCKED</span>
+                  </div>
+                )}
                 {conversations.map(conv => (
                   <div
                     key={conv.id}
-                    className={`conversation-item ${selectedConvId === conv.id ? 'active' : ''}`}
-                    onClick={() => setSelectedConvId(conv.id)}
+                    className={`conversation-item ${selectedConvId === conv.id && !viewingPinned ? 'active' : ''}`}
+                    onClick={() => { setSelectedConvId(conv.id); setViewingPinned(false); }}
                   >
                     <div className="conversation-name">
                       {conv.participant_1 === auth.currentUser.id ? 'Model' : 'Client'}
@@ -7473,40 +7685,7 @@
               </div>
             </div>
 
-            <div className="message-thread">
-              <div className="message-thread-header">Conversation</div>
-              <div className="message-thread-scroll">
-                {messages.length === 0 ? (
-                  <div className="empty-state">
-                    <div className="empty-state-icon">👋</div>
-                    <div className="empty-state-title">No messages yet</div>
-                    <div className="empty-state-text">Start the conversation!</div>
-                  </div>
-                ) : (
-                  <>
-                    {messages.map(msg => (
-                      <div key={msg.id} className={`message-bubble ${msg.sender_id === auth.currentUser.id ? 'sent' : 'received'}`}>
-                        <div className="message-content">{msg.content}</div>
-                        <div className="message-time">
-                          {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                      </div>
-                    ))}
-                    <div ref={messageEndRef} />
-                  </>
-                )}
-              </div>
-              <div className="message-input-section">
-                <input
-                  type="text"
-                  placeholder="Type your message..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                />
-                <button onClick={handleSendMessage}>Send</button>
-              </div>
-            </div>
+            {viewingPinned ? renderPinnedMessageView() : renderConversationView()}
           </div>
         </div>
       );
@@ -9413,23 +9592,84 @@ RULES
             </div>
           </div>
 
-          {/* Info Sections (formerly the PDF content) */}
+          {/* Setup Guide & Info Sections */}
           <div className="cp-info-section">
-            <h3>How It Works</h3>
-            <p>1. Select one or more platforms and enter 5–10 competitor handles per platform above.</p>
-            <p>2. Click "Generate Master Prompt" — this creates a custom AI prompt with your targets baked in.</p>
-            <p>3. Copy the prompt and paste it into Claude (claude.ai) with computer use enabled.</p>
-            <p>4. Make sure you're signed into the platform in your browser. The AI uses your browser to scan.</p>
-            <p>5. Wait 15–30 minutes. The AI visits each account, scans posts, and collects engagers.</p>
-            <p>6. Results appear as a simple list — just handles, platform, and classification tags.</p>
+            <h3>🍒 Setup Guide — Read This First</h3>
+            <p style={{ color: '#aaa', marginBottom: '1rem' }}>Follow these steps exactly. If you skip one, the scan won't work.</p>
 
-            <h3>What You Need</h3>
-            <ul>
-              <li>FREE Claude account with computer use enabled (claude.ai)</li>
-              <li>Be signed into the platform you want to scan in your browser</li>
-              <li>5–10 competitor account handles</li>
-              <li>15–30 minutes for the AI to complete the scan</li>
-            </ul>
+            <div style={{ background: 'rgba(157,78,221,0.08)', border: '1px solid rgba(157,78,221,0.2)', borderRadius: 10, padding: '1rem 1.2rem', marginBottom: '1.5rem' }}>
+              <p style={{ fontWeight: 700, color: '#ff6ec7', marginBottom: '0.5rem', fontSize: '0.95rem' }}>STEP 1 — Create Your Free Claude Account</p>
+              <p>Go to <span style={{ color: '#fff', fontWeight: 600 }}>claude.ai</span> in your browser.</p>
+              <p>Click <span style={{ color: '#fff' }}>"Sign up"</span> and create a free account with your email or Google login.</p>
+              <p>That's it — no credit card, no paid plan needed.</p>
+            </div>
+
+            <div style={{ background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.25)', borderRadius: 10, padding: '1rem 1.2rem', marginBottom: '1.5rem' }}>
+              <p style={{ fontWeight: 700, color: '#ffd700', marginBottom: '0.5rem', fontSize: '0.95rem' }}>💡 NEED HELP? ASK CLAUDE.</p>
+              <p>Once you've created your free Claude account, you can ask Claude for help at <span style={{ color: '#fff', fontWeight: 600 }}>any point</span> during this setup. Just type what you need in plain English — for example:</p>
+              <p style={{ color: '#fff', fontStyle: 'italic', margin: '0.5rem 0 0.5rem 0.5rem' }}>"Help me set up computer use so you can browse my social media accounts and collect data for me."</p>
+              <p>Here's what's actually happening in simple terms: <span style={{ color: '#fff', fontWeight: 600 }}>you need to give Claude permission to use your web browser.</span> When you're logged into your social media accounts (Instagram, Twitter, etc.), Claude will open those sites in your browser, scroll through profiles and posts, and read the public comments and likes — just like you would if you did it yourself, except Claude does it for you automatically. That's why you need to be logged in first and why you click "Allow" when Claude asks — you're giving Claude the green light to drive your browser and search those platforms on your behalf.</p>
+            </div>
+
+            <div style={{ background: 'rgba(157,78,221,0.08)', border: '1px solid rgba(157,78,221,0.2)', borderRadius: 10, padding: '1rem 1.2rem', marginBottom: '1.5rem' }}>
+              <p style={{ fontWeight: 700, color: '#ff6ec7', marginBottom: '0.5rem', fontSize: '0.95rem' }}>STEP 2 — Turn On "Computer Use"</p>
+              <p>Once you're logged into Claude, look at the chat box at the bottom of the screen.</p>
+              <p>Right below the text box, you'll see small icons or toggles. Look for one that says <span style={{ color: '#fff', fontWeight: 600 }}>"Computer Use"</span> or shows a <span style={{ color: '#fff' }}>computer/monitor icon</span>.</p>
+              <p>Click it so it's <span style={{ color: '#00e676', fontWeight: 600 }}>turned ON</span> (highlighted or toggled).</p>
+              <p style={{ color: '#ff6ec7', fontStyle: 'italic', marginTop: '0.5rem' }}>This is what lets Claude control your browser and visit pages for you. If you skip this, the prompt won't work.</p>
+            </div>
+
+            <div style={{ background: 'rgba(157,78,221,0.08)', border: '1px solid rgba(157,78,221,0.2)', borderRadius: 10, padding: '1rem 1.2rem', marginBottom: '1.5rem' }}>
+              <p style={{ fontWeight: 700, color: '#ff6ec7', marginBottom: '0.5rem', fontSize: '0.95rem' }}>STEP 3 — Log Into Your Social Media Accounts</p>
+              <p><span style={{ color: '#fff', fontWeight: 600 }}>Before you paste the prompt</span>, open a new tab in the SAME browser and log into every platform you're scanning.</p>
+              <p>For example, if you entered Instagram and Twitter handles above:</p>
+              <ul style={{ margin: '0.5rem 0 0.5rem 1.2rem', color: '#ccc' }}>
+                <li>Open a tab → go to <span style={{ color: '#fff' }}>instagram.com</span> → make sure you're logged in</li>
+                <li>Open another tab → go to <span style={{ color: '#fff' }}>twitter.com</span> (or x.com) → make sure you're logged in</li>
+              </ul>
+              <p style={{ color: '#ff6ec7', fontStyle: 'italic', marginTop: '0.5rem' }}>Claude uses YOUR browser to visit these profiles. If you're not signed in, Claude can't see comments, likes, or follower data.</p>
+            </div>
+
+            <div style={{ background: 'rgba(157,78,221,0.08)', border: '1px solid rgba(157,78,221,0.2)', borderRadius: 10, padding: '1rem 1.2rem', marginBottom: '1.5rem' }}>
+              <p style={{ fontWeight: 700, color: '#ff6ec7', marginBottom: '0.5rem', fontSize: '0.95rem' }}>STEP 4 — Generate & Copy Your Prompt</p>
+              <p>Come back to this page (ModelBid Cherry Picker).</p>
+              <p>Enter your competitor handles in the form above and click <span style={{ color: '#fff', fontWeight: 600 }}>"Generate Master Prompt"</span>.</p>
+              <p>A big block of text will appear — that's your custom prompt. Click <span style={{ color: '#fff', fontWeight: 600 }}>"Copy"</span> to copy it to your clipboard.</p>
+            </div>
+
+            <div style={{ background: 'rgba(157,78,221,0.08)', border: '1px solid rgba(157,78,221,0.2)', borderRadius: 10, padding: '1rem 1.2rem', marginBottom: '1.5rem' }}>
+              <p style={{ fontWeight: 700, color: '#ff6ec7', marginBottom: '0.5rem', fontSize: '0.95rem' }}>STEP 5 — Paste It Into Claude & Let It Run</p>
+              <p>Go back to your Claude tab at <span style={{ color: '#fff' }}>claude.ai</span>.</p>
+              <p>Click inside the message box, press <span style={{ color: '#fff', fontWeight: 600 }}>Ctrl+V</span> (or Cmd+V on Mac) to paste the prompt.</p>
+              <p>Press <span style={{ color: '#fff', fontWeight: 600 }}>Enter</span> to send it.</p>
+              <p>Claude will ask for permission to use your computer — click <span style={{ color: '#00e676', fontWeight: 600 }}>"Allow"</span>.</p>
+              <p style={{ marginTop: '0.5rem' }}>Now sit back. Claude will open your browser, visit each account, scroll through posts, and collect the data for you. <span style={{ color: '#ff6ec7', fontWeight: 600 }}>This takes 15–30 minutes.</span></p>
+            </div>
+
+            <div style={{ background: 'rgba(157,78,221,0.08)', border: '1px solid rgba(157,78,221,0.2)', borderRadius: 10, padding: '1rem 1.2rem', marginBottom: '1.5rem' }}>
+              <p style={{ fontWeight: 700, color: '#ff6ec7', marginBottom: '0.5rem', fontSize: '0.95rem' }}>STEP 6 — Get Your Results</p>
+              <p>When Claude is done, you'll see a clean list right in the chat — usernames grouped by platform with tags like COMMENTER, BUYER-SIGNAL, etc.</p>
+              <p>You'll also get a ready-to-send outreach DM you can copy and personalize.</p>
+              <p style={{ color: '#ff6ec7', fontStyle: 'italic', marginTop: '0.5rem' }}>That's it. You now have a targeted list of high-intent fans ready to DM.</p>
+            </div>
+
+            <h3 style={{ marginTop: '2rem' }}>⚠️ Do's and Don'ts</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div style={{ background: 'rgba(0,230,118,0.06)', border: '1px solid rgba(0,230,118,0.15)', borderRadius: 10, padding: '1rem' }}>
+                <p style={{ fontWeight: 700, color: '#00e676', marginBottom: '0.5rem' }}>DO ✓</p>
+                <p style={{ color: '#ccc', fontSize: '0.85rem' }}>Stay logged into your social accounts the entire time</p>
+                <p style={{ color: '#ccc', fontSize: '0.85rem' }}>Keep your browser open — don't minimize or close it</p>
+                <p style={{ color: '#ccc', fontSize: '0.85rem' }}>Let Claude finish completely before touching your browser</p>
+                <p style={{ color: '#ccc', fontSize: '0.85rem' }}>Click "Allow" when Claude asks for browser permission</p>
+              </div>
+              <div style={{ background: 'rgba(255,82,82,0.06)', border: '1px solid rgba(255,82,82,0.15)', borderRadius: 10, padding: '1rem' }}>
+                <p style={{ fontWeight: 700, color: '#ff5252', marginBottom: '0.5rem' }}>DON'T ✗</p>
+                <p style={{ color: '#ccc', fontSize: '0.85rem' }}>Don't close or switch tabs while the scan is running</p>
+                <p style={{ color: '#ccc', fontSize: '0.85rem' }}>Don't click around in the browser — let Claude drive</p>
+                <p style={{ color: '#ccc', fontSize: '0.85rem' }}>Don't log out of any social account mid-scan</p>
+                <p style={{ color: '#ccc', fontSize: '0.85rem' }}>Don't use a private/incognito window — your logins won't carry over</p>
+              </div>
+            </div>
 
             <h3>Classification Key</h3>
             <dl className="cp-class-key">
@@ -9444,9 +9684,9 @@ RULES
             <h3>Important Notes</h3>
             <ul>
               <li>This tool only finds repeat engagers — one-time visitors are filtered out automatically.</li>
-              <li>The AI will never interact with any account — it only reads public data.</li>
-              <li>Results are for your use only. Reach out to prospects on your own terms.</li>
-              <li>Do not close your browser while the scan is running.</li>
+              <li>Claude will never interact with any account — Claude only reads public data. Claude won't like, comment, or follow anyone.</li>
+              <li>Your results are for your eyes only. Reach out to prospects on your own terms.</li>
+              <li>If Claude gets stuck or a platform asks you to log in, just sign in and tell Claude to try again.</li>
             </ul>
           </div>
         </div>
