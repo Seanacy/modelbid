@@ -9267,7 +9267,7 @@ RULES
         setTimeout(() => setCopied(false), 2000);
       };
 
-      const isModel = auth.currentUser && auth.profile?.user_type === 'model';
+      const isModel = auth.currentUser && auth.profile?.role === 'model';
       const hasCherryPicker = isModel && auth.profile?.cherry_picker_active;
 
       const handleGenerateGated = () => {
@@ -9530,7 +9530,7 @@ RULES
                   <a className="nav-dropdown-item" onClick={() => window.location.hash = 'westackr'}>
                     <span className="dd-icon">⚡</span> WeStackr
                   </a>
-                  {auth.profile?.user_type === 'client' && (
+                  {auth.profile?.role === 'client' && (
                     <a className="nav-dropdown-item" onClick={() => window.location.hash = 'reputation'}>
                       <span className="dd-icon">🛡️</span> Reputation
                     </a>
@@ -9554,7 +9554,7 @@ RULES
                 <div className="user-section">
                   <a className="nav-link" onClick={() => window.location.hash = 'messages'}>📬 Messages</a>
                   <a className="nav-link" onClick={() => window.location.hash = 'dashboard'}>Dashboard</a>
-                  {auth.profile?.user_type === 'model' && (
+                  {auth.profile?.role === 'model' && (
                     <a className="nav-link" onClick={() => window.location.hash = 'cherry-picker'} style={{ color: '#ff6ec7' }}>🍒 Cherry Picker</a>
                   )}
                   <a className="nav-link" onClick={() => window.location.hash = 'edit-profile'}>⚙️ Profile</a>
