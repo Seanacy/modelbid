@@ -6966,6 +6966,11 @@
       const [voteChoices, setVoteChoices] = useState({});
       const [userReactions, setUserReactions] = useState({});
 
+      // Real posts from Supabase
+      const [realPosts, setRealPosts] = useState([]);
+      const [loadingPosts, setLoadingPosts] = useState(true);
+      const [postSubmitting, setPostSubmitting] = useState(false);
+
       // Post creation — poll/vote builder
       const [postEngagementType, setPostEngagementType] = useState(null); // 'poll' or 'vote'
       const [postPollQuestion, setPostPollQuestion] = useState('');
@@ -7010,22 +7015,229 @@
         return false;
       };
 
-      const handlePollVote = (postId, optionIdx) => {
+      // === FETCH REAL POSTS ===
+      const fetchPosts = async () => {
+        try {
+          setLoadingPosts(true);
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
+          const fetchPromise = supabase
+            .from('posts')
+            .select('*, profiles(display_name, avatar_emoji, role)')
+            .order('created_at', { ascending: false })
+            .limit(50);
+          const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+          if (error) throw error;
+          if (data && data.length > 0) {
+            // Fetch counts for each post
+            const postIds = data.map(p => p.id);
+            const [likesRes, commentsRes, reactionsRes, pollVotesRes, ynVotesRes, bookmarksRes] = await Promise.all([
+              supabase.from('post_likes').select('post_id, user_id').in('post_id', postIds),
+              supabase.from('post_comments').select('*').in('post_id', postIds).order('created_at', { ascending: true }),
+              supabase.from('post_reactions').select('post_id, emoji, user_id').in('post_id', postIds),
+              supabase.from('post_poll_votes').select('post_id, option_index, user_id').in('post_id', postIds),
+              supabase.from('post_yes_no_votes').select('post_id, choice, user_id').in('post_id', postIds),
+              auth?.profile?.id ? supabase.from('post_bookmarks').select('post_id').eq('user_id', auth.profile.id).in('post_id', postIds) : { data: [] }
+            ]);
+
+            const userId = auth?.profile?.id;
+            const enriched = data.map(post => {
+              const postLikes = (likesRes.data || []).filter(l => l.post_id === post.id);
+              const postComments = (commentsRes.data || []).filter(c => c.post_id === post.id);
+              const postReactions = (reactionsRes.data || []).filter(r => r.post_id === post.id);
+              const postPollVotes = (pollVotesRes.data || []).filter(v => v.post_id === post.id);
+              const postYnVotes = (ynVotesRes.data || []).filter(v => v.post_id === post.id);
+
+              // Build reaction counts
+              const reactionCounts = {};
+              postReactions.forEach(r => { reactionCounts[r.emoji] = (reactionCounts[r.emoji] || 0) + 1; });
+
+              // Build poll vote counts
+              let pollData = null;
+              if (post.poll_question && post.poll_options) {
+                const opts = post.poll_options;
+                const voteCounts = opts.map((_, i) => postPollVotes.filter(v => v.option_index === i).length);
+                const myVote = postPollVotes.find(v => v.user_id === userId);
+                pollData = { question: post.poll_question, options: opts, votes: voteCounts, totalVotes: postPollVotes.length, myVote: myVote ? myVote.option_index : undefined };
+              }
+
+              // Build yes/no vote counts
+              let voteData = null;
+              if (post.vote_question) {
+                const yesCount = postYnVotes.filter(v => v.choice === 'yes').length;
+                const noCount = postYnVotes.filter(v => v.choice === 'no').length;
+                const myVote = postYnVotes.find(v => v.user_id === userId);
+                voteData = { question: post.vote_question, yes: yesCount, no: noCount, totalVotes: postYnVotes.length, myChoice: myVote ? myVote.choice : undefined };
+              }
+
+              // My reaction
+              const myReaction = postReactions.find(r => r.user_id === userId);
+
+              // My like
+              const iLiked = postLikes.some(l => l.user_id === userId);
+
+              // Bookmarked
+              const iBookmarked = (bookmarksRes.data || []).some(b => b.post_id === post.id);
+
+              // Pinned comment
+              const pinned = postComments.find(c => c.is_pinned);
+
+              const profile = post.profiles || {};
+              const typeLabels = { 'portfolio': 'Portfolio', 'session-preview': 'Session Preview', 'availability': 'Now Booking', 'behind-scenes': 'Behind the Scenes' };
+
+              // Subtract user's own like/reaction so the +1 display math works
+              const baseLikes = iLiked ? postLikes.length - 1 : postLikes.length;
+
+              // For reactions, subtract user's own so +1 display math works
+              if (myReaction) {
+                reactionCounts[myReaction.emoji] = (reactionCounts[myReaction.emoji] || 1) - 1;
+              }
+
+              // For polls, subtract user's own vote
+              if (pollData && pollData.myVote !== undefined) {
+                pollData.votes[pollData.myVote] = Math.max(0, pollData.votes[pollData.myVote] - 1);
+                pollData.totalVotes = Math.max(0, pollData.totalVotes - 1);
+              }
+
+              // For yes/no votes, subtract user's own
+              if (voteData && voteData.myChoice) {
+                if (voteData.myChoice === 'yes') voteData.yes = Math.max(0, voteData.yes - 1);
+                else voteData.no = Math.max(0, voteData.no - 1);
+              }
+
+              return {
+                id: post.id,
+                userEmoji: profile.avatar_emoji || '👤',
+                userName: profile.display_name || 'Anonymous',
+                verified: true,
+                userType: profile.role || 'model',
+                userId: post.user_id,
+                time: timeAgo(post.created_at),
+                type: post.type,
+                typeLabel: typeLabels[post.type] || post.type,
+                text: post.text,
+                imageEmoji: post.image_url || '',
+                likes: baseLikes,
+                iLiked,
+                commentCount: postComments.length,
+                tips: 0,
+                locked: post.locked || false,
+                poll: pollData,
+                vote: voteData,
+                reactions: reactionCounts,
+                myReaction: myReaction ? myReaction.emoji : null,
+                pinnedComment: pinned ? { author: 'User', emoji: '👤', text: pinned.text } : null,
+                previewComments: postComments.slice(0, 2).map(c => ({ author: 'User', emoji: '👤', text: c.text, id: c.id })),
+                allComments: postComments,
+                iBookmarked
+              };
+            });
+            setRealPosts(enriched);
+            // Set initial liked/bookmarked/pollVotes/voteChoices/userReactions state
+            const likedInit = {};
+            const bookInit = {};
+            const pollInit = {};
+            const voteInit = {};
+            const reactInit = {};
+            enriched.forEach(p => {
+              if (p.iLiked) likedInit[p.id] = true;
+              if (p.iBookmarked) bookInit[p.id] = true;
+              if (p.poll?.myVote !== undefined) pollInit[p.id] = p.poll.myVote;
+              if (p.vote?.myChoice) voteInit[p.id] = p.vote.myChoice;
+              if (p.myReaction) reactInit[p.id] = p.myReaction;
+            });
+            setLiked(prev => ({ ...prev, ...likedInit }));
+            setBookmarked(prev => ({ ...prev, ...bookInit }));
+            setPollVotes(prev => ({ ...prev, ...pollInit }));
+            setVoteChoices(prev => ({ ...prev, ...voteInit }));
+            setUserReactions(prev => ({ ...prev, ...reactInit }));
+          }
+        } catch (err) {
+          console.error('Feed fetch error:', err);
+        } finally {
+          setLoadingPosts(false);
+        }
+      };
+
+      const timeAgo = (dateStr) => {
+        const now = new Date();
+        const then = new Date(dateStr);
+        const diff = Math.floor((now - then) / 1000);
+        if (diff < 60) return 'just now';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+        return then.toLocaleDateString();
+      };
+
+      useEffect(() => { fetchPosts(); }, []);
+
+      // === CREATE POST ===
+      const submitPost = async () => {
+        if (!canPublishPost() || postSubmitting) return;
+        if (!auth?.profile?.id) {
+          auth?.showToast?.('You must be logged in to post', 'error') || alert('You must be logged in');
+          return;
+        }
+        setPostSubmitting(true);
+        try {
+          const postData = {
+            user_id: auth.profile.id,
+            text: newPostText.trim(),
+            type: newPostType,
+            locked: false
+          };
+          if (postEngagementType === 'poll') {
+            postData.poll_question = postPollQuestion.trim();
+            postData.poll_options = postPollOptions.filter(o => o.trim());
+          }
+          if (postEngagementType === 'vote') {
+            postData.vote_question = postVoteQuestion.trim();
+          }
+          const { data, error } = await supabase.from('posts').insert(postData).select().single();
+          if (error) throw error;
+          auth?.showToast?.('Post published!', 'success') || alert('Post published!');
+          resetPostForm();
+          fetchPosts(); // Refresh feed
+        } catch (err) {
+          console.error('Post creation error:', err);
+          auth?.showToast?.('Failed to post: ' + err.message, 'error') || alert('Failed to post');
+        } finally {
+          setPostSubmitting(false);
+        }
+      };
+
+      // === INTERACTIONS ===
+      const handlePollVote = async (postId, optionIdx) => {
         if (pollVotes[postId] !== undefined) return;
+        if (!auth?.profile?.id) return;
         setPollVotes(prev => ({ ...prev, [postId]: optionIdx }));
+        try {
+          await supabase.from('post_poll_votes').insert({ post_id: postId, user_id: auth.profile.id, option_index: optionIdx });
+        } catch (err) { console.error('Poll vote error:', err); }
       };
 
-      const handleVote = (postId, choice) => {
+      const handleVote = async (postId, choice) => {
         if (voteChoices[postId] !== undefined) return;
+        if (!auth?.profile?.id) return;
         setVoteChoices(prev => ({ ...prev, [postId]: choice }));
+        try {
+          await supabase.from('post_yes_no_votes').insert({ post_id: postId, user_id: auth.profile.id, choice });
+        } catch (err) { console.error('Vote error:', err); }
       };
 
-      const handleReaction = (postId, emoji) => {
-        setUserReactions(prev => {
-          const current = prev[postId];
-          if (current === emoji) return { ...prev, [postId]: null };
-          return { ...prev, [postId]: emoji };
-        });
+      const handleReaction = async (postId, emoji) => {
+        if (!auth?.profile?.id) return;
+        const current = userReactions[postId];
+        if (current === emoji) {
+          setUserReactions(prev => ({ ...prev, [postId]: null }));
+          try { await supabase.from('post_reactions').delete().eq('post_id', postId).eq('user_id', auth.profile.id); } catch (err) {}
+        } else {
+          setUserReactions(prev => ({ ...prev, [postId]: emoji }));
+          try {
+            await supabase.from('post_reactions').delete().eq('post_id', postId).eq('user_id', auth.profile.id);
+            await supabase.from('post_reactions').insert({ post_id: postId, user_id: auth.profile.id, emoji });
+          } catch (err) { console.error('Reaction error:', err); }
+        }
       };
 
       const stories = [
@@ -7119,12 +7331,30 @@
         },
       ];
 
-      const toggleLike = (postId) => {
+      const toggleLike = async (postId) => {
+        const wasLiked = liked[postId];
         setLiked(prev => ({ ...prev, [postId]: !prev[postId] }));
+        if (!auth?.profile?.id) return;
+        try {
+          if (wasLiked) {
+            await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', auth.profile.id);
+          } else {
+            await supabase.from('post_likes').insert({ post_id: postId, user_id: auth.profile.id });
+          }
+        } catch (err) { console.error('Like error:', err); }
       };
 
-      const toggleBookmark = (postId) => {
+      const toggleBookmark = async (postId) => {
+        const wasBookmarked = bookmarked[postId];
         setBookmarked(prev => ({ ...prev, [postId]: !prev[postId] }));
+        if (!auth?.profile?.id) return;
+        try {
+          if (wasBookmarked) {
+            await supabase.from('post_bookmarks').delete().eq('post_id', postId).eq('user_id', auth.profile.id);
+          } else {
+            await supabase.from('post_bookmarks').insert({ post_id: postId, user_id: auth.profile.id });
+          }
+        } catch (err) { console.error('Bookmark error:', err); }
       };
 
       const toggleFollow = (userName) => {
@@ -7135,13 +7365,19 @@
         setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }));
       };
 
-      const addComment = (postId) => {
+      const addComment = async (postId) => {
         if (!commentText[postId]?.trim()) return;
+        if (!auth?.profile?.id) return;
+        const text = commentText[postId].trim();
+        // Optimistic update
         setComments(prev => ({
           ...prev,
-          [postId]: [...(prev[postId] || []), { author: auth?.profile?.display_name || 'You', emoji: auth?.profile?.avatar_emoji || '👤', text: commentText[postId] }]
+          [postId]: [...(prev[postId] || []), { author: auth?.profile?.display_name || 'You', emoji: auth?.profile?.avatar_emoji || '👤', text }]
         }));
         setCommentText(prev => ({ ...prev, [postId]: '' }));
+        try {
+          await supabase.from('post_comments').insert({ post_id: postId, user_id: auth.profile.id, text });
+        } catch (err) { console.error('Comment error:', err); }
       };
 
       const openStory = (storyId) => {
@@ -7166,11 +7402,13 @@
         }
       };
 
-      const filteredPosts = feedTab === 'foryou' ? demoPosts :
-        feedTab === 'models' ? demoPosts.filter(p => p.userType === 'model') :
-        feedTab === 'clients' ? demoPosts.filter(p => p.userType === 'client') :
-        feedTab === 'booking' ? demoPosts.filter(p => p.type === 'availability' || p.type === 'session-preview') :
-        demoPosts;
+      // Merge real posts (on top) with demo posts (as fallback content)
+      const allPosts = [...realPosts, ...demoPosts];
+      const filteredPosts = feedTab === 'foryou' ? allPosts :
+        feedTab === 'models' ? allPosts.filter(p => p.userType === 'model') :
+        feedTab === 'clients' ? allPosts.filter(p => p.userType === 'client') :
+        feedTab === 'booking' ? allPosts.filter(p => p.type === 'availability' || p.type === 'session-preview') :
+        allPosts;
 
       return (
         <div className="feed-container">
@@ -7408,12 +7646,8 @@
                   <button className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={resetPostForm}>Cancel</button>
                   <button className={canPublishPost() ? 'btn glow-btn' : 'btn btn-secondary'}
                     style={{ fontSize: '0.8rem', opacity: canPublishPost() ? 1 : 0.5, cursor: canPublishPost() ? 'pointer' : 'not-allowed' }}
-                    onClick={() => {
-                      if (canPublishPost()) {
-                        auth?.showToast?.('Post published!', 'success') || alert('Post published!');
-                        resetPostForm();
-                      }
-                    }}>Post</button>
+                    disabled={postSubmitting}
+                    onClick={submitPost}>{postSubmitting ? 'Posting...' : 'Post'}</button>
                 </div>
               </div>
             )}
