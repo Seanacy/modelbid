@@ -6452,6 +6452,28 @@
         'Ready for a giveaway?',
         'Do you want behind-the-scenes content?'
       ];
+      const fanActivationPresets = {
+        outfit: {
+          question: 'Pick my next outfit',
+          options: ['Lingerie Set', 'Bodysuit', 'Streetwear', 'Elegant Dress']
+        },
+        location: {
+          question: 'Choose my shoot location',
+          options: ['Studio', 'Beach', 'Urban Rooftop', 'Hotel Suite']
+        },
+        theme: {
+          question: 'What theme should I do next?',
+          options: ['Dark & Moody', 'Bright & Playful', 'Vintage Glam', 'Fantasy']
+        },
+        style: {
+          question: 'Which style do you want to see?',
+          options: ['Glamour', 'Artistic', 'Boudoir', 'Casual & Fun']
+        },
+        color: {
+          question: 'Pick the color palette for my next set',
+          options: ['Red & Black', 'White & Gold', 'Pastels', 'Neon']
+        }
+      };
 
       const resetPostForm = () => {
         setNewPostText('');
@@ -6471,6 +6493,9 @@
         }
         if (postEngagementType === 'vote') {
           return postVoteQuestion.trim();
+        }
+        if (postEngagementType === 'fan_activation') {
+          return postPollQuestion.trim() && postPollOptions.filter(o => o.trim()).length >= 2;
         }
         return false;
       };
@@ -6583,6 +6608,7 @@
                 locked: post.locked || false,
                 poll: pollData,
                 vote: voteData,
+                fanActivated: post.fan_activated || false,
                 reactions: reactionCounts,
                 myReaction: myReaction ? myReaction.emoji : null,
                 pinnedComment: pinned ? { author: 'User', emoji: '👤', text: pinned.text } : null,
@@ -6662,6 +6688,11 @@
           if (postEngagementType === 'poll') {
             postData.poll_question = postPollQuestion.trim();
             postData.poll_options = postPollOptions.filter(o => o.trim());
+          }
+          if (postEngagementType === 'fan_activation') {
+            postData.poll_question = postPollQuestion.trim();
+            postData.poll_options = postPollOptions.filter(o => o.trim());
+            postData.fan_activated = true;
           }
           if (postEngagementType === 'vote') {
             postData.vote_question = postVoteQuestion.trim();
@@ -7030,7 +7061,7 @@
                     </div>
                   )}
 
-                  {/* Poll vs Vote selector */}
+                  {/* Poll vs Vote vs Fan Activation selector */}
                   <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
                     <button onClick={() => setPostEngagementType(postEngagementType === 'poll' ? null : 'poll')}
                       style={{ flex: 1, padding: '10px', borderRadius: '10px', fontWeight: 700, fontSize: '0.85rem',
@@ -7049,6 +7080,15 @@
                         color: postEngagementType === 'vote' ? '#00e676' : 'var(--text-secondary)' }}>
                       🗳️ Vote
                       <div style={{ fontSize: '0.7rem', fontWeight: 400, marginTop: '2px', opacity: 0.7 }}>Yes / No</div>
+                    </button>
+                    <button onClick={() => setPostEngagementType(postEngagementType === 'fan_activation' ? null : 'fan_activation')}
+                      style={{ flex: 1, padding: '10px', borderRadius: '10px', fontWeight: 700, fontSize: '0.85rem',
+                        cursor: 'pointer', transition: 'all 0.2s',
+                        border: postEngagementType === 'fan_activation' ? '2px solid #ffd700' : '1px solid rgba(255,255,255,0.1)',
+                        background: postEngagementType === 'fan_activation' ? 'rgba(255,215,0,0.12)' : 'rgba(255,255,255,0.03)',
+                        color: postEngagementType === 'fan_activation' ? '#ffd700' : 'var(--text-secondary)' }}>
+                      🔥 Fan Decides
+                      <div style={{ fontSize: '0.7rem', fontWeight: 400, marginTop: '2px', opacity: 0.7 }}>They choose your shoot</div>
                     </button>
                   </div>
 
@@ -7127,10 +7167,71 @@
                     </div>
                   )}
 
+                  {/* Fan Activation builder */}
+                  {postEngagementType === 'fan_activation' && (
+                    <div>
+                      <div style={{ fontSize: '0.82rem', color: '#ffd700', fontWeight: 700, marginBottom: '8px' }}>
+                        🔥 Let your fans decide your next shoot
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '12px', lineHeight: 1.5 }}>
+                        Pick a category below. Your fans vote on what you should do — then you deliver. When they see their choice come to life, they feel ownership. That's what turns followers into spenders.
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                        {Object.entries(fanActivationPresets).map(([key, preset]) => (
+                          <button key={key} onClick={() => {
+                              setPostPollQuestion(preset.question);
+                              setPostPollOptions([...preset.options]);
+                            }}
+                            style={{ fontSize: '0.75rem', padding: '6px 14px', borderRadius: '14px', cursor: 'pointer',
+                              border: postPollQuestion === preset.question ? '1.5px solid #ffd700' : '1px solid rgba(255,215,0,0.2)',
+                              background: postPollQuestion === preset.question ? 'rgba(255,215,0,0.15)' : 'rgba(255,215,0,0.04)',
+                              color: '#ffd700', transition: 'all 0.15s', fontWeight: 600 }}>
+                            {key === 'outfit' ? '👗' : key === 'location' ? '📍' : key === 'theme' ? '🎨' : key === 'style' ? '✨' : '🎨'} {preset.question}
+                          </button>
+                        ))}
+                      </div>
+                      <input value={postPollQuestion} onChange={e => setPostPollQuestion(e.target.value)}
+                        placeholder="Or write your own question..."
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', marginBottom: '8px',
+                          border: '1px solid rgba(255,215,0,0.2)', background: 'var(--bg-card-light)',
+                          color: 'var(--text-primary)', fontSize: '0.85rem' }} />
+                      {postPollOptions.map((opt, i) => (
+                        <div key={i} style={{ display: 'flex', gap: '6px', marginBottom: '4px', alignItems: 'center' }}>
+                          <input value={opt} onChange={e => {
+                              const updated = [...postPollOptions];
+                              updated[i] = e.target.value;
+                              setPostPollOptions(updated);
+                            }}
+                            placeholder={`Choice ${i + 1}`}
+                            style={{ flex: 1, padding: '6px 10px', borderRadius: '6px',
+                              border: '1px solid rgba(255,215,0,0.12)', background: 'var(--bg-card-light)',
+                              color: 'var(--text-primary)', fontSize: '0.82rem' }} />
+                          {postPollOptions.length > 2 && (
+                            <button onClick={() => setPostPollOptions(postPollOptions.filter((_, j) => j !== i))}
+                              style={{ background: 'none', border: 'none', color: '#ff5252', cursor: 'pointer',
+                                fontSize: '1rem', padding: '0 4px' }}>×</button>
+                          )}
+                        </div>
+                      ))}
+                      {postPollOptions.length < 6 && (
+                        <button onClick={() => setPostPollOptions([...postPollOptions, ''])}
+                          style={{ fontSize: '0.78rem', color: '#ffd700', background: 'none', border: 'none',
+                            cursor: 'pointer', marginTop: '4px', padding: 0 }}>
+                          + Add choice
+                        </button>
+                      )}
+                      <div style={{ marginTop: '10px', padding: '8px 12px', borderRadius: '8px',
+                        background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.1)',
+                        fontSize: '0.72rem', color: '#aaa', lineHeight: 1.5 }}>
+                        <strong style={{ color: '#ffd700' }}>Pro tip:</strong> Follow through on the winning choice and post the results. Fans who see their vote come to life become your most loyal supporters.
+                      </div>
+                    </div>
+                  )}
+
                   {/* Validation hint */}
                   {!postEngagementType && (
                     <div style={{ fontSize: '0.76rem', color: '#ff6ec7', textAlign: 'center', padding: '4px 0' }}>
-                      Select a Poll or Vote above to continue
+                      Select a Poll, Vote, or Fan Decides above to continue
                     </div>
                   )}
                 </div>
@@ -7174,6 +7275,15 @@
                   {following[post.userId] ? 'Following' : 'Follow'}
                 </button>
               </div>
+
+              {/* Fan Activation Badge */}
+              {post.fanActivated && (
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 12px',
+                  borderRadius: '14px', background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.25)',
+                  marginBottom: '8px', fontSize: '0.72rem', fontWeight: 700, color: '#ffd700' }}>
+                  🔥 Fans Decide This Shoot
+                </div>
+              )}
 
               {/* Post Text */}
               <div className="post-text">{post.text}</div>
