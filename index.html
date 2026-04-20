@@ -2540,429 +2540,6 @@
       }
     }
 
-    /* ===== MODEL TOKENS / CREATOR INVESTMENT ===== */
-    .token-page {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 1.5rem;
-    }
-
-    .token-hero {
-      background: linear-gradient(135deg, #0d1b2a, #1b2838, #0d1b2a);
-      border: 1px solid rgba(0,217,255,0.2);
-      border-radius: 16px;
-      padding: 2rem;
-      text-align: center;
-      margin-bottom: 1.5rem;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .token-hero::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at 50% 0%, rgba(0,217,255,0.08) 0%, transparent 60%);
-      pointer-events: none;
-    }
-
-    .token-model-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-
-    .token-model-avatar {
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent-teal), var(--accent-purple));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2rem;
-      border: 2px solid var(--accent-teal);
-    }
-
-    .token-model-info {
-      text-align: left;
-    }
-
-    .token-model-name {
-      font-size: 1.3rem;
-      font-weight: 700;
-    }
-
-    .token-ticker {
-      color: var(--accent-teal);
-      font-size: 0.85rem;
-      font-weight: 600;
-      font-family: monospace;
-    }
-
-    .token-price-display {
-      margin: 1.5rem 0;
-    }
-
-    .token-price-big {
-      font-size: 3rem;
-      font-weight: 800;
-      color: var(--accent-gold);
-      line-height: 1;
-    }
-
-    .token-price-change {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin-top: 0.5rem;
-    }
-
-    .token-price-change.up {
-      background: rgba(0,217,163,0.15);
-      color: var(--success-green);
-    }
-
-    .token-price-change.down {
-      background: rgba(255,71,87,0.15);
-      color: var(--danger-red);
-    }
-
-    .token-stats-row {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .token-stat-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 1rem;
-      text-align: center;
-    }
-
-    .token-stat-value {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: var(--text-primary);
-    }
-
-    .token-stat-label {
-      font-size: 0.7rem;
-      color: var(--text-secondary);
-      text-transform: uppercase;
-      margin-top: 0.25rem;
-    }
-
-    /* Price Chart - Pure CSS bars */
-    .token-chart {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 1.25rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .token-chart-title {
-      font-weight: 600;
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .token-chart-period {
-      display: flex;
-      gap: 0.5rem;
-    }
-
-    .token-chart-period button {
-      background: transparent;
-      border: 1px solid var(--border-color);
-      color: var(--text-secondary);
-      padding: 4px 12px;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .token-chart-period button.active {
-      background: var(--accent-teal);
-      color: #000;
-      border-color: var(--accent-teal);
-      font-weight: 600;
-    }
-
-    .token-chart-bars {
-      display: flex;
-      align-items: flex-end;
-      gap: 3px;
-      height: 160px;
-      padding-top: 1rem;
-    }
-
-    .token-chart-bar-wrap {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      height: 100%;
-      justify-content: flex-end;
-    }
-
-    .token-chart-bar {
-      width: 100%;
-      border-radius: 3px 3px 0 0;
-      min-height: 4px;
-      transition: height 0.3s ease;
-      position: relative;
-    }
-
-    .token-chart-bar.green {
-      background: linear-gradient(to top, rgba(0,217,163,0.4), var(--success-green));
-    }
-
-    .token-chart-bar.red {
-      background: linear-gradient(to top, rgba(255,71,87,0.4), var(--danger-red));
-    }
-
-    .token-chart-label {
-      font-size: 0.6rem;
-      color: var(--text-secondary);
-      margin-top: 6px;
-    }
-
-    /* Buy/Sell Panel */
-    .token-trade-panel {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .token-trade-tabs {
-      display: flex;
-      gap: 0;
-      margin-bottom: 1.25rem;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 1px solid var(--border-color);
-    }
-
-    .token-trade-tab {
-      flex: 1;
-      padding: 0.6rem;
-      text-align: center;
-      font-weight: 600;
-      font-size: 0.9rem;
-      cursor: pointer;
-      background: transparent;
-      border: none;
-      color: var(--text-secondary);
-      transition: all 0.2s;
-    }
-
-    .token-trade-tab.active-buy {
-      background: rgba(0,217,163,0.15);
-      color: var(--success-green);
-    }
-
-    .token-trade-tab.active-sell {
-      background: rgba(255,71,87,0.15);
-      color: var(--danger-red);
-    }
-
-    .token-trade-input-group {
-      margin-bottom: 1rem;
-    }
-
-    .token-trade-input-group label {
-      display: block;
-      font-size: 0.8rem;
-      color: var(--text-secondary);
-      margin-bottom: 0.4rem;
-    }
-
-    .token-trade-input {
-      width: 100%;
-      background: var(--bg-dark);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 0.75rem 1rem;
-      color: var(--text-primary);
-      font-size: 1rem;
-      font-weight: 600;
-      outline: none;
-    }
-
-    .token-trade-input:focus {
-      border-color: var(--accent-teal);
-    }
-
-    .token-trade-summary {
-      display: flex;
-      justify-content: space-between;
-      padding: 0.75rem 0;
-      border-top: 1px solid var(--border-color);
-      font-size: 0.85rem;
-      color: var(--text-secondary);
-    }
-
-    .token-trade-summary .total {
-      color: var(--accent-gold);
-      font-weight: 700;
-    }
-
-    /* Holdings */
-    .token-holdings {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 1.25rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .token-holding-row {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      padding: 0.75rem 0;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-    }
-
-    .token-holding-row:last-child {
-      border-bottom: none;
-    }
-
-    .token-holding-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.1rem;
-    }
-
-    .token-holding-info {
-      flex: 1;
-    }
-
-    .token-holding-name {
-      font-weight: 600;
-      font-size: 0.9rem;
-    }
-
-    .token-holding-shares {
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-    }
-
-    .token-holding-value {
-      text-align: right;
-    }
-
-    .token-holding-price {
-      font-weight: 700;
-      font-size: 0.95rem;
-    }
-
-    .token-holding-gain {
-      font-size: 0.75rem;
-    }
-
-    .token-holding-gain.up { color: var(--success-green); }
-    .token-holding-gain.down { color: var(--danger-red); }
-
-    /* Trending Models */
-    .token-trending {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 1.25rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .token-trending-row {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.6rem 0;
-      cursor: pointer;
-      border-radius: 8px;
-      transition: background 0.2s;
-    }
-
-    .token-trending-row:hover {
-      background: rgba(255,255,255,0.03);
-    }
-
-    .token-trending-rank {
-      width: 24px;
-      font-weight: 700;
-      color: var(--text-secondary);
-      font-size: 0.85rem;
-      text-align: center;
-    }
-
-    .token-trending-mini-chart {
-      display: flex;
-      align-items: flex-end;
-      gap: 1px;
-      height: 20px;
-      width: 50px;
-    }
-
-    .token-trending-mini-bar {
-      flex: 1;
-      border-radius: 1px;
-      min-height: 2px;
-    }
-
-    /* What is this info */
-    .token-info-box {
-      background: linear-gradient(135deg, rgba(0,217,255,0.06), rgba(0,217,255,0.02));
-      border: 1px solid rgba(0,217,255,0.2);
-      border-radius: 12px;
-      padding: 1.25rem;
-      margin-bottom: 1.5rem;
-      display: flex;
-      gap: 1rem;
-      align-items: flex-start;
-    }
-
-    .token-disclaimer {
-      background: rgba(255,71,87,0.06);
-      border: 1px solid rgba(255,71,87,0.2);
-      border-radius: 10px;
-      padding: 0.85rem 1rem;
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-      line-height: 1.5;
-      margin-bottom: 1.5rem;
-    }
-
-    @media (max-width: 768px) {
-      .token-stats-row {
-        grid-template-columns: repeat(2, 1fr);
-      }
-      .token-price-big {
-        font-size: 2.2rem;
-      }
-      .token-trade-panel {
-        padding: 1rem;
-      }
-    }
-
     /* ===== TOP CLIENTS WALL ===== */
     .top-clients-header {
       text-align: center;
@@ -5200,422 +4777,6 @@
       );
     }
 
-    // ===== MODEL TOKENS / CREATOR INVESTMENT (Lazy-loaded) =====
-    function ModelTokenPage({ modelId }) {
-      const auth = useContext(AuthContext);
-      const [tradeMode, setTradeMode] = useState('buy');
-      const [quantity, setQuantity] = useState(1);
-      const [chartPeriod, setChartPeriod] = useState('1M');
-      const [selectedModel, setSelectedModel] = useState(null);
-
-      // Demo token data for Aria Valentina
-      const demoToken = {
-        modelName: 'Aria Valentina',
-        emoji: '👩',
-        ticker: '$ARIA',
-        currentPrice: 4.72,
-        previousPrice: 3.85,
-        allTimeHigh: 5.10,
-        totalSupply: 10000,
-        circulatingSupply: 3847,
-        holders: 142,
-        marketCap: 18137,
-        volume24h: 2340,
-        launchPrice: 0.50,
-      };
-
-      // Price history (30 days of simulated data)
-      const priceHistory = {
-        '1W': [3.85, 3.92, 4.10, 4.05, 4.28, 4.55, 4.72],
-        '1M': [2.10, 2.25, 2.40, 2.38, 2.55, 2.80, 2.75, 2.90, 3.05, 3.15, 3.10, 3.25, 3.40, 3.38, 3.50, 3.65, 3.60, 3.72, 3.85, 3.80, 3.92, 4.10, 4.05, 4.15, 4.28, 4.20, 4.35, 4.55, 4.60, 4.72],
-        '3M': [0.50, 0.65, 0.80, 0.75, 0.90, 1.10, 1.05, 1.25, 1.40, 1.55, 1.50, 1.70, 1.85, 2.00, 1.95, 2.10, 2.25, 2.40, 2.55, 2.80, 3.05, 3.25, 3.40, 3.65, 3.85, 4.10, 4.28, 4.55, 4.60, 4.72],
-        'ALL': [0.50, 0.55, 0.60, 0.65, 0.72, 0.80, 0.85, 0.90, 1.00, 1.10, 1.25, 1.40, 1.55, 1.70, 1.85, 2.00, 2.10, 2.25, 2.40, 2.55, 2.80, 3.05, 3.25, 3.40, 3.65, 3.85, 4.10, 4.28, 4.55, 4.60, 4.65, 4.72],
-      };
-
-      const chartLabels = {
-        '1W': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-        '1M': Array.from({length: 30}, (_, i) => i % 5 === 0 ? `D${i+1}` : ''),
-        '3M': Array.from({length: 30}, (_, i) => i % 5 === 0 ? `W${Math.floor(i/2.5)+1}` : ''),
-        'ALL': Array.from({length: 32}, (_, i) => i % 5 === 0 ? `M${Math.floor(i/3)+1}` : ''),
-      };
-
-      // Demo holdings (what the logged-in user owns)
-      const demoHoldings = [
-        { emoji: '👩', name: 'Aria Valentina', ticker: '$ARIA', shares: 25, avgBuy: 1.80, currentPrice: 4.72 },
-        { emoji: '💃', name: 'Sofia Laurent', ticker: '$SOFI', shares: 40, avgBuy: 0.90, currentPrice: 2.15 },
-        { emoji: '🧑‍🦰', name: 'Jade Monroe', ticker: '$JADE', shares: 10, avgBuy: 3.20, currentPrice: 3.05 },
-      ];
-
-      // Trending models to invest in
-      const trendingModels = [
-        { emoji: '👩', name: 'Aria Valentina', ticker: '$ARIA', price: 4.72, change: 22.6, miniChart: [40, 55, 60, 58, 70, 80, 85, 95] },
-        { emoji: '💃', name: 'Sofia Laurent', ticker: '$SOFI', price: 2.15, change: 15.8, miniChart: [30, 35, 40, 38, 50, 55, 60, 70] },
-        { emoji: '👱‍♀️', name: 'Lena Petrova', ticker: '$LENA', price: 6.30, change: 8.2, miniChart: [60, 62, 65, 63, 68, 70, 72, 75] },
-        { emoji: '🧑‍🦰', name: 'Jade Monroe', ticker: '$JADE', price: 3.05, change: -4.7, miniChart: [50, 48, 52, 45, 42, 40, 38, 35] },
-        { emoji: '👩‍🦱', name: 'Mia Chen', ticker: '$MIAC', price: 1.25, change: 42.0, miniChart: [10, 15, 18, 25, 30, 40, 50, 65] },
-        { emoji: '🧕', name: 'Zara Okafor', ticker: '$ZARA', price: 0.85, change: 70.0, miniChart: [5, 8, 12, 15, 20, 30, 42, 60] },
-      ];
-
-      // Price factors breakdown
-      const priceFactors = [
-        { label: 'Sessions Completed', value: '134', impact: '+$1.20', icon: '📸' },
-        { label: 'Avg Review Score', value: '4.9/5', impact: '+$0.85', icon: '⭐' },
-        { label: 'Inner Circle Subs', value: '89', impact: '+$0.65', icon: '💎' },
-        { label: 'Repeat Booking Rate', value: '78%', impact: '+$0.52', icon: '🔄' },
-        { label: 'Follower Growth (30d)', value: '+340', impact: '+$0.80', icon: '📈' },
-        { label: 'Profile Views (30d)', value: '2.4K', impact: '+$0.20', icon: '👀' },
-      ];
-
-      const token = demoToken;
-      const prices = priceHistory[chartPeriod] || priceHistory['1M'];
-      const labels = chartLabels[chartPeriod] || chartLabels['1M'];
-      const maxPrice = Math.max(...prices);
-      const priceChange = ((token.currentPrice - token.previousPrice) / token.previousPrice * 100).toFixed(1);
-      const isUp = parseFloat(priceChange) >= 0;
-      const totalCost = (quantity * token.currentPrice).toFixed(2);
-
-      return (
-        <div className="token-page">
-          <button className="btn btn-secondary" style={{ marginBottom: '1rem' }}
-            onClick={() => window.location.hash = 'invest'}>
-            ← All Tokens
-          </button>
-
-          {/* Hero - Model Token Overview */}
-          <div className="token-hero">
-            <div className="token-model-row">
-              <div className="token-model-avatar">{token.emoji}</div>
-              <div className="token-model-info">
-                <div className="token-model-name">{token.modelName}</div>
-                <div className="token-ticker">{token.ticker}</div>
-              </div>
-            </div>
-            <div className="token-price-display">
-              <div className="token-price-big">${token.currentPrice.toFixed(2)}</div>
-              <div className={`token-price-change ${isUp ? 'up' : 'down'}`}>
-                {isUp ? '▲' : '▼'} {Math.abs(priceChange)}% this week
-              </div>
-            </div>
-          </div>
-
-          {/* Stats Row */}
-          <div className="token-stats-row">
-            <div className="token-stat-card">
-              <div className="token-stat-value" style={{ color: 'var(--accent-gold)' }}>${token.marketCap.toLocaleString()}</div>
-              <div className="token-stat-label">Market Cap</div>
-            </div>
-            <div className="token-stat-card">
-              <div className="token-stat-value">{token.holders}</div>
-              <div className="token-stat-label">Holders</div>
-            </div>
-            <div className="token-stat-card">
-              <div className="token-stat-value">${token.volume24h.toLocaleString()}</div>
-              <div className="token-stat-label">24h Volume</div>
-            </div>
-            <div className="token-stat-card">
-              <div className="token-stat-value" style={{ color: 'var(--success-green)' }}>${token.allTimeHigh.toFixed(2)}</div>
-              <div className="token-stat-label">All-Time High</div>
-            </div>
-          </div>
-
-          {/* Info Box */}
-          <div className="token-info-box">
-            <div style={{ fontSize: '1.5rem', flexShrink: 0 }}>ℹ️</div>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--accent-teal)', marginBottom: '0.3rem' }}>How Model Tokens Work</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                Every model has a token with a price driven by real activity — sessions booked, reviews earned, followers gained, and Inner Circle subscribers. Buy tokens early in a model's career and profit as they grow. Token holders also unlock perks like priority booking and discounted sessions. Prices update after each confirmed session.
-              </div>
-            </div>
-          </div>
-
-          {/* Price Chart */}
-          <div className="token-chart">
-            <div className="token-chart-title">
-              <span>📊 Price History</span>
-              <div className="token-chart-period">
-                {['1W', '1M', '3M', 'ALL'].map(p => (
-                  <button key={p} className={chartPeriod === p ? 'active' : ''} onClick={() => setChartPeriod(p)}>{p}</button>
-                ))}
-              </div>
-            </div>
-            <div className="token-chart-bars">
-              {prices.map((price, i) => {
-                const prevPrice = i > 0 ? prices[i-1] : price;
-                const barHeight = (price / maxPrice) * 140;
-                const isGreen = price >= prevPrice;
-                return (
-                  <div key={i} className="token-chart-bar-wrap">
-                    <div className={`token-chart-bar ${isGreen ? 'green' : 'red'}`}
-                      style={{ height: barHeight + 'px' }}
-                      title={`$${price.toFixed(2)}`} />
-                    <div className="token-chart-label">{labels[i]}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* What Drives the Price */}
-          <div className="token-chart" style={{ marginBottom: '1.5rem' }}>
-            <div className="token-chart-title" style={{ marginBottom: '0.75rem' }}>
-              <span>🧮 What Drives {token.ticker} Price</span>
-            </div>
-            {priceFactors.map((factor, i) => (
-              <div key={i} style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0.6rem 0',
-                borderBottom: i < priceFactors.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span>{factor.icon}</span>
-                  <span style={{ fontSize: '0.85rem' }}>{factor.label}</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{factor.value}</span>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--success-green)', fontWeight: 600, minWidth: '55px', textAlign: 'right' }}>{factor.impact}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Buy/Sell Panel — Reputation-Gated */}
-          {(() => {
-            const demoClientRep = getClientRepLevel(7, 85);
-            if (demoClientRep.level >= 2) {
-              return (
-                <div style={{ background: 'rgba(0,217,163,0.06)', border: '1px solid rgba(0,217,163,0.15)', borderRadius: '8px', padding: '0.5rem 0.75rem', marginBottom: '0.75rem', fontSize: '0.8em', color: 'var(--success-green)', textAlign: 'center' }}>
-                  ✅ <strong>{demoClientRep.name}</strong> — you get early access to new token drops
-                </div>
-              );
-            }
-            return (
-              <div style={{ background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.15)', borderRadius: '8px', padding: '0.5rem 0.75rem', marginBottom: '0.75rem', fontSize: '0.8em', color: '#aaa', textAlign: 'center' }}>
-                ⭐ <span style={{ color: '#ffd700' }}>Reach Bronze Member</span> for early access to new token drops and lower fees
-              </div>
-            );
-          })()}
-          <div className="token-trade-panel">
-            <div className="token-trade-tabs">
-              <button className={`token-trade-tab ${tradeMode === 'buy' ? 'active-buy' : ''}`}
-                onClick={() => setTradeMode('buy')}>Buy {token.ticker}</button>
-              <button className={`token-trade-tab ${tradeMode === 'sell' ? 'active-sell' : ''}`}
-                onClick={() => setTradeMode('sell')}>Sell {token.ticker}</button>
-            </div>
-            <div className="token-trade-input-group">
-              <label>Quantity</label>
-              <input type="number" className="token-trade-input" value={quantity} min="1" max="1000"
-                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))} />
-            </div>
-            <div className="token-trade-input-group">
-              <label>Price per token</label>
-              <input type="text" className="token-trade-input" value={`$${token.currentPrice.toFixed(2)}`} disabled
-                style={{ opacity: 0.6 }} />
-            </div>
-            <div className="token-trade-summary">
-              <span>Total {tradeMode === 'buy' ? 'Cost' : 'Received'}</span>
-              <span className="total">${totalCost}</span>
-            </div>
-            <button className="btn glow-btn btn-block"
-              style={{
-                background: tradeMode === 'buy'
-                  ? 'linear-gradient(135deg, var(--success-green), #00b386)'
-                  : 'linear-gradient(135deg, var(--danger-red), #cc3a47)',
-                marginTop: '0.75rem'
-              }}
-              onClick={() => auth?.showToast?.(`Demo mode — ${tradeMode === 'buy' ? 'Buy' : 'Sell'} ${quantity} ${token.ticker} for $${totalCost}`, 'info') || alert(`Demo: ${tradeMode} ${quantity} ${token.ticker} for $${totalCost}`)}>
-              {tradeMode === 'buy' ? `Buy ${quantity} ${token.ticker}` : `Sell ${quantity} ${token.ticker}`}
-            </button>
-          </div>
-
-          {/* Disclaimer */}
-          <div className="token-disclaimer">
-            ⚠️ <strong>Important:</strong> Model Tokens are platform credits for use within ModelBid only. They are not securities, cryptocurrency, or financial instruments. Token values are based on model activity metrics and are non-transferable outside the platform. Past performance does not guarantee future results. Invest responsibly.
-          </div>
-
-          {/* Your Holdings */}
-          <div className="token-holdings">
-            <div style={{ fontWeight: 600, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span>💼</span> Your Portfolio
-            </div>
-            {demoHoldings.map((h, i) => {
-              const totalValue = (h.shares * h.currentPrice).toFixed(2);
-              const totalCostBasis = (h.shares * h.avgBuy).toFixed(2);
-              const gain = ((h.currentPrice - h.avgBuy) / h.avgBuy * 100).toFixed(1);
-              const gainUp = parseFloat(gain) >= 0;
-              return (
-                <div key={i} className="token-holding-row">
-                  <div className="token-holding-avatar">{h.emoji}</div>
-                  <div className="token-holding-info">
-                    <div className="token-holding-name">{h.name} <span style={{ color: 'var(--accent-teal)', fontSize: '0.75rem', fontFamily: 'monospace' }}>{h.ticker}</span></div>
-                    <div className="token-holding-shares">{h.shares} tokens • Avg ${h.avgBuy.toFixed(2)}</div>
-                  </div>
-                  <div className="token-holding-value">
-                    <div className="token-holding-price">${totalValue}</div>
-                    <div className={`token-holding-gain ${gainUp ? 'up' : 'down'}`}>
-                      {gainUp ? '▲' : '▼'} {Math.abs(gain)}%
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
-              <span style={{ fontWeight: 600 }}>Total Portfolio Value</span>
-              <span style={{ fontWeight: 700, color: 'var(--accent-gold)', fontSize: '1.1rem' }}>
-                ${demoHoldings.reduce((sum, h) => sum + h.shares * h.currentPrice, 0).toFixed(2)}
-              </span>
-            </div>
-          </div>
-
-          {/* Trending Models */}
-          <div className="token-trending">
-            <div style={{ fontWeight: 600, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span>🔥</span> Trending Tokens
-            </div>
-            {trendingModels.map((m, i) => {
-              const trendUp = m.change >= 0;
-              const maxVal = Math.max(...m.miniChart);
-              return (
-                <div key={i} className="token-trending-row" onClick={() => window.location.hash = `token/${m.ticker.replace('$', '').toLowerCase()}`}>
-                  <div className="token-trending-rank">#{i + 1}</div>
-                  <div className="token-holding-avatar" style={{ width: 36, height: 36, fontSize: '1rem' }}>{m.emoji}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{m.name}</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--accent-teal)', fontFamily: 'monospace' }}>{m.ticker}</div>
-                  </div>
-                  <div className="token-trending-mini-chart">
-                    {m.miniChart.map((v, j) => (
-                      <div key={j} className="token-trending-mini-bar"
-                        style={{
-                          height: (v / maxVal * 18) + 2 + 'px',
-                          background: trendUp ? 'var(--success-green)' : 'var(--danger-red)',
-                          opacity: 0.4 + (j / m.miniChart.length) * 0.6
-                        }} />
-                    ))}
-                  </div>
-                  <div style={{ textAlign: 'right', minWidth: '70px' }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>${m.price.toFixed(2)}</div>
-                    <div style={{ fontSize: '0.75rem', color: trendUp ? 'var(--success-green)' : 'var(--danger-red)' }}>
-                      {trendUp ? '▲' : '▼'} {Math.abs(m.change)}%
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
-
-    // Token marketplace / browse all tokens
-    function TokenMarketPage() {
-      const trendingModels = [
-        { emoji: '👩', name: 'Aria Valentina', ticker: '$ARIA', price: 4.72, change: 22.6, sessions: 134, rating: 4.9, miniChart: [40, 55, 60, 58, 70, 80, 85, 95] },
-        { emoji: '💃', name: 'Sofia Laurent', ticker: '$SOFI', price: 2.15, change: 15.8, sessions: 87, rating: 4.8, miniChart: [30, 35, 40, 38, 50, 55, 60, 70] },
-        { emoji: '👱‍♀️', name: 'Lena Petrova', ticker: '$LENA', price: 6.30, change: 8.2, sessions: 201, rating: 4.95, miniChart: [60, 62, 65, 63, 68, 70, 72, 75] },
-        { emoji: '🧑‍🦰', name: 'Jade Monroe', ticker: '$JADE', price: 3.05, change: -4.7, sessions: 56, rating: 4.6, miniChart: [50, 48, 52, 45, 42, 40, 38, 35] },
-        { emoji: '👩‍🦱', name: 'Mia Chen', ticker: '$MIAC', price: 1.25, change: 42.0, sessions: 28, rating: 4.7, miniChart: [10, 15, 18, 25, 30, 40, 50, 65] },
-        { emoji: '🧕', name: 'Zara Okafor', ticker: '$ZARA', price: 0.85, change: 70.0, sessions: 12, rating: 5.0, miniChart: [5, 8, 12, 15, 20, 30, 42, 60] },
-        { emoji: '👩‍🦳', name: 'Nina Rosetti', ticker: '$NINA', price: 5.40, change: 3.1, sessions: 178, rating: 4.85, miniChart: [65, 68, 66, 70, 69, 72, 71, 73] },
-        { emoji: '💁', name: 'Tasha Williams', ticker: '$TASH', price: 0.62, change: 110.0, sessions: 8, rating: 4.5, miniChart: [3, 5, 8, 10, 18, 25, 35, 55] },
-      ];
-
-      return (
-        <div className="token-page">
-          <div className="token-hero" style={{ marginBottom: '1.5rem' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📈</div>
-            <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Model Token Market</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              Invest in models early. Profit as they grow. Unlock exclusive perks.
-            </p>
-          </div>
-
-          {/* Info Box */}
-          <div className="token-info-box">
-            <div style={{ fontSize: '1.5rem', flexShrink: 0 }}>ℹ️</div>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--accent-teal)', marginBottom: '0.3rem' }}>What are Model Tokens?</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                Every model on ModelBid has a token whose price reflects their real activity — sessions, reviews, subscribers, and growth. Buy tokens early when a model is just starting, and their value grows as the model succeeds. Token holders get priority booking, session discounts, and bragging rights. It's like being an early investor in talent.
-              </div>
-            </div>
-          </div>
-
-          {/* Market Stats */}
-          <div className="token-stats-row">
-            <div className="token-stat-card">
-              <div className="token-stat-value" style={{ color: 'var(--accent-gold)' }}>$42,850</div>
-              <div className="token-stat-label">Total Market Cap</div>
-            </div>
-            <div className="token-stat-card">
-              <div className="token-stat-value">{trendingModels.length}</div>
-              <div className="token-stat-label">Active Tokens</div>
-            </div>
-            <div className="token-stat-card">
-              <div className="token-stat-value" style={{ color: 'var(--success-green)' }}>$8,920</div>
-              <div className="token-stat-label">24h Volume</div>
-            </div>
-            <div className="token-stat-card">
-              <div className="token-stat-value">412</div>
-              <div className="token-stat-label">Active Investors</div>
-            </div>
-          </div>
-
-          {/* All Tokens */}
-          <div className="token-trending">
-            <div style={{ fontWeight: 600, marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span>🏆 All Model Tokens</span>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Sorted by market cap</span>
-            </div>
-            {trendingModels.map((m, i) => {
-              const trendUp = m.change >= 0;
-              const maxVal = Math.max(...m.miniChart);
-              return (
-                <div key={i} className="token-trending-row" onClick={() => window.location.hash = `token/demo`}
-                  style={{ padding: '0.85rem 0.5rem' }}>
-                  <div className="token-trending-rank" style={{ fontSize: '1rem', fontWeight: 800, color: i < 3 ? 'var(--accent-gold)' : 'var(--text-secondary)' }}>
-                    {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`}
-                  </div>
-                  <div className="token-holding-avatar" style={{ width: 42, height: 42, fontSize: '1.2rem' }}>{m.emoji}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{m.name}</div>
-                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--accent-teal)', fontFamily: 'monospace' }}>{m.ticker}</span>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{m.sessions} sessions</span>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--accent-gold)' }}>⭐ {m.rating}</span>
-                    </div>
-                  </div>
-                  <div className="token-trending-mini-chart">
-                    {m.miniChart.map((v, j) => (
-                      <div key={j} className="token-trending-mini-bar"
-                        style={{
-                          height: (v / maxVal * 18) + 2 + 'px',
-                          background: trendUp ? 'var(--success-green)' : 'var(--danger-red)',
-                          opacity: 0.4 + (j / m.miniChart.length) * 0.6
-                        }} />
-                    ))}
-                  </div>
-                  <div style={{ textAlign: 'right', minWidth: '75px' }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>${m.price.toFixed(2)}</div>
-                    <div style={{ fontSize: '0.75rem', color: trendUp ? 'var(--success-green)' : 'var(--danger-red)', fontWeight: 600 }}>
-                      {trendUp ? '▲' : '▼'} {Math.abs(m.change)}%
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Disclaimer */}
-          <div className="token-disclaimer">
-            ⚠️ <strong>Important:</strong> Model Tokens are platform credits for use within ModelBid only. They are not securities, cryptocurrency, or financial instruments. Token values are based on model activity metrics and are non-transferable outside the platform. Past performance does not guarantee future results. Invest responsibly.
-          </div>
-        </div>
-      );
-    }
-
     // ===== 360 OUTFIT VIEWER (Lazy-loaded, zero dependencies) =====
     function OutfitViewer360({ outfits }) {
       const [activeOutfit, setActiveOutfit] = useState(null);
@@ -6093,30 +5254,6 @@
                 </div>
               </div>
 
-              {/* Step 6-8: Invest — deepest engagement */}
-              <div className="profile-section" style={{ background: 'linear-gradient(135deg, rgba(0,217,255,0.08), rgba(0,217,163,0.08))', borderColor: 'rgba(0,217,255,0.25)' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📈</div>
-                  <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>Invest in {model.display_name?.split(' ')[0] || 'Model'}</div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
-                    Buy tokens early and profit as they grow
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
-                    <div>
-                      <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent-gold)' }}>$4.72</div>
-                      <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>TOKEN PRICE</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--success-green)' }}>▲ 22.6%</div>
-                      <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>THIS WEEK</div>
-                    </div>
-                  </div>
-                  <button className="btn glow-btn btn-block" style={{ background: 'linear-gradient(135deg, var(--accent-teal), #0099cc)', fontSize: '0.85rem' }}
-                    onClick={() => window.location.hash = 'token/demo'}>
-                    View Token →
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -8817,7 +7954,7 @@ REMEMBER:
 
     // ===== MODEL REVENUE NUDGES =====
     // Contextual cards that guide models toward their next revenue stream
-    // Ordered by progression: Bookings → Tips → Inner Circle → Tokens → WeStackr
+    // Ordered by progression: Bookings → Tips → Inner Circle → WeStackr
     function ModelNudges({ context, limit }) {
       const auth = useContext(AuthContext);
       if (!auth.profile || auth.profile.role !== 'model') return null;
@@ -8825,7 +7962,6 @@ REMEMBER:
       const profile = auth.profile;
       const sessions = profile.sessions_completed || 0;
       const hasInnerCircle = false; // will check DB later
-      const hasToken = false; // will check DB later
       const hasCampaign = false; // will check DB later
 
       // Build nudge list based on what she hasn't unlocked yet — progression order
@@ -8876,23 +8012,7 @@ REMEMBER:
         });
       }
 
-      // 4. Tokens — the investment play
-      if (!hasToken) {
-        allNudges.push({
-          id: 'tokens',
-          icon: '📈',
-          iconBg: 'linear-gradient(135deg, rgba(0,217,255,0.15), rgba(0,217,163,0.15))',
-          title: 'Your brand is an investment',
-          desc: 'As your sessions and reviews grow, your token price rises. Investors buy in early — and your value compounds.',
-          earn: 'Token appreciation',
-          earnBg: 'rgba(0,217,255,0.1)',
-          earnColor: '#00d9ff',
-          link: 'invest',
-          contexts: ['dashboard', 'feed', 'browse']
-        });
-      }
-
-      // 5. WeStackr — the crowdfunding play
+      // 4. WeStackr — the crowdfunding play
       if (!hasCampaign) {
         allNudges.push({
           id: 'westackr',
@@ -8930,7 +8050,7 @@ REMEMBER:
 
       // Determine progression state for each nudge
       const featuresUsed = profile.features_used || [];
-      // Progression order: first-booking → tips → inner-circle → tokens → westackr → boost
+      // Progression order: first-booking → tips → inner-circle → westackr → boost
       let foundNext = false;
       const withState = shown.map(nudge => {
         if (featuresUsed.includes(nudge.id)) {
@@ -9016,14 +8136,6 @@ REMEMBER:
           desc: 'Fans pay monthly for exclusive content, early booking access, and discounts. Recurring income that grows with your audience.',
           earn: 'Recurring revenue', earnBg: 'rgba(157,78,221,0.1)', earnColor: '#c44dff',
           link: 'edit-profile'
-        },
-        {
-          id: 'tokens', icon: '📈',
-          iconBg: 'linear-gradient(135deg, rgba(0,217,255,0.15), rgba(0,217,163,0.15))',
-          title: 'Your brand is an investment',
-          desc: 'As your sessions and reviews grow, your token price rises. Investors buy in early — and your value compounds.',
-          earn: 'Token appreciation', earnBg: 'rgba(0,217,255,0.1)', earnColor: '#00d9ff',
-          link: 'invest'
         },
         {
           id: 'westackr', icon: '⚡',
@@ -10749,9 +9861,9 @@ REMEMBER:
 
       const tiers = [
         { level: 1, name: 'Newcomer', icon: '🌱', reqSessions: 0, reqTrust: 0, perks: 'Browse and book any model, view profiles, send messages' },
-        { level: 2, name: 'Bronze Member', icon: '🥉', reqSessions: 3, reqTrust: 70, perks: 'Featured on The Wall, leave public reviews, early token drop access' },
-        { level: 3, name: 'Silver Pro', icon: '🥈', reqSessions: 10, reqTrust: 80, perks: 'Priority booking with top models, lower token fees, Inner Circle discounts (5%)' },
-        { level: 4, name: 'Gold VIP', icon: '👑', reqSessions: 15, reqTrust: 85, perks: 'Priority booking queue, Inner Circle discounts (10%), VIP token drops' },
+        { level: 2, name: 'Bronze Member', icon: '🥉', reqSessions: 3, reqTrust: 70, perks: 'Featured on The Wall, leave public reviews' },
+        { level: 3, name: 'Silver Pro', icon: '🥈', reqSessions: 10, reqTrust: 80, perks: 'Priority booking with top models, Inner Circle discounts (5%)' },
+        { level: 4, name: 'Gold VIP', icon: '👑', reqSessions: 15, reqTrust: 85, perks: 'Priority booking queue, Inner Circle discounts (10%)' },
         { level: 5, name: 'Platinum Elite', icon: '💎', reqSessions: 25, reqTrust: 90, perks: 'Max Inner Circle discount (15%), first access to new features, Platinum profile badge' },
       ];
 
@@ -10759,13 +9871,10 @@ REMEMBER:
         { feature: 'Browse & Book Any Model', reqLevel: 1, icon: '📸' },
         { feature: 'The Wall Placement', reqLevel: 2, icon: '🏆' },
         { feature: 'Leave Public Reviews', reqLevel: 2, icon: '⭐' },
-        { feature: 'Early Access to Token Drops', reqLevel: 2, icon: '📈' },
         { feature: 'Priority Booking with Top Models', reqLevel: 3, icon: '💃' },
-        { feature: 'Lower Token Trading Fees', reqLevel: 3, icon: '🚀' },
         { feature: 'Inner Circle Discounts (5%)', reqLevel: 3, icon: '🎯' },
         { feature: 'Priority Booking Queue', reqLevel: 4, icon: '⚡' },
         { feature: 'Inner Circle Discounts (10%)', reqLevel: 4, icon: '🔓' },
-        { feature: 'VIP Token Drops', reqLevel: 4, icon: '💰' },
         { feature: 'Max Inner Circle Discount (15%)', reqLevel: 5, icon: '💎' },
         { feature: 'First Access to New Features', reqLevel: 5, icon: '🎪' },
         { feature: 'Platinum Profile Badge', reqLevel: 5, icon: '🏅' },
@@ -10789,7 +9898,7 @@ REMEMBER:
 
           {/* Info Box */}
           <div className="rep-info-box">
-            <strong>What is Reputation-Gated Access?</strong> Your reputation level is based on your completed sessions and trust score. As you build trust with models, you unlock exclusive platform features — premium model access, token investment perks, Inner Circle discounts, and more. Every session counts toward your next tier.
+            <strong>What is Reputation-Gated Access?</strong> Your reputation level is based on your completed sessions and trust score. As you build trust with models, you unlock exclusive platform features — premium model access, Inner Circle discounts, and more. Every session counts toward your next tier.
           </div>
 
           {/* Current Level Card */}
@@ -11668,9 +10777,7 @@ RULES
         if (page === 'home') return !auth.currentUser ? <HomePage /> : <FeedPage />;
         if (page === 'feed') return <FeedPage />;
         if (page === 'wall') return <TopClientsPage />;
-        if (page === 'invest') return <TokenMarketPage />;
         if (page === 'reputation') return <ReputationPage />;
-        if (page === 'token' && params[0]) return <ModelTokenPage modelId={params[0]} />;
         if (page === 'circle' && params[0]) return <InnerCirclePage modelId={params[0]} />;
         if (page === 'browse') return <BrowseModelsPage />;
         if (page === 'profile' && params[0]) return <ProfilePage modelId={params[0]} />;
@@ -11726,11 +10833,6 @@ RULES
                       <span className="dd-icon">🛡️</span> Reputation
                     </a>
                   )}
-                  <div className="nav-dropdown-divider"></div>
-                  {/* Deep journey — investment */}
-                  <a className="nav-dropdown-item" onClick={() => window.location.hash = 'invest'}>
-                    <span className="dd-icon">📈</span> Invest
-                  </a>
                 </div>
               </div>
             </div>
