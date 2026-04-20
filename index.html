@@ -7668,6 +7668,32 @@
       );
     }
 
+    /*
+    -- DM Polls tables
+    CREATE TABLE dm_polls (
+      id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+      model_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+      question text NOT NULL,
+      options jsonb NOT NULL DEFAULT '[]',
+      folder text,
+      created_at timestamptz DEFAULT now()
+    );
+    ALTER TABLE dm_polls ENABLE ROW LEVEL SECURITY;
+    CREATE POLICY "Models manage own polls" ON dm_polls FOR ALL USING (auth.uid() = model_id);
+
+    CREATE TABLE dm_poll_responses (
+      id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+      message_id uuid NOT NULL,
+      voter_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+      option_index integer NOT NULL,
+      created_at timestamptz DEFAULT now(),
+      UNIQUE(message_id, voter_id)
+    );
+    ALTER TABLE dm_poll_responses ENABLE ROW LEVEL SECURITY;
+    CREATE POLICY "Users can vote" ON dm_poll_responses FOR INSERT WITH CHECK (auth.uid() = voter_id);
+    CREATE POLICY "Users can see votes" ON dm_poll_responses FOR SELECT USING (true);
+    */
+
     function MessagesPage({ conversationId }) {
       const auth = useContext(AuthContext);
       const [conversations, setConversations] = useState([]);
@@ -7679,6 +7705,17 @@
       const [pinnedCopied, setPinnedCopied] = useState(false);
       const [cherryPickerDirect, setCherryPickerDirect] = useState(false);
       const messageEndRef = useRef(null);
+
+      // DM Polls state
+      const [showPollLibrary, setShowPollLibrary] = useState(false);
+      const [pollLibrary, setPollLibrary] = useState([]);
+      const [pollFolders, setPollFolders] = useState([]);
+      const [selectedPollFolder, setSelectedPollFolder] = useState('All');
+      const [creatingPoll, setCreatingPoll] = useState(false);
+      const [newPollQuestion, setNewPollQuestion] = useState('');
+      const [newPollOptions, setNewPollOptions] = useState(['', '']);
+      const [newPollFolder, setNewPollFolder] = useState('');
+      const [pollResponses, setPollResponses] = useState({});
 
       const hasCherryPicker = (auth.profile?.role === 'model' && auth.profile?.cherry_picker_active) || cherryPickerDirect;
 
@@ -7697,6 +7734,53 @@
             });
         }
       }, [auth.currentUser]);
+
+      // Fetch poll library for models
+      useEffect(() => {
+        if (auth.currentUser && auth.profile?.role === 'model') {
+          const fetchPolls = async () => {
+            const { data, error } = await supabase
+              .from('dm_polls')
+              .select('*')
+              .eq('model_id', auth.currentUser.id)
+              .order('created_at', { ascending: false });
+            if (!error && data) {
+              setPollLibrary(data);
+              const folders = [...new Set(data.map(p => p.folder).filter(Boolean))];
+              setPollFolders(folders);
+            }
+          };
+          fetchPolls();
+        }
+      }, [auth.currentUser, auth.profile?.role]);
+
+      // Fetch poll responses when messages load
+      useEffect(() => {
+        const fetchPollResponses = async () => {
+          if (!messages.length) return;
+          const pollMessages = messages.filter(msg => {
+            try {
+              const parsed = JSON.parse(msg.content);
+              return parsed.type === 'poll';
+            } catch { return false; }
+          });
+          if (!pollMessages.length) return;
+          const msgIds = pollMessages.map(m => m.id);
+          const { data, error } = await supabase
+            .from('dm_poll_responses')
+            .select('*')
+            .in('message_id', msgIds);
+          if (!error && data) {
+            const grouped = {};
+            data.forEach(r => {
+              if (!grouped[r.message_id]) grouped[r.message_id] = [];
+              grouped[r.message_id].push(r);
+            });
+            setPollResponses(grouped);
+          }
+        };
+        fetchPollResponses();
+      }, [messages]);
 
       // Auto-select pinned message when cherry picker becomes available
       useEffect(() => {
@@ -7908,6 +7992,77 @@ REMEMBER:
         }
       };
 
+      // --- DM Poll functions ---
+      const handleSavePoll = async () => {
+        if (!newPollQuestion.trim()) { showToast('Enter a poll question', 'error'); return; }
+        const validOptions = newPollOptions.filter(o => o.trim());
+        if (validOptions.length < 2) { showToast('Need at least 2 options', 'error'); return; }
+        const { data, error } = await supabase
+          .from('dm_polls')
+          .insert({
+            model_id: auth.currentUser.id,
+            question: newPollQuestion.trim(),
+            options: validOptions,
+            folder: newPollFolder.trim() || null,
+          })
+          .select()
+          .single();
+        if (error) { showToast('Failed to save poll', 'error'); return; }
+        setPollLibrary(prev => [data, ...prev]);
+        if (data.folder && !pollFolders.includes(data.folder)) {
+          setPollFolders(prev => [...prev, data.folder]);
+        }
+        setNewPollQuestion('');
+        setNewPollOptions(['', '']);
+        setNewPollFolder('');
+        setCreatingPoll(false);
+        showToast('Poll saved!', 'success');
+      };
+
+      const handleDeletePoll = async (pollId) => {
+        const { error } = await supabase.from('dm_polls').delete().eq('id', pollId);
+        if (error) { showToast('Failed to delete poll', 'error'); return; }
+        setPollLibrary(prev => prev.filter(p => p.id !== pollId));
+        showToast('Poll deleted', 'success');
+      };
+
+      const handleSendPoll = async (poll) => {
+        if (!selectedConvId) { showToast('Select a conversation first', 'error'); return; }
+        const content = JSON.stringify({ type: 'poll', question: poll.question, options: poll.options, poll_id: poll.id });
+        const success = await auth.sendMessage(selectedConvId, content);
+        if (success) {
+          await supabase
+            .from('conversations')
+            .update({
+              last_message_at: new Date().toISOString(),
+              last_message_preview: '📊 Poll: ' + poll.question.substring(0, 40),
+            })
+            .eq('id', selectedConvId);
+          setShowPollLibrary(false);
+          showToast('Poll sent!', 'success');
+        }
+      };
+
+      const handleVotePoll = async (messageId, optionIndex) => {
+        const { error } = await supabase
+          .from('dm_poll_responses')
+          .insert({
+            message_id: messageId,
+            voter_id: auth.currentUser.id,
+            option_index: optionIndex,
+          });
+        if (error) {
+          if (error.code === '23505') { showToast('You already voted', 'error'); return; }
+          showToast('Vote failed', 'error'); return;
+        }
+        setPollResponses(prev => ({
+          ...prev,
+          [messageId]: [...(prev[messageId] || []), { message_id: messageId, voter_id: auth.currentUser.id, option_index: optionIndex }]
+        }));
+        showToast('Vote recorded!', 'success');
+      };
+      // --- End DM Poll functions ---
+
       if (loading && !hasCherryPicker) {
         return <div className="text-center" style={{ padding: '2rem' }}>Loading messages...</div>;
       }
@@ -7970,7 +8125,7 @@ REMEMBER:
           );
         }
         return (
-          <div className="message-thread">
+          <div className="message-thread" style={{ position: 'relative' }}>
             <div className="message-thread-header">Conversation</div>
             <div className="message-thread-scroll">
               {messages.length === 0 ? (
@@ -7981,19 +8136,116 @@ REMEMBER:
                 </div>
               ) : (
                 <>
-                  {messages.map(msg => (
-                    <div key={msg.id} className={`message-bubble ${msg.sender_id === auth.currentUser.id ? 'sent' : 'received'}`}>
-                      <div className="message-content">{msg.content}</div>
-                      <div className="message-time">
-                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {messages.map(msg => {
+                    let pollData = null;
+                    try { const p = JSON.parse(msg.content); if (p.type === 'poll') pollData = p; } catch {}
+                    if (pollData) {
+                      const responses = pollResponses[msg.id] || [];
+                      const totalVotes = responses.length;
+                      const myVote = responses.find(r => r.voter_id === auth.currentUser.id);
+                      const isSender = msg.sender_id === auth.currentUser.id;
+                      return (
+                        <div key={msg.id} className={`message-bubble ${isSender ? 'sent' : 'received'}`} style={{ maxWidth: '340px' }}>
+                          <div style={{ border: '1px solid rgba(255,215,0,0.3)', borderRadius: 12, padding: '0.8rem', background: 'rgba(255,215,0,0.04)' }}>
+                            <div style={{ fontWeight: 700, marginBottom: '0.6rem', fontSize: '0.92rem', color: '#ffd700' }}>📊 {pollData.question}</div>
+                            {pollData.options.map((opt, idx) => {
+                              const count = responses.filter(r => r.option_index === idx).length;
+                              const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+                              const voted = myVote && myVote.option_index === idx;
+                              if (isSender || myVote) {
+                                return (
+                                  <div key={idx} style={{ marginBottom: '0.4rem', position: 'relative', borderRadius: 8, overflow: 'hidden', background: 'rgba(255,255,255,0.05)', border: voted ? '1px solid #ffd700' : '1px solid rgba(255,255,255,0.08)' }}>
+                                    <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: pct + '%', background: voted ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.05)', borderRadius: 8, transition: 'width 0.3s' }} />
+                                    <div style={{ position: 'relative', padding: '0.4rem 0.6rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                                      <span>{opt} {voted && '✓'}</span>
+                                      <span style={{ color: '#999' }}>{count} ({pct}%)</span>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <button key={idx} onClick={() => handleVotePoll(msg.id, idx)} style={{ display: 'block', width: '100%', marginBottom: '0.4rem', padding: '0.45rem 0.6rem', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#ddd', fontSize: '0.82rem', cursor: 'pointer', textAlign: 'left', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.background='rgba(255,215,0,0.12)'} onMouseOut={e => e.target.style.background='rgba(255,255,255,0.05)'}>
+                                  {opt}
+                                </button>
+                              );
+                            })}
+                            {totalVotes > 0 && <div style={{ fontSize: '0.7rem', color: '#777', marginTop: '0.3rem' }}>{totalVotes} vote{totalVotes !== 1 ? 's' : ''}</div>}
+                          </div>
+                          <div className="message-time">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={msg.id} className={`message-bubble ${msg.sender_id === auth.currentUser.id ? 'sent' : 'received'}`}>
+                        <div className="message-content">{msg.content}</div>
+                        <div className="message-time">
+                          {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   <div ref={messageEndRef} />
                 </>
               )}
             </div>
+
+            {/* Poll Library Overlay */}
+            {showPollLibrary && (
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(20,20,30,0.98)', zIndex: 20, display: 'flex', flexDirection: 'column', borderRadius: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.8rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                  <span style={{ fontWeight: 700, fontSize: '1rem' }}>📊 Poll Library</span>
+                  <button onClick={() => { setShowPollLibrary(false); setCreatingPoll(false); }} style={{ background: 'none', border: 'none', color: '#999', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+                </div>
+                {/* Folder tabs */}
+                <div style={{ display: 'flex', gap: '0.4rem', padding: '0.6rem 1rem', overflowX: 'auto', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  {['All', ...pollFolders].map(f => (
+                    <button key={f} onClick={() => setSelectedPollFolder(f)} style={{ padding: '0.3rem 0.7rem', borderRadius: 20, border: selectedPollFolder === f ? '1px solid #ffd700' : '1px solid rgba(255,255,255,0.1)', background: selectedPollFolder === f ? 'rgba(255,215,0,0.12)' : 'transparent', color: selectedPollFolder === f ? '#ffd700' : '#aaa', fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap', fontWeight: selectedPollFolder === f ? 700 : 400 }}>{f}</button>
+                  ))}
+                </div>
+                {/* New Poll button */}
+                <div style={{ padding: '0.6rem 1rem' }}>
+                  <button onClick={() => setCreatingPoll(!creatingPoll)} style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #ffd700, #ff8c00)', color: '#000', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}>+ New Poll</button>
+                </div>
+                {/* Create form */}
+                {creatingPoll && (
+                  <div style={{ padding: '0 1rem 0.8rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <input value={newPollQuestion} onChange={e => setNewPollQuestion(e.target.value)} placeholder="Poll question..." style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.85rem', marginBottom: '0.4rem', boxSizing: 'border-box' }} />
+                    {newPollOptions.map((opt, i) => (
+                      <input key={i} value={opt} onChange={e => { const updated = [...newPollOptions]; updated[i] = e.target.value; setNewPollOptions(updated); }} placeholder={`Option ${i + 1}`} style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', color: '#ddd', fontSize: '0.82rem', marginBottom: '0.3rem', boxSizing: 'border-box' }} />
+                    ))}
+                    {newPollOptions.length < 6 && (
+                      <button onClick={() => setNewPollOptions(prev => [...prev, ''])} style={{ background: 'none', border: '1px dashed rgba(255,255,255,0.15)', color: '#888', padding: '0.3rem', borderRadius: 6, width: '100%', fontSize: '0.78rem', cursor: 'pointer', marginBottom: '0.4rem' }}>+ Add Option</button>
+                    )}
+                    <input value={newPollFolder} onChange={e => setNewPollFolder(e.target.value)} placeholder="Folder (optional)" style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', color: '#ddd', fontSize: '0.82rem', marginBottom: '0.5rem', boxSizing: 'border-box' }} />
+                    <button onClick={handleSavePoll} style={{ width: '100%', padding: '0.45rem', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #ff6ec7, #9d4edd)', color: '#fff', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>Save Poll</button>
+                  </div>
+                )}
+                {/* Poll list */}
+                <div style={{ flex: 1, overflowY: 'auto', padding: '0.5rem 1rem' }}>
+                  {pollLibrary.filter(p => selectedPollFolder === 'All' || p.folder === selectedPollFolder).map(poll => (
+                    <div key={poll.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '0.7rem', marginBottom: '0.5rem' }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: '0.3rem', color: '#eee' }}>{poll.question}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.72rem', color: '#999' }}>{(poll.options || []).length} options</span>
+                        {poll.folder && <span style={{ fontSize: '0.68rem', background: 'rgba(255,215,0,0.1)', color: '#ffd700', padding: '1px 6px', borderRadius: 6 }}>{poll.folder}</span>}
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <button onClick={() => handleSendPoll(poll)} style={{ flex: 1, padding: '0.35rem', borderRadius: 6, border: 'none', background: 'linear-gradient(135deg, #ff6ec7, #9d4edd)', color: '#fff', fontWeight: 600, fontSize: '0.78rem', cursor: 'pointer' }}>Send</button>
+                        <button onClick={() => handleDeletePoll(poll.id)} style={{ padding: '0.35rem 0.6rem', borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#999', fontSize: '0.78rem', cursor: 'pointer' }}>🗑️</button>
+                      </div>
+                    </div>
+                  ))}
+                  {pollLibrary.filter(p => selectedPollFolder === 'All' || p.folder === selectedPollFolder).length === 0 && (
+                    <div style={{ textAlign: 'center', color: '#666', padding: '2rem 0', fontSize: '0.85rem' }}>No polls yet. Create one above!</div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="message-input-section">
+              {auth.profile?.role !== 'client' && (
+                <button onClick={() => setShowPollLibrary(true)} title="Poll Library" style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '0.4rem 0.55rem', fontSize: '1rem', cursor: 'pointer', flexShrink: 0, lineHeight: 1 }}>📊</button>
+              )}
               <input
                 type="text"
                 placeholder="Type your message..."
