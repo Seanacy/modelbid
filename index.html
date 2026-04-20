@@ -8075,6 +8075,175 @@ REMEMBER:
       const auth = useContext(AuthContext);
       const [bookings, setBookings] = useState([]);
       const [loading, setLoading] = useState(true);
+      const [myCampaigns, setMyCampaigns] = useState([]);
+      const [myCampaignItems, setMyCampaignItems] = useState({});
+      const [showAddProduct, setShowAddProduct] = useState(null); // campaign_id or null
+      const [newProduct, setNewProduct] = useState({ name: '', price: '', description: '', image_url: '', inventory: '' });
+
+      // Fetch user's campaigns + store items
+      useEffect(() => {
+        if (!auth.currentUser) return;
+        const fetchMyCampaigns = async () => {
+          try {
+            const { data } = await supabase.from('campaigns').select('*')
+              .eq('creator_id', auth.currentUser.id).order('created_at', { ascending: false });
+            if (data) {
+              setMyCampaigns(data);
+              const storeIds = data.filter(c => c.store_mode_enabled).map(c => c.id);
+              if (storeIds.length > 0) {
+                const { data: items } = await supabase.from('store_items').select('*')
+                  .in('campaign_id', storeIds).eq('is_active', true).order('created_at', { ascending: true });
+                if (items) {
+                  const map = {};
+                  items.forEach(item => { if (!map[item.campaign_id]) map[item.campaign_id] = []; map[item.campaign_id].push(item); });
+                  setMyCampaignItems(map);
+                }
+              }
+            }
+          } catch (e) { console.error('Fetch my campaigns:', e); }
+        };
+        fetchMyCampaigns();
+      }, [auth.currentUser]);
+
+      const handleAddStoreProduct = async (campaignId) => {
+        if (!newProduct.name || !newProduct.price) return;
+        try {
+          const { data, error } = await supabase.from('store_items').insert({
+            campaign_id: campaignId,
+            name: newProduct.name.trim(),
+            description: newProduct.description.trim() || null,
+            price: parseFloat(newProduct.price),
+            image_url: newProduct.image_url.trim() || null,
+            inventory_count: parseInt(newProduct.inventory) || 0,
+            sold_count: 0,
+          }).select().single();
+          if (error) throw error;
+          setMyCampaignItems(prev => ({ ...prev, [campaignId]: [...(prev[campaignId] || []), data] }));
+          setNewProduct({ name: '', price: '', description: '', image_url: '', inventory: '' });
+          setShowAddProduct(null);
+          auth.showToast('Product added!', 'success');
+        } catch (e) { auth.showToast('Failed to add product: ' + e.message, 'error'); }
+      };
+
+      const handleDeleteStoreProduct = async (itemId, campaignId) => {
+        try {
+          await supabase.from('store_items').update({ is_active: false }).eq('id', itemId);
+          setMyCampaignItems(prev => ({ ...prev, [campaignId]: (prev[campaignId] || []).filter(i => i.id !== itemId) }));
+          auth.showToast('Product removed', 'success');
+        } catch (e) { auth.showToast('Failed to remove product', 'error'); }
+      };
+
+      const handleToggleStore = async (campaign) => {
+        try {
+          const newVal = !campaign.store_mode_enabled;
+          await supabase.from('campaigns').update({ store_mode_enabled: newVal }).eq('id', campaign.id);
+          setMyCampaigns(prev => prev.map(c => c.id === campaign.id ? { ...c, store_mode_enabled: newVal } : c));
+          auth.showToast(newVal ? 'Store enabled!' : 'Store disabled', 'success');
+        } catch (e) { auth.showToast('Failed to toggle store', 'error'); }
+      };
+
+      const renderMyCampaigns = () => {
+        if (myCampaigns.length === 0) return null;
+        return (
+          <div style={{ marginTop: '2rem' }}>
+            <h3 style={{ marginBottom: '1rem' }}>My Campaigns</h3>
+            {myCampaigns.map(camp => {
+              const items = myCampaignItems[camp.id] || [];
+              return (
+                <div key={camp.id} className="card" style={{ marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
+                    <div>
+                      <div style={{ fontWeight: 700 }}>{camp.title}</div>
+                      <div style={{ fontSize: '0.85rem', color: '#888' }}>
+                        ${Number(camp.raised || 0).toLocaleString()} / ${Number(camp.goal).toLocaleString()} • {camp.category}
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '0.8rem', padding: '2px 8px', borderRadius: '6px',
+                      background: camp.funded ? 'rgba(0,230,118,0.15)' : 'rgba(0,217,255,0.1)',
+                      color: camp.funded ? '#00e676' : '#00d9ff' }}>
+                      {camp.funded ? 'Funded' : camp.status || 'Active'}
+                    </span>
+                  </div>
+
+                  {/* Store toggle */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px',
+                    padding: '8px 12px', background: 'rgba(255,110,199,0.06)', borderRadius: '8px',
+                    border: '1px solid rgba(255,110,199,0.12)' }}>
+                    <span style={{ fontSize: '0.85rem', color: '#ff6ec7', fontWeight: 600 }}>🛍️ Store</span>
+                    <button onClick={() => handleToggleStore(camp)} style={{
+                      width: '40px', height: '22px', borderRadius: '11px', border: 'none', cursor: 'pointer',
+                      background: camp.store_mode_enabled ? '#ff6ec7' : 'rgba(255,255,255,0.1)', position: 'relative', transition: 'background 0.2s'
+                    }}>
+                      <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#fff',
+                        position: 'absolute', top: '3px', left: camp.store_mode_enabled ? '21px' : '3px',
+                        transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' }}></div>
+                    </button>
+                    <span style={{ fontSize: '0.78rem', color: '#888' }}>
+                      {camp.store_mode_enabled ? `${items.length} product${items.length !== 1 ? 's' : ''}` : 'Disabled'}
+                    </span>
+                  </div>
+
+                  {/* Store products list */}
+                  {camp.store_mode_enabled && (
+                    <div style={{ marginTop: '8px' }}>
+                      {items.map(item => (
+                        <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px',
+                          background: 'rgba(255,255,255,0.03)', borderRadius: '6px', marginBottom: '4px', fontSize: '0.83rem' }}>
+                          {item.image_url && <img src={item.image_url} alt="" style={{ width: '28px', height: '28px', borderRadius: '4px', objectFit: 'cover' }}
+                            onError={(e) => e.target.style.display = 'none'} />}
+                          <span style={{ flex: 1 }}><strong>{item.name}</strong> — ${Number(item.price).toFixed(2)}</span>
+                          <span style={{ color: '#888', fontSize: '0.75rem' }}>{item.sold_count || 0} sold</span>
+                          <button onClick={() => handleDeleteStoreProduct(item.id, camp.id)}
+                            style={{ background: 'none', border: 'none', color: 'var(--danger-red)', cursor: 'pointer', fontSize: '0.9rem' }}>✕</button>
+                        </div>
+                      ))}
+
+                      {/* Add product */}
+                      {showAddProduct === camp.id ? (
+                        <div style={{ background: 'rgba(255,110,199,0.04)', border: '1px dashed rgba(255,110,199,0.2)',
+                          borderRadius: '8px', padding: '10px', marginTop: '6px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                            <input type="text" placeholder="Product name *" value={newProduct.name}
+                              onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} style={{ fontSize: '0.83rem' }} />
+                            <input type="number" placeholder="Price ($) *" value={newProduct.price} min="0.01" step="0.01"
+                              onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })} style={{ fontSize: '0.83rem' }} />
+                            <input type="text" placeholder="Image URL" value={newProduct.image_url}
+                              onChange={(e) => setNewProduct({ ...newProduct, image_url: e.target.value })} style={{ fontSize: '0.83rem' }} />
+                            <input type="number" placeholder="Inventory (0=unlimited)" value={newProduct.inventory} min="0"
+                              onChange={(e) => setNewProduct({ ...newProduct, inventory: e.target.value })} style={{ fontSize: '0.83rem' }} />
+                          </div>
+                          <input type="text" placeholder="Description (optional)" value={newProduct.description}
+                            onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                            style={{ fontSize: '0.83rem', marginTop: '6px', width: '100%' }} />
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+                            <button onClick={() => handleAddStoreProduct(camp.id)}
+                              disabled={!newProduct.name || !newProduct.price}
+                              style={{ padding: '5px 14px', borderRadius: '6px', border: 'none', fontSize: '0.82rem', fontWeight: 600,
+                                background: newProduct.name && newProduct.price ? '#ff6ec7' : 'rgba(255,255,255,0.08)',
+                                color: newProduct.name && newProduct.price ? '#fff' : '#666',
+                                cursor: newProduct.name && newProduct.price ? 'pointer' : 'not-allowed' }}>
+                              Save Product
+                            </button>
+                            <button onClick={() => { setShowAddProduct(null); setNewProduct({ name: '', price: '', description: '', image_url: '', inventory: '' }); }}
+                              style={{ padding: '5px 14px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)',
+                                background: 'none', color: '#888', cursor: 'pointer', fontSize: '0.82rem' }}>Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button onClick={() => setShowAddProduct(camp.id)}
+                          style={{ marginTop: '6px', padding: '5px 14px', borderRadius: '6px', border: '1px dashed rgba(255,110,199,0.3)',
+                            background: 'none', color: '#ff6ec7', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>
+                          + Add Product
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      };
 
       useEffect(() => {
         const fetchBookings = async () => {
@@ -8181,6 +8350,8 @@ REMEMBER:
                 </div>
               )}
             </div>
+
+            {renderMyCampaigns()}
           </div>
         );
       } else {
@@ -8235,6 +8406,8 @@ REMEMBER:
                 </div>
               )}
             </div>
+
+            {renderMyCampaigns()}
           </div>
         );
       }
@@ -8282,9 +8455,11 @@ REMEMBER:
       const [loading, setLoading] = useState(false);
       const [form, setForm] = useState({
         title: '', description: '', goal: '', category: '',
-        image_url: '', duration_days: 30, backer_reward: '', co_admins: []
+        image_url: '', duration_days: 30, backer_reward: '', co_admins: [],
+        storeEnabled: false, storeEmbedUrl: '', products: []
       });
       const [adminInput, setAdminInput] = useState('');
+      const [productDraft, setProductDraft] = useState({ name: '', price: '', description: '', image_url: '', inventory: '' });
 
       const categories = [
         { id: 'lingerie', label: 'Lingerie', icon: '👙' },
@@ -8296,6 +8471,27 @@ REMEMBER:
         { id: 'boudoir', label: 'Boudoir', icon: '🌹' },
         { id: 'cosplay', label: 'Cosplay', icon: '🎭' },
       ];
+
+      const detectEmbedProvider = (url) => {
+        if (!url.trim()) return null;
+        try {
+          const host = new URL(url).hostname.toLowerCase();
+          if (host.includes('etsy.com')) return 'etsy';
+          if (host.includes('shopify.com') || host.endsWith('.myshopify.com')) return 'shopify';
+          if (host.includes('gumroad.com')) return 'gumroad';
+          return 'other';
+        } catch { return 'other'; }
+      };
+
+      const addProduct = () => {
+        if (!productDraft.name || !productDraft.price) return;
+        setForm({ ...form, products: [...form.products, { ...productDraft }] });
+        setProductDraft({ name: '', price: '', description: '', image_url: '', inventory: '' });
+      };
+
+      const removeProduct = (idx) => {
+        setForm({ ...form, products: form.products.filter((_, i) => i !== idx) });
+      };
 
       const addAdmin = () => {
         const name = adminInput.trim();
@@ -8320,6 +8516,7 @@ REMEMBER:
         }
         setLoading(true);
         try {
+          const embedProvider = form.storeEnabled ? detectEmbedProvider(form.storeEmbedUrl) : null;
           const { data, error } = await supabase.from('campaigns').insert({
             creator_id: auth.currentUser.id,
             title: form.title,
@@ -8331,10 +8528,29 @@ REMEMBER:
             backer_reward: form.backer_reward || null,
             co_admins: form.co_admins,
             source: 'modelbid',
+            store_mode_enabled: form.storeEnabled,
+            store_embed_url: form.storeEnabled && form.storeEmbedUrl ? form.storeEmbedUrl : null,
+            store_embed_provider: embedProvider,
           }).select().single();
 
           if (error) throw error;
-          auth.showToast('Campaign launched!', 'success');
+
+          // Insert store products if any
+          if (form.storeEnabled && form.products.length > 0) {
+            for (const p of form.products) {
+              await supabase.from('store_items').insert({
+                campaign_id: data.id,
+                name: p.name.trim(),
+                description: p.description.trim() || null,
+                price: parseFloat(p.price),
+                image_url: p.image_url.trim() || null,
+                inventory_count: parseInt(p.inventory) || 0,
+                sold_count: 0,
+              });
+            }
+          }
+
+          auth.showToast(form.storeEnabled ? 'Campaign + Store launched!' : 'Campaign launched!', 'success');
           onCreated(data);
           onClose();
         } catch (err) {
@@ -8416,6 +8632,117 @@ REMEMBER:
               <div className="ws-hint">Optional — describe what backers receive when the goal is met</div>
             </div>
 
+            {/* ===== STORE MODE SECTION ===== */}
+            <div style={{ background: 'rgba(255,110,199,0.06)', border: '1px solid rgba(255,110,199,0.2)',
+              borderRadius: '12px', padding: '16px', marginTop: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: form.storeEnabled ? '12px' : 0 }}>
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: '0.95rem', color: '#ff6ec7', margin: 0 }}>
+                    🛍️ Campaign Store
+                  </label>
+                  <div className="ws-hint" style={{ marginTop: '2px' }}>
+                    Sell merch, digital downloads, or link your external store. Sales count toward your goal!
+                  </div>
+                </div>
+                <button type="button" onClick={() => setForm({ ...form, storeEnabled: !form.storeEnabled })}
+                  style={{
+                    width: '48px', height: '26px', borderRadius: '13px', border: 'none', cursor: 'pointer',
+                    background: form.storeEnabled ? '#ff6ec7' : 'rgba(255,255,255,0.1)',
+                    position: 'relative', transition: 'background 0.2s', flexShrink: 0
+                  }}>
+                  <div style={{
+                    width: '20px', height: '20px', borderRadius: '50%', background: '#fff',
+                    position: 'absolute', top: '3px', transition: 'left 0.2s',
+                    left: form.storeEnabled ? '25px' : '3px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                  }}></div>
+                </button>
+              </div>
+
+              {form.storeEnabled && (
+                <div>
+                  {/* External Store Link */}
+                  <div className="ws-field" style={{ marginBottom: '12px' }}>
+                    <label style={{ fontSize: '0.85rem' }}>External Store Link <span style={{ color: '#888', fontWeight: 400 }}>(optional)</span></label>
+                    <input type="url" placeholder="https://www.etsy.com/shop/yourshop or Shopify/Gumroad link"
+                      value={form.storeEmbedUrl}
+                      onChange={(e) => setForm({ ...form, storeEmbedUrl: e.target.value })} />
+                    <div className="ws-hint">
+                      Link an Etsy, Shopify, or Gumroad store. Gumroad stores embed directly on the campaign.
+                      {form.storeEmbedUrl && (() => {
+                        const p = detectEmbedProvider(form.storeEmbedUrl);
+                        const labels = { etsy: '🧡 Etsy', shopify: '💚 Shopify', gumroad: '💛 Gumroad', other: '🔗 External' };
+                        return p ? <span style={{ marginLeft: '8px', fontWeight: 600, color: '#ff6ec7' }}>Detected: {labels[p]}</span> : null;
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Native Products */}
+                  <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '8px' }}>
+                    Products <span style={{ color: '#888', fontWeight: 400 }}>(sell directly on the campaign)</span>
+                  </label>
+
+                  {/* Product list */}
+                  {form.products.map((p, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px',
+                      background: 'rgba(0,217,255,0.06)', border: '1px solid rgba(0,217,255,0.15)',
+                      borderRadius: '8px', padding: '8px 12px', fontSize: '0.85rem' }}>
+                      {p.image_url && <img src={p.image_url} alt="" style={{ width: '36px', height: '36px', borderRadius: '6px', objectFit: 'cover' }}
+                        onError={(e) => e.target.style.display = 'none'} />}
+                      <span style={{ flex: 1 }}>
+                        <strong>{p.name}</strong> — ${parseFloat(p.price).toFixed(2)}
+                        {p.inventory && <span style={{ color: '#888' }}> ({p.inventory} in stock)</span>}
+                      </span>
+                      <button onClick={() => removeProduct(i)} style={{
+                        background: 'none', border: 'none', color: 'var(--danger-red)',
+                        cursor: 'pointer', fontSize: '1rem', padding: '0 4px'
+                      }}>✕</button>
+                    </div>
+                  ))}
+
+                  {/* Add product form */}
+                  <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.12)',
+                    borderRadius: '10px', padding: '12px', marginTop: '6px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <input type="text" placeholder="Product name *" value={productDraft.name}
+                        onChange={(e) => setProductDraft({ ...productDraft, name: e.target.value })}
+                        style={{ fontSize: '0.85rem' }} />
+                      <input type="number" placeholder="Price ($) *" min="0.01" step="0.01" value={productDraft.price}
+                        onChange={(e) => setProductDraft({ ...productDraft, price: e.target.value })}
+                        style={{ fontSize: '0.85rem' }} />
+                      <input type="text" placeholder="Image URL (optional)" value={productDraft.image_url}
+                        onChange={(e) => setProductDraft({ ...productDraft, image_url: e.target.value })}
+                        style={{ fontSize: '0.85rem' }} />
+                      <input type="number" placeholder="Inventory (0 = unlimited)" min="0" value={productDraft.inventory}
+                        onChange={(e) => setProductDraft({ ...productDraft, inventory: e.target.value })}
+                        style={{ fontSize: '0.85rem' }} />
+                    </div>
+                    <input type="text" placeholder="Short description (optional)" value={productDraft.description}
+                      onChange={(e) => setProductDraft({ ...productDraft, description: e.target.value })}
+                      style={{ fontSize: '0.85rem', marginTop: '8px', width: '100%' }} />
+                    <button type="button" onClick={addProduct}
+                      disabled={!productDraft.name || !productDraft.price}
+                      style={{
+                        marginTop: '8px', padding: '6px 16px', borderRadius: '8px', border: 'none',
+                        background: productDraft.name && productDraft.price ? '#ff6ec7' : 'rgba(255,255,255,0.08)',
+                        color: productDraft.name && productDraft.price ? '#fff' : '#666',
+                        cursor: productDraft.name && productDraft.price ? 'pointer' : 'not-allowed',
+                        fontSize: '0.85rem', fontWeight: 600
+                      }}>
+                      + Add Product
+                    </button>
+                  </div>
+
+                  {form.products.length > 0 && (
+                    <div className="ws-hint" style={{ marginTop: '8px', color: '#00e676' }}>
+                      {form.products.length} product{form.products.length !== 1 ? 's' : ''} will be listed. Store purchases count toward your funding goal!
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            {/* ===== END STORE MODE ===== */}
+
             <div className="ws-field">
               <label>Co-Admins</label>
               <div className="ws-hint" style={{ marginBottom: '0.5rem', marginTop: 0 }}>
@@ -8453,10 +8780,11 @@ REMEMBER:
       const [activeTab, setActiveTab] = useState('all');
       const [showCreate, setShowCreate] = useState(false);
       const [dbCampaigns, setDbCampaigns] = useState([]);
+      const [storeItemsMap, setStoreItemsMap] = useState({});
       const [loadingDb, setLoadingDb] = useState(true);
       const isUpgraded = false; // demo: free-tier client
 
-      // Fetch real campaigns from Supabase
+      // Fetch real campaigns + store items from Supabase
       useEffect(() => {
         const timeout = setTimeout(() => setLoadingDb(false), 3000);
         const fetchCampaigns = async () => {
@@ -8465,7 +8793,27 @@ REMEMBER:
               .from('campaigns')
               .select('*, creator:profiles!creator_id(display_name, role, avatar_emoji)')
               .order('created_at', { ascending: false });
-            if (!error && data) setDbCampaigns(data);
+            if (!error && data) {
+              setDbCampaigns(data);
+              // Fetch store items for campaigns with store mode
+              const storeCampaignIds = data.filter(c => c.store_mode_enabled).map(c => c.id);
+              if (storeCampaignIds.length > 0) {
+                const { data: items } = await supabase
+                  .from('store_items')
+                  .select('*')
+                  .in('campaign_id', storeCampaignIds)
+                  .eq('is_active', true)
+                  .order('created_at', { ascending: true });
+                if (items) {
+                  const map = {};
+                  items.forEach(item => {
+                    if (!map[item.campaign_id]) map[item.campaign_id] = [];
+                    map[item.campaign_id].push(item);
+                  });
+                  setStoreItemsMap(map);
+                }
+              }
+            }
           } catch (e) { console.error('Fetch campaigns:', e); }
           finally { setLoadingDb(false); clearTimeout(timeout); }
         };
@@ -8499,6 +8847,9 @@ REMEMBER:
           category: c.category,
           funded: c.funded,
           backer_reward: c.backer_reward,
+          store_mode_enabled: c.store_mode_enabled,
+          store_embed_url: c.store_embed_url,
+          store_embed_provider: c.store_embed_provider,
           isReal: true
         };
       });
@@ -8689,6 +9040,99 @@ REMEMBER:
                     {c.funded && c.admins.length > 1 && (
                       <div className="ws-split-info">
                         💰 <strong>Fund split:</strong> ${splitAmount} per admin × {c.admins.length} admins = ${c.goal.toLocaleString()} total
+                      </div>
+                    )}
+
+                    {/* ===== CAMPAIGN STORE ===== */}
+                    {c.store_mode_enabled && (storeItemsMap[c.id]?.length > 0 || c.store_embed_url) && (
+                      <div style={{ background: 'rgba(255,110,199,0.06)', border: '1px solid rgba(255,110,199,0.15)',
+                        borderRadius: '12px', padding: '14px', marginTop: '12px' }}>
+                        <h4 style={{ margin: '0 0 10px 0', fontSize: '0.95rem', color: '#ff6ec7', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          🛍️ Campaign Store
+                        </h4>
+
+                        {/* External store link */}
+                        {c.store_embed_url && (
+                          <div style={{ marginBottom: storeItemsMap[c.id]?.length > 0 ? '12px' : 0 }}>
+                            {c.store_embed_provider === 'gumroad' ? (
+                              <iframe src={c.store_embed_url} title="Gumroad store" style={{ width: '100%', height: '360px', border: 'none', borderRadius: '8px' }}
+                                sandbox="allow-scripts allow-same-origin allow-popups allow-forms" />
+                            ) : (
+                              <a href={c.store_embed_url} target="_blank" rel="noopener noreferrer"
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px',
+                                  background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                                  borderRadius: '8px', color: '#ff6ec7', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600 }}>
+                                {c.store_embed_provider === 'etsy' ? '🧡 Visit Etsy Store' :
+                                 c.store_embed_provider === 'shopify' ? '💚 Visit Shopify Store' : '🔗 Visit External Store'}
+                                <span style={{ fontSize: '0.8rem' }}>↗</span>
+                              </a>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Native product grid */}
+                        {storeItemsMap[c.id]?.length > 0 && (
+                          <div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px' }}>
+                              {storeItemsMap[c.id].map(item => {
+                                const available = item.inventory_count > 0 ? item.inventory_count - (item.sold_count || 0) : null;
+                                return (
+                                  <div key={item.id} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                                    borderRadius: '10px', overflow: 'hidden', transition: 'border-color 0.2s' }}
+                                    onMouseOver={(e) => e.currentTarget.style.borderColor = 'rgba(255,110,199,0.4)'}
+                                    onMouseOut={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'}>
+                                    {item.image_url ? (
+                                      <img src={item.image_url} alt={item.name} style={{ width: '100%', height: '100px', objectFit: 'cover' }}
+                                        onError={(e) => { e.target.style.display = 'none'; }} />
+                                    ) : (
+                                      <div style={{ width: '100%', height: '100px', background: 'rgba(255,110,199,0.08)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>🛍️</div>
+                                    )}
+                                    <div style={{ padding: '8px 10px' }}>
+                                      <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)',
+                                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
+                                      {item.description && <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '2px',
+                                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.description}</div>}
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+                                        <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#00e676' }}>${Number(item.price).toFixed(2)}</span>
+                                        <span style={{ fontSize: '0.7rem', color: '#888' }}>
+                                          {item.sold_count > 0 ? `${item.sold_count} sold` : ''}
+                                          {available !== null && available <= 5 && available > 0 ? ` • ${available} left` : ''}
+                                          {available === 0 ? 'Sold out' : ''}
+                                        </span>
+                                      </div>
+                                      <button onClick={() => {
+                                        if (available === 0) return;
+                                        alert('Stripe checkout coming soon! You\'ll be charged $' + Number(item.price).toFixed(2) + ' + fees for "' + item.name + '".');
+                                      }}
+                                        style={{
+                                          width: '100%', marginTop: '6px', padding: '5px 0', borderRadius: '6px', border: 'none',
+                                          background: available === 0 ? 'rgba(255,255,255,0.05)' : '#ff6ec7',
+                                          color: available === 0 ? '#666' : '#fff',
+                                          fontSize: '0.78rem', fontWeight: 600,
+                                          cursor: available === 0 ? 'not-allowed' : 'pointer'
+                                        }}>
+                                        {available === 0 ? 'Sold Out' : 'Buy'}
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: '#00e676', marginTop: '8px', textAlign: 'center' }}>
+                              Store purchases count toward the campaign goal!
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Store badge on card */}
+                    {c.store_mode_enabled && !storeItemsMap[c.id]?.length && !c.store_embed_url && (
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '8px',
+                        padding: '4px 10px', borderRadius: '6px', background: 'rgba(255,110,199,0.08)',
+                        border: '1px solid rgba(255,110,199,0.15)', fontSize: '0.78rem', color: '#ff6ec7' }}>
+                        🛍️ Store enabled — products coming soon
                       </div>
                     )}
 
