@@ -7331,11 +7331,28 @@
       const [loading, setLoading] = useState(true);
       const [viewingPinned, setViewingPinned] = useState(false);
       const [pinnedCopied, setPinnedCopied] = useState(false);
+      const [cherryPickerDirect, setCherryPickerDirect] = useState(false);
       const messageEndRef = useRef(null);
 
-      const hasCherryPicker = auth.profile?.role === 'model' && auth.profile?.cherry_picker_active;
+      const hasCherryPicker = (auth.profile?.role === 'model' && auth.profile?.cherry_picker_active) || cherryPickerDirect;
 
-      // Auto-select pinned message when profile loads and cherry picker is active
+      // Direct fallback: fetch cherry_picker_active from DB in case auth.profile is slow/missing
+      useEffect(() => {
+        if (auth.currentUser && !auth.profile?.cherry_picker_active) {
+          supabase
+            .from('profiles')
+            .select('cherry_picker_active, role')
+            .eq('id', auth.currentUser.id)
+            .single()
+            .then(({ data }) => {
+              if (data?.role === 'model' && data?.cherry_picker_active) {
+                setCherryPickerDirect(true);
+              }
+            });
+        }
+      }, [auth.currentUser]);
+
+      // Auto-select pinned message when cherry picker becomes available
       useEffect(() => {
         if (hasCherryPicker && !conversationId && !selectedConvId) {
           setViewingPinned(true);
@@ -7463,7 +7480,11 @@ REMEMBER:
       }, [messages]);
 
       useEffect(() => {
+        // Stop loading immediately — don't block the page waiting for conversations
+        setLoading(false);
+
         const fetchConversations = async () => {
+          if (!auth.currentUser) return;
           try {
             const { data, error } = await supabase
               .from('conversations')
@@ -7471,27 +7492,15 @@ REMEMBER:
               .or(`participant_1.eq.${auth.currentUser.id},participant_2.eq.${auth.currentUser.id}`)
               .order('last_message_at', { ascending: false });
 
-            if (error) {
-              console.log('Conversations table not found or empty — skipping');
-              setConversations([]);
-            } else {
-              setConversations(data || []);
+            if (!error && data) {
+              setConversations(data);
             }
           } catch (error) {
             console.log('Fetch conversations skipped:', error.message);
-            setConversations([]);
-          } finally {
-            setLoading(false);
           }
         };
 
-        if (auth.currentUser) {
-          // Set a timeout so loading never hangs forever
-          const timeout = setTimeout(() => setLoading(false), 3000);
-          fetchConversations().then(() => clearTimeout(timeout));
-        } else {
-          setLoading(false);
-        }
+        fetchConversations();
       }, [auth.currentUser]);
 
       useEffect(() => {
