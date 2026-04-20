@@ -10751,7 +10751,7 @@ RULES
       const auth = useContext(AuthContext);
       const isModel = auth?.profile?.role === 'model';
       const isClient = auth?.profile?.role === 'client';
-      const [tab, setTab] = useState(isModel ? 'myteam' : 'tasks');
+      const [tab, setTab] = useState(isModel ? 'mysquad' : 'tasks');
       const [teamMembers, setTeamMembers] = useState([]);
       const [pendingRequests, setPendingRequests] = useState([]);
       const [shareLinks, setShareLinks] = useState([]);
@@ -10760,14 +10760,30 @@ RULES
       const [inviteSearch, setInviteSearch] = useState('');
       const [searchResults, setSearchResults] = useState([]);
       const [generating, setGenerating] = useState(false);
-      // For client: which model teams they're on
       const [myModelTeams, setMyModelTeams] = useState([]);
+      const [selectedModelId, setSelectedModelId] = useState(null);
+      const [squadMembers, setSquadMembers] = useState([]);
+
+      const getClicksForMember = (memberId) => {
+        let total = 0;
+        shareLinks.filter(l => l.team_member_id === memberId || l.client_id === memberId).forEach(l => {
+          total += (linkClicks[l.id] || 0);
+        });
+        return total;
+      };
+
+      const selectedTeam = isClient ? myModelTeams.find(t => {
+        const mid = t.model_id || t.profiles?.id;
+        return mid === selectedModelId && t.status === 'active';
+      }) : null;
+      const selectedModelName = isClient && selectedTeam ? (selectedTeam.profiles?.display_name || 'Model') : '';
+      const selectedModelEmoji = isClient && selectedTeam ? (selectedTeam.profiles?.avatar_emoji || '🎀') : '🎀';
+      const activeTeams = isClient ? myModelTeams.filter(t => t.status === 'active') : [];
 
       const fetchTeamData = async () => {
         setLoading(true);
         try {
           if (isModel) {
-            // Fetch my team members
             const { data: members } = await supabase
               .from('team_members')
               .select('*, profiles:client_id(id, display_name, avatar_emoji)')
@@ -10775,7 +10791,6 @@ RULES
               .eq('status', 'active');
             setTeamMembers(members || []);
 
-            // Fetch pending requests
             const { data: pending } = await supabase
               .from('team_members')
               .select('*, profiles:client_id(id, display_name, avatar_emoji)')
@@ -10783,16 +10798,13 @@ RULES
               .eq('status', 'pending');
             setPendingRequests(pending || []);
 
-            // Fetch all share links for my profile
             const { data: links } = await supabase
               .from('share_links')
               .select('*, profiles:client_id(display_name, avatar_emoji)')
               .eq('model_id', auth.profile.id);
             setShareLinks(links || []);
 
-            // Fetch click counts per link
             if (links && links.length > 0) {
-              const linkIds = links.map(l => l.id);
               const { data: clicks } = await supabase
                 .from('share_link_clicks')
                 .select('link_id');
@@ -10805,21 +10817,23 @@ RULES
           }
 
           if (isClient) {
-            // Fetch teams I'm on
             const { data: teams } = await supabase
               .from('team_members')
               .select('*, profiles:model_id(id, display_name, avatar_emoji)')
               .eq('client_id', auth.profile.id);
             setMyModelTeams(teams || []);
 
-            // Fetch my share links
+            const activeOnes = (teams || []).filter(t => t.status === 'active');
+            if (activeOnes.length > 0 && !selectedModelId) {
+              setSelectedModelId(activeOnes[0].model_id || activeOnes[0].profiles?.id);
+            }
+
             const { data: links } = await supabase
               .from('share_links')
               .select('*')
               .eq('client_id', auth.profile.id);
             setShareLinks(links || []);
 
-            // Fetch click counts
             if (links && links.length > 0) {
               const { data: clicks } = await supabase
                 .from('share_link_clicks')
@@ -10835,7 +10849,38 @@ RULES
         setLoading(false);
       };
 
+      const fetchSquadMembers = async (modelId) => {
+        if (!modelId) return;
+        try {
+          const { data } = await supabase
+            .from('team_members')
+            .select('*, profiles:client_id(id, display_name, avatar_emoji)')
+            .eq('model_id', modelId)
+            .eq('status', 'active');
+          setSquadMembers(data || []);
+        } catch (err) { console.error('Squad fetch error:', err); }
+      };
+
+      const timeAgo = (dateStr) => {
+        if (!dateStr) return '';
+        const diff = Date.now() - new Date(dateStr).getTime();
+        const mins = Math.floor(diff / 60000);
+        if (mins < 1) return 'just now';
+        if (mins < 60) return mins + 'm ago';
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return hrs + 'h ago';
+        const days = Math.floor(hrs / 24);
+        return days + 'd ago';
+      };
+
       useEffect(() => { if (auth?.profile?.id) fetchTeamData(); }, [auth?.profile?.id]);
+
+      useEffect(() => {
+        const modelId = isModel ? auth?.profile?.id : selectedModelId;
+        if (modelId && isClient && tab === 'squad') {
+          fetchSquadMembers(modelId);
+        }
+      }, [tab, selectedModelId, auth?.profile?.id]);
 
       const handleInvite = async (clientId) => {
         try {
@@ -10874,7 +10919,7 @@ RULES
         try {
           const code = Math.random().toString(36).substring(2, 10);
           const teamMember = isModel
-            ? teamMembers[0] // shouldn't happen from model side
+            ? teamMembers[0]
             : myModelTeams.find(t => t.model_id === modelId || t.profiles?.id === modelId);
           if (!teamMember) { setGenerating(false); return; }
           await supabase.from('share_links').insert({
@@ -10918,370 +10963,459 @@ RULES
         );
       }
 
-      return (
-        <div className="page-content" style={{ maxWidth: '700px', margin: '0 auto', padding: '1rem' }}>
-          {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, lineHeight: 1.3 }}>
-              <span style={{ color: '#ffd700' }}>The Team</span>, <span style={{ color: '#ff6ec7' }}>The Fam</span>, <span style={{ color: '#00d9ff' }}>The Sauce</span>
-            </div>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '6px', maxWidth: '480px', margin: '6px auto 0', lineHeight: 1.5 }}>
-              {isModel
-                ? "Your inner circle of loyal fans who help grow your brand. They share your profile, bring in new clients, and rep you across the platform."
-                : "Join a model's team and help her grow. Share her profile, bring in clients, and earn your spot as one of her most valued supporters."
-              }
-            </div>
-          </div>
+      /* ========== TAB BAR COMPONENT ========== */
+      const TabBar = ({ tabs, current, onChange }) => (
+        <div style={{ display: 'flex', gap: '3px', marginBottom: '1.2rem', background: 'var(--bg-card)',
+          borderRadius: '12px', padding: '4px', border: '1px solid var(--border-color)' }}>
+          {tabs.map(t => (
+            <button key={t.key} onClick={() => onChange(t.key)}
+              style={{ flex: 1, padding: '9px 4px', borderRadius: '9px', border: 'none', fontWeight: 700,
+                fontSize: '0.75rem', cursor: 'pointer', transition: 'all 0.2s', letterSpacing: '0.01em',
+                background: current === t.key ? 'linear-gradient(135deg, #ffd700, #ffaa00)' : 'transparent',
+                color: current === t.key ? '#1a1a2e' : 'var(--text-secondary)' }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      );
 
-          {/* Tasks Info Box — for team members (always visible, not role-gated to prevent flicker) */}
-          {auth?.profile?.role !== 'model' && (
-            <div style={{ background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.15)',
-              borderRadius: '12px', padding: '14px 16px', marginBottom: '1.2rem' }}>
-              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#ffd700', marginBottom: '8px' }}>
-                Ways You Can Help Your Model
+      /* ========== CHAT UI COMPONENT ========== */
+      /* ========================================== */
+      /* ========== MODEL VIEW ==================== */
+      /* ========================================== */
+      if (isModel) {
+        const modelName = auth.profile.display_name || 'You';
+        const modelFirstName = modelName.split(' ')[0];
+        return (
+          <div className="page-content" style={{ maxWidth: '700px', margin: '0 auto', padding: '1rem' }}>
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 900, lineHeight: 1.3 }}>
+                <span style={{ color: '#ffd700' }}>The Team</span>, <span style={{ color: '#ff6ec7' }}>The Fam</span>, <span style={{ color: '#00d9ff' }}>The Sauce</span>
               </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                You're free to do any of these anytime — every bit helps and is much appreciated:
+              <div style={{ fontSize: '1.1rem', fontWeight: 800, marginTop: '6px', color: 'var(--text-primary)' }}>
+                {modelFirstName}'s Squad
               </div>
-              <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {[
-                  { icon: '🔗', text: 'Share her profile link to drive new traffic' },
-                  { icon: '⭐', text: 'Leave reviews or testimonials after sessions' },
-                  { icon: '🛡️', text: 'Report bad actors or fake accounts' },
-                  { icon: '🗳️', text: 'Vote & engage on her polls to boost visibility' },
-                  { icon: '🤝', text: 'Refer new clients who actually book' },
-                ].map((task, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: 'var(--text-primary)' }}>
-                    <span>{task.icon}</span> {task.text}
-                  </div>
-                ))}
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: 1.5 }}>
+                Your ride-or-die crew repping your brand
               </div>
             </div>
-          )}
 
-          {/* Tabs */}
-          <div style={{ display: 'flex', gap: '4px', marginBottom: '1.2rem', background: 'var(--bg-card)',
-            borderRadius: '10px', padding: '4px', border: '1px solid var(--border-color)' }}>
-            {isModel ? (
-              <>
-                {['myteam', 'requests', 'analytics'].map(t => (
-                  <button key={t} onClick={() => setTab(t)}
-                    style={{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none', fontWeight: 600,
-                      fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s',
-                      background: tab === t ? 'linear-gradient(135deg, #ffd700, #ffaa00)' : 'transparent',
-                      color: tab === t ? '#1a1a2e' : 'var(--text-secondary)' }}>
-                    {t === 'myteam' ? `My Team (${teamMembers.length})` : t === 'requests' ? `Requests (${pendingRequests.length})` : 'Analytics'}
-                  </button>
-                ))}
-              </>
+            <TabBar
+              tabs={[
+                { key: 'mysquad', label: `My Squad (${teamMembers.length})` },
+                { key: 'requests', label: `Requests (${pendingRequests.length})` },
+                { key: 'analytics', label: 'Analytics' }
+              ]}
+              current={tab} onChange={setTab} />
+
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '2rem' }}><div className="loading-spinner"></div></div>
             ) : (
               <>
-                {['tasks', 'mylinks', 'teams'].map(t => (
-                  <button key={t} onClick={() => setTab(t)}
-                    style={{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none', fontWeight: 600,
-                      fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s',
-                      background: tab === t ? 'linear-gradient(135deg, #ffd700, #ffaa00)' : 'transparent',
-                      color: tab === t ? '#1a1a2e' : 'var(--text-secondary)' }}>
-                    {t === 'tasks' ? 'Tasks' : t === 'mylinks' ? `My Links (${shareLinks.length})` : `My Teams (${myModelTeams.filter(t => t.status === 'active').length})`}
-                  </button>
-                ))}
-              </>
-            )}
-          </div>
-
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '2rem' }}><div className="loading-spinner"></div></div>
-          ) : (
-            <>
-              {/* ===== MODEL VIEW ===== */}
-              {isModel && tab === 'myteam' && (
-                <div>
-                  {/* Invite search */}
-                  <div style={{ marginBottom: '1rem' }}>
-                    <input type="text" value={inviteSearch} onChange={e => searchClients(e.target.value)}
-                      placeholder="Search clients to invite..."
-                      style={{ width: '100%', padding: '10px 14px', borderRadius: '10px',
-                        border: '1px solid var(--border-color)', background: 'var(--bg-card)',
-                        color: 'var(--text-primary)', fontSize: '0.85rem', boxSizing: 'border-box' }} />
-                    {searchResults.length > 0 && (
-                      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                        borderRadius: '10px', marginTop: '4px', overflow: 'hidden' }}>
-                        {searchResults.map(client => (
-                          <div key={client.id} style={{ display: 'flex', alignItems: 'center', gap: '10px',
-                            padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}
-                            onClick={() => handleInvite(client.id)}>
-                            <div style={{ width: '32px', height: '32px', borderRadius: '50%',
-                              background: 'linear-gradient(135deg, #ffd700, #ffaa00)', display: 'flex',
-                              alignItems: 'center', justifyContent: 'center' }}>{client.avatar_emoji || '👤'}</div>
-                            <div style={{ flex: 1, fontWeight: 600, fontSize: '0.85rem' }}>{client.display_name}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#ffd700', fontWeight: 700 }}>+ Invite</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {teamMembers.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-                      <div style={{ fontSize: '2rem', marginBottom: '8px' }}>👥</div>
-                      <div>No team members yet. Search above to invite your first fan!</div>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {teamMembers.map(member => (
-                        <div key={member.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                          borderRadius: '12px', padding: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <div style={{ width: '42px', height: '42px', borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #ffd700, #ffaa00)', display: 'flex',
-                            alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-                            {member.profiles?.avatar_emoji || '👤'}
-                          </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{member.profiles?.display_name || 'Team Member'}</div>
-                            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-                              Joined {member.joined_at ? new Date(member.joined_at).toLocaleDateString() : 'recently'}
+                {/* MY SQUAD TAB */}
+                {tab === 'mysquad' && (
+                  <div>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <input type="text" value={inviteSearch} onChange={e => searchClients(e.target.value)}
+                        placeholder="Search clients to invite to your squad..."
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: '10px',
+                          border: '1px solid var(--border-color)', background: 'var(--bg-card)',
+                          color: 'var(--text-primary)', fontSize: '0.85rem', boxSizing: 'border-box' }} />
+                      {searchResults.length > 0 && (
+                        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                          borderRadius: '10px', marginTop: '4px', overflow: 'hidden' }}>
+                          {searchResults.map(client => (
+                            <div key={client.id} style={{ display: 'flex', alignItems: 'center', gap: '10px',
+                              padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}
+                              onClick={() => handleInvite(client.id)}>
+                              <div style={{ width: '32px', height: '32px', borderRadius: '50%',
+                                background: 'linear-gradient(135deg, #ffd700, #ffaa00)', display: 'flex',
+                                alignItems: 'center', justifyContent: 'center' }}>{client.avatar_emoji || '👤'}</div>
+                              <div style={{ flex: 1, fontWeight: 600, fontSize: '0.85rem' }}>{client.display_name}</div>
+                              <div style={{ fontSize: '0.75rem', color: '#ffd700', fontWeight: 700 }}>+ Invite</div>
                             </div>
-                          </div>
-                          <div style={{ background: 'rgba(255,215,0,0.1)', padding: '3px 10px', borderRadius: '10px',
-                            fontSize: '0.7rem', fontWeight: 700, color: '#ffd700' }}>
-                            Team 💛
-                          </div>
+                          ))}
                         </div>
-                      ))}
+                      )}
                     </div>
-                  )}
-                </div>
-              )}
 
-              {isModel && tab === 'requests' && (
-                <div>
-                  {pendingRequests.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-                      <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📭</div>
-                      <div>No pending requests right now.</div>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {pendingRequests.map(req => (
-                        <div key={req.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                          borderRadius: '12px', padding: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <div style={{ width: '42px', height: '42px', borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', display: 'flex',
-                            alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-                            {req.profiles?.avatar_emoji || '👤'}
-                          </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{req.profiles?.display_name || 'Client'}</div>
-                            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-                              {req.invited_by === 'client' ? 'Wants to join your team' : 'You invited them'}
-                            </div>
-                          </div>
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <button onClick={() => handleAccept(req.id)}
-                              style={{ padding: '6px 14px', borderRadius: '8px', border: 'none',
-                                background: 'linear-gradient(135deg, #ffd700, #ffaa00)', color: '#1a1a2e',
-                                fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer' }}>Accept</button>
-                            <button onClick={() => handleDecline(req.id)}
-                              style={{ padding: '6px 14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)',
-                                background: 'transparent', color: 'var(--text-secondary)', fontWeight: 600,
-                                fontSize: '0.78rem', cursor: 'pointer' }}>Decline</button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {isModel && tab === 'analytics' && (
-                <div>
-                  <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                    borderRadius: '12px', padding: '16px', marginBottom: '1rem' }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '12px' }}>Team Link Performance</div>
-                    {shareLinks.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                        No share links created yet. Your team members generate these.
+                    {teamMembers.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-secondary)' }}>
+                        <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>👥</div>
+                        <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px', color: 'var(--text-primary)' }}>Your squad is empty</div>
+                        <div style={{ fontSize: '0.82rem' }}>Invite your most loyal fans!</div>
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {shareLinks.map(link => (
-                          <div key={link.id} style={{ display: 'flex', alignItems: 'center', gap: '10px',
-                            padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
-                            <div style={{ width: '32px', height: '32px', borderRadius: '50%',
-                              background: 'linear-gradient(135deg, #ffd700, #ffaa00)', display: 'flex',
-                              alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem' }}>
-                              {link.profiles?.avatar_emoji || '👤'}
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontWeight: 600, fontSize: '0.82rem' }}>{link.profiles?.display_name || 'Team Member'}</div>
-                              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>
-                                modelbid.tech/?ref={link.code}
+                        {teamMembers.map(member => {
+                          const memberClicks = getClicksForMember(member.client_id || member.profiles?.id);
+                          return (
+                            <div key={member.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                              borderRadius: '12px', padding: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div style={{ width: '46px', height: '46px', borderRadius: '50%',
+                                background: 'linear-gradient(135deg, #ffd700, #ffaa00)', display: 'flex',
+                                alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', flexShrink: 0 }}>
+                                {member.profiles?.avatar_emoji || '👤'}
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{member.profiles?.display_name || 'Team Member'}</div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                                  Joined {member.joined_at ? new Date(member.joined_at).toLocaleDateString() : 'recently'}
+                                </div>
+                              </div>
+                              <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                                <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#ffd700' }}>{memberClicks}</div>
+                                <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>clicks</div>
                               </div>
                             </div>
-                            <div style={{ textAlign: 'right' }}>
-                              <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#ffd700' }}>{linkClicks[link.id] || 0}</div>
-                              <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>clicks</div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* REQUESTS TAB */}
+                {tab === 'requests' && (
+                  <div>
+                    {pendingRequests.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-secondary)' }}>
+                        <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>📭</div>
+                        <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px', color: 'var(--text-primary)' }}>No pending requests</div>
+                        <div style={{ fontSize: '0.82rem' }}>When someone wants to join your squad, it'll show up here.</div>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {pendingRequests.map(req => (
+                          <div key={req.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                            borderRadius: '12px', padding: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ width: '42px', height: '42px', borderRadius: '50%',
+                              background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', display: 'flex',
+                              alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
+                              {req.profiles?.avatar_emoji || '👤'}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{req.profiles?.display_name || 'Client'}</div>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                                {req.invited_by === 'client' ? 'Wants to join your squad' : 'You invited them'}
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <button onClick={() => handleAccept(req.id)}
+                                style={{ padding: '6px 14px', borderRadius: '8px', border: 'none',
+                                  background: 'linear-gradient(135deg, #ffd700, #ffaa00)', color: '#1a1a2e',
+                                  fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer' }}>Accept</button>
+                              <button onClick={() => handleDecline(req.id)}
+                                style={{ padding: '6px 14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)',
+                                  background: 'transparent', color: 'var(--text-secondary)', fontWeight: 600,
+                                  fontSize: '0.78rem', cursor: 'pointer' }}>Decline</button>
                             </div>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
+                )}
 
-                  {/* Summary stats */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                {/* ANALYTICS TAB */}
+                {tab === 'analytics' && (
+                  <div>
                     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                      borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
-                      <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ffd700' }}>{teamMembers.length}</div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Team Members</div>
+                      borderRadius: '12px', padding: '16px', marginBottom: '1rem' }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '12px' }}>Team Link Performance</div>
+                      {shareLinks.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                          No share links created yet. Your team members generate these.
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {shareLinks.map(link => (
+                            <div key={link.id} style={{ display: 'flex', alignItems: 'center', gap: '10px',
+                              padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
+                              <div style={{ width: '32px', height: '32px', borderRadius: '50%',
+                                background: 'linear-gradient(135deg, #ffd700, #ffaa00)', display: 'flex',
+                                alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem' }}>
+                                {link.profiles?.avatar_emoji || '👤'}
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 600, fontSize: '0.82rem' }}>{link.profiles?.display_name || 'Team Member'}</div>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>
+                                  modelbid.tech/?ref={link.code}
+                                </div>
+                              </div>
+                              <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#ffd700' }}>{linkClicks[link.id] || 0}</div>
+                                <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>clicks</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                      borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
-                      <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ff6ec7' }}>{shareLinks.length}</div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Share Links</div>
-                    </div>
-                    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                      borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
-                      <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#00d9ff' }}>
-                        {Object.values(linkClicks).reduce((a, b) => a + b, 0)}
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                        borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ffd700' }}>{teamMembers.length}</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Team Members</div>
                       </div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Total Clicks</div>
+                      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                        borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ff6ec7' }}>{shareLinks.length}</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Share Links</div>
+                      </div>
+                      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                        borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#00d9ff' }}>
+                          {Object.values(linkClicks).reduce((a, b) => a + b, 0)}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Total Clicks</div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </>
+            )}
+          </div>
+        );
+      }
 
-              {/* ===== CLIENT VIEW ===== */}
-              {isClient && tab === 'tasks' && (
-                <div>
-                  {/* The info box is above the tabs, tasks tab just shows active teams with actions */}
-                  {myModelTeams.filter(t => t.status === 'active').length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-                      <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🤝</div>
-                      <div>You're not on any teams yet. Browse models and request to join their team!</div>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {myModelTeams.filter(t => t.status === 'active').map(team => (
-                        <div key={team.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                          borderRadius: '12px', padding: '14px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-                            <div style={{ width: '42px', height: '42px', borderRadius: '50%',
-                              background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', display: 'flex',
-                              alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-                              {team.profiles?.avatar_emoji || '🎀'}
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{team.profiles?.display_name || 'Model'}</div>
-                              <div style={{ fontSize: '0.7rem', color: '#ffd700', fontWeight: 600 }}>Team Member 💛</div>
-                            </div>
+      /* ========================================== */
+      /* ========== CLIENT VIEW =================== */
+      /* ========================================== */
+      if (isClient) {
+        const clientLinks = selectedModelId ? shareLinks.filter(l => l.model_id === selectedModelId) : [];
+
+        return (
+          <div className="page-content" style={{ maxWidth: '700px', margin: '0 auto', padding: '1rem' }}>
+
+            {/* TEAM PICKER — if on multiple teams */}
+            {activeTeams.length > 1 && (
+              <div style={{ marginBottom: '1.2rem' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Your Teams
+                </div>
+                <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+                  {activeTeams.map(team => {
+                    const mid = team.model_id || team.profiles?.id;
+                    const isSelected = mid === selectedModelId;
+                    return (
+                      <div key={team.id} onClick={() => { setSelectedModelId(mid); setTab('tasks'); }}
+                        style={{ cursor: 'pointer', padding: '10px 16px', borderRadius: '12px', flexShrink: 0,
+                          background: isSelected ? 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,110,199,0.1))' : 'var(--bg-card)',
+                          border: isSelected ? '1.5px solid rgba(255,215,0,0.4)' : '1px solid var(--border-color)',
+                          display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', display: 'flex',
+                          alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>
+                          {team.profiles?.avatar_emoji || '🎀'}
+                        </div>
+                        <div style={{ fontWeight: 700, fontSize: '0.82rem', color: isSelected ? '#ffd700' : 'var(--text-primary)' }}>
+                          {team.profiles?.display_name || 'Model'}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* NO ACTIVE TEAMS */}
+            {activeTeams.length === 0 && !loading && (
+              <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🤝</div>
+                <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '6px' }}>No Teams Yet</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+                  Browse models and request to join their team to start repping!
+                </div>
+                <button className="btn glow-btn" onClick={() => window.location.hash = 'explore'}>Browse Models</button>
+              </div>
+            )}
+
+            {/* SELECTED TEAM VIEW */}
+            {selectedTeam && (
+              <>
+                {/* Hero Section */}
+                <div style={{ textAlign: 'center', marginBottom: '1.2rem', padding: '1.2rem 0' }}>
+                  <div style={{ width: '80px', height: '80px', borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #ff6ec7, #c44dff, #ffd700)', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem',
+                    margin: '0 auto 12px', boxShadow: '0 0 24px rgba(255,110,199,0.3)' }}>
+                    {selectedModelEmoji}
+                  </div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--text-primary)' }}>
+                    {selectedModelName}
+                  </div>
+                  <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                    You're on {selectedModelName.split(' ')[0]}'s Team
+                  </div>
+                  <div style={{ display: 'inline-block', marginTop: '8px', background: 'linear-gradient(135deg, #ffd700, #ffaa00)',
+                    color: '#1a1a2e', padding: '4px 14px', borderRadius: '20px', fontSize: '0.72rem',
+                    fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Team Member
+                  </div>
+                </div>
+
+                <TabBar
+                  tabs={[
+                    { key: 'tasks', label: 'My Tasks' },
+                    { key: 'mylinks', label: `My Links (${clientLinks.length})` },
+                    { key: 'squad', label: 'The Squad' }
+                  ]}
+                  current={tab} onChange={setTab} />
+
+                {loading ? (
+                  <div style={{ textAlign: 'center', padding: '2rem' }}><div className="loading-spinner"></div></div>
+                ) : (
+                  <>
+                    {/* MY TASKS TAB */}
+                    {tab === 'tasks' && (
+                      <div>
+                        <div style={{ background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.15)',
+                          borderRadius: '12px', padding: '14px 16px', marginBottom: '1.2rem' }}>
+                          <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#ffd700', marginBottom: '8px' }}>
+                            Ways You Can Help {selectedModelName.split(' ')[0]}
                           </div>
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <button onClick={() => generateShareLink(team.model_id || team.profiles?.id)}
-                              disabled={generating}
-                              style={{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none',
-                                background: 'linear-gradient(135deg, #ffd700, #ffaa00)', color: '#1a1a2e',
-                                fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
-                              🔗 Generate Share Link
-                            </button>
-                            <button onClick={() => window.location.hash = `profile/${team.model_id || team.profiles?.id}`}
-                              style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)',
-                                background: 'transparent', color: 'var(--text-secondary)', fontWeight: 600,
-                                fontSize: '0.8rem', cursor: 'pointer' }}>
-                              View Profile
-                            </button>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                            You're free to do any of these anytime — every bit helps and is much appreciated:
+                          </div>
+                          <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {[
+                              { icon: '🔗', text: `Share ${selectedModelName.split(' ')[0]}'s profile link to drive new traffic` },
+                              { icon: '⭐', text: 'Leave reviews or testimonials after sessions' },
+                              { icon: '🛡️', text: 'Report bad actors or fake accounts' },
+                              { icon: '🗳️', text: 'Vote & engage on her polls to boost visibility' },
+                              { icon: '🤝', text: 'Refer new clients who actually book' },
+                            ].map((task, i) => (
+                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: 'var(--text-primary)' }}>
+                                <span>{task.icon}</span> {task.text}
+                              </div>
+                            ))}
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
 
-              {isClient && tab === 'mylinks' && (
-                <div>
-                  {shareLinks.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-                      <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🔗</div>
-                      <div>No share links yet. Go to Tasks and generate one for your model!</div>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {shareLinks.map(link => (
-                        <div key={link.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                          borderRadius: '12px', padding: '14px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                            <div style={{ flex: 1, fontFamily: 'monospace', fontSize: '0.8rem', color: '#ffd700',
-                              background: 'rgba(255,215,0,0.06)', padding: '6px 10px', borderRadius: '8px',
-                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              modelbid.tech/?ref={link.code}
-                            </div>
-                            <button onClick={() => copyLink(link.code)}
-                              style={{ padding: '6px 12px', borderRadius: '8px', border: 'none',
-                                background: 'linear-gradient(135deg, #ffd700, #ffaa00)', color: '#1a1a2e',
-                                fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                              Copy
-                            </button>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                              Created {new Date(link.created_at).toLocaleDateString()}
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <span style={{ fontWeight: 800, fontSize: '1rem', color: '#ffd700' }}>{linkClicks[link.id] || 0}</span>
-                              <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>clicks</span>
-                            </div>
-                          </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <button className="btn glow-btn" onClick={() => generateShareLink(selectedModelId)}
+                            disabled={generating}
+                            style={{ width: '100%', padding: '12px', fontSize: '0.9rem' }}>
+                            {generating ? 'Generating...' : `Generate Share Link for ${selectedModelName.split(' ')[0]}`}
+                          </button>
+                          <button onClick={() => window.location.hash = `profile/${selectedModelId}`}
+                            style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)',
+                              background: 'var(--bg-card)', color: 'var(--text-primary)', fontWeight: 700,
+                              fontSize: '0.85rem', cursor: 'pointer' }}>
+                            View {selectedModelName.split(' ')[0]}'s Profile
+                          </button>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+                      </div>
+                    )}
 
-              {isClient && tab === 'teams' && (
-                <div>
-                  {myModelTeams.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-                      <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🎀</div>
-                      <div>You haven't joined any teams yet. Browse models and request to join!</div>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {myModelTeams.map(team => (
-                        <div key={team.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                          borderRadius: '12px', padding: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <div style={{ width: '42px', height: '42px', borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', display: 'flex',
-                            alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-                            {team.profiles?.avatar_emoji || '🎀'}
+                    {/* MY LINKS TAB */}
+                    {tab === 'mylinks' && (
+                      <div>
+                        {clientLinks.length === 0 ? (
+                          <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-secondary)' }}>
+                            <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>🔗</div>
+                            <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px', color: 'var(--text-primary)' }}>No links yet</div>
+                            <div style={{ fontSize: '0.82rem' }}>Generate a share link from the Tasks tab to start repping!</div>
                           </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{team.profiles?.display_name || 'Model'}</div>
-                            <div style={{ fontSize: '0.72rem', color: team.status === 'active' ? '#ffd700' : 'var(--text-secondary)' }}>
-                              {team.status === 'active' ? 'Active Team Member 💛' : team.status === 'pending' ? 'Pending...' : team.status}
-                            </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {clientLinks.map(link => (
+                              <div key={link.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                                borderRadius: '12px', padding: '14px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                                  <div style={{ flex: 1, fontFamily: 'monospace', fontSize: '0.8rem', color: '#ffd700',
+                                    background: 'rgba(255,215,0,0.06)', padding: '6px 10px', borderRadius: '8px',
+                                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    modelbid.tech/?ref={link.code}
+                                  </div>
+                                  <button onClick={() => copyLink(link.code)}
+                                    style={{ padding: '6px 12px', borderRadius: '8px', border: 'none',
+                                      background: 'linear-gradient(135deg, #ffd700, #ffaa00)', color: '#1a1a2e',
+                                      fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                    Copy
+                                  </button>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                    Created {link.created_at ? new Date(link.created_at).toLocaleDateString() : 'recently'}
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ fontWeight: 800, fontSize: '1rem', color: '#ffd700' }}>{linkClicks[link.id] || 0}</span>
+                                    <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>clicks</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                          {team.status === 'active' && (
-                            <div style={{ background: 'rgba(255,215,0,0.1)', padding: '3px 10px', borderRadius: '10px',
-                              fontSize: '0.7rem', fontWeight: 700, color: '#ffd700' }}>
-                              Active
-                            </div>
-                          )}
-                          {team.status === 'pending' && (
-                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '3px 10px', borderRadius: '10px',
-                              fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                              Pending
-                            </div>
-                          )}
+                        )}
+                      </div>
+                    )}
+
+                    {/* THE SQUAD TAB */}
+                    {tab === 'squad' && (
+                      <div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '12px', lineHeight: 1.5 }}>
+                          Your fellow team members repping {selectedModelName.split(' ')[0]}'s brand
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </>
-          )}
+                        {squadMembers.length === 0 ? (
+                          <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-secondary)' }}>
+                            <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>👥</div>
+                            <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px', color: 'var(--text-primary)' }}>Just you for now</div>
+                            <div style={{ fontSize: '0.82rem' }}>Be the first to rep and others will follow!</div>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {squadMembers.map(member => {
+                              const isMe = (member.client_id || member.profiles?.id) === auth.profile.id;
+                              const memberClicks = getClicksForMember(member.client_id || member.profiles?.id);
+                              return (
+                                <div key={member.id} style={{ background: isMe ? 'rgba(255,215,0,0.04)' : 'var(--bg-card)',
+                                  border: isMe ? '1px solid rgba(255,215,0,0.2)' : '1px solid var(--border-color)',
+                                  borderRadius: '12px', padding: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                  <div style={{ width: '42px', height: '42px', borderRadius: '50%',
+                                    background: 'linear-gradient(135deg, #ffd700, #ffaa00)', display: 'flex',
+                                    alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0 }}>
+                                    {member.profiles?.avatar_emoji || '👤'}
+                                  </div>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>
+                                      {member.profiles?.display_name || 'Team Member'}
+                                      {isMe && <span style={{ color: '#ffd700', fontSize: '0.72rem', marginLeft: '6px' }}>(You)</span>}
+                                    </div>
+                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                                      Joined {member.joined_at ? new Date(member.joined_at).toLocaleDateString() : 'recently'}
+                                    </div>
+                                  </div>
+                                  <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                                    <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#ffd700' }}>{memberClicks}</div>
+                                    <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>clicks</div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        );
+      }
+
+      /* ========== FALLBACK (neither model nor client) ========== */
+      return (
+        <div className="page-content" style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '8px' }}>
+            <span style={{ color: '#ffd700' }}>The Team, The Fam, The Sauce</span>
+          </div>
+          <div style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Set up your profile to access team features.</div>
+          <button className="btn glow-btn" onClick={() => window.location.hash = 'settings'}>Set Up Profile</button>
         </div>
       );
     }
