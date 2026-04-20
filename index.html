@@ -10772,13 +10772,16 @@ RULES
         return total;
       };
 
-      const selectedTeam = isClient ? myModelTeams.find(t => {
-        const mid = t.model_id || t.profiles?.id;
-        return mid === selectedModelId && t.status === 'active';
-      }) : null;
-      const selectedModelName = isClient && selectedTeam ? (selectedTeam.profiles?.display_name || 'Model') : '';
-      const selectedModelEmoji = isClient && selectedTeam ? (selectedTeam.profiles?.avatar_emoji || '🎀') : '🎀';
       const activeTeams = isClient ? myModelTeams.filter(t => t.status === 'active') : [];
+      const selectedTeam = isClient ? (
+        myModelTeams.find(t => {
+          const mid = t.model_id || t.profiles?.id;
+          return mid === selectedModelId && t.status === 'active';
+        }) || activeTeams[0] || null
+      ) : null;
+      const effectiveModelId = selectedTeam ? (selectedTeam.model_id || selectedTeam.profiles?.id) : selectedModelId;
+      const selectedModelName = selectedTeam ? (selectedTeam.profiles?.display_name || 'Model') : '';
+      const selectedModelEmoji = selectedTeam ? (selectedTeam.profiles?.avatar_emoji || '🎀') : '🎀';
 
       const fetchTeamData = async () => {
         setLoading(true);
@@ -11185,7 +11188,7 @@ RULES
       /* ========== CLIENT VIEW =================== */
       /* ========================================== */
       if (isClient) {
-        const clientLinks = selectedModelId ? shareLinks.filter(l => l.model_id === selectedModelId) : [];
+        const clientLinks = effectiveModelId ? shareLinks.filter(l => l.model_id === effectiveModelId) : [];
 
         return (
           <div className="page-content" style={{ maxWidth: '700px', margin: '0 auto', padding: '1rem' }}>
@@ -11199,7 +11202,7 @@ RULES
                 <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
                   {activeTeams.map(team => {
                     const mid = team.model_id || team.profiles?.id;
-                    const isSelected = mid === selectedModelId;
+                    const isSelected = mid === effectiveModelId;
                     return (
                       <div key={team.id} onClick={() => { setSelectedModelId(mid); setTab('tasks'); }}
                         style={{ cursor: 'pointer', padding: '10px 16px', borderRadius: '12px', flexShrink: 0,
@@ -11299,12 +11302,12 @@ RULES
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <button className="btn glow-btn" onClick={() => generateShareLink(selectedModelId)}
+                          <button className="btn glow-btn" onClick={() => generateShareLink(effectiveModelId)}
                             disabled={generating}
                             style={{ width: '100%', padding: '12px', fontSize: '0.9rem' }}>
                             {generating ? 'Generating...' : `Generate Share Link for ${selectedModelName.split(' ')[0]}`}
                           </button>
-                          <button onClick={() => window.location.hash = `profile/${selectedModelId}`}
+                          <button onClick={() => window.location.hash = `profile/${effectiveModelId}`}
                             style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)',
                               background: 'var(--bg-card)', color: 'var(--text-primary)', fontWeight: 700,
                               fontSize: '0.85rem', cursor: 'pointer' }}>
