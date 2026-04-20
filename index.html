@@ -11675,7 +11675,7 @@ RULES
         if (page === 'browse') return <BrowseModelsPage />;
         if (page === 'profile' && params[0]) return <ProfilePage modelId={params[0]} />;
         if (page === 'client' && params[0]) return <ClientProfilePage clientId={params[0]} />;
-        if (page === 'formodels') return <ForModelsPage />;
+        if (page === 'formodels') return auth.profile?.role === 'client' ? <FeedPage /> : <ForModelsPage />;
         if (page === 'westackr') return <WeStackrPage />;
         if (page === 'contracts') return <ContractsPage />;
         if (page === 'login') return <LoginPage />;
@@ -11702,9 +11702,11 @@ RULES
                 <span className="nav-dropdown-toggle">More ▾</span>
                 <div className="nav-dropdown-menu">
                   {/* Early journey — discovery & context */}
-                  <a className="nav-dropdown-item" onClick={() => window.location.hash = 'formodels'}>
-                    <span className="dd-icon">🎀</span> For Models
-                  </a>
+                  {auth.profile?.role !== 'client' && (
+                    <a className="nav-dropdown-item" onClick={() => window.location.hash = 'formodels'}>
+                      <span className="dd-icon">🎀</span> For Models
+                    </a>
+                  )}
                   <a className="nav-dropdown-item" onClick={() => window.location.hash = 'contracts'}>
                     <span className="dd-icon">📝</span> Contracts
                   </a>
