@@ -4571,7 +4571,7 @@
 
           if (error) throw error;
           setProfile(prev => ({ ...prev, cherry_picker_active: true }));
-          showToast('Cherry Picker activated! Your Master Prompt has been saved to Messages.', 'success');
+          showToast('Cherry Picker unlocked! Your Master Prompt has been saved to Messages.', 'success');
           window.location.hash = 'messages';
           return true;
         } catch (error) {
@@ -7564,7 +7564,7 @@ REMEMBER:
                 <span style={{ fontSize: '1.2rem' }}>📌</span>
                 <span style={{ fontWeight: 700, color: '#ffd700', fontSize: '0.95rem' }}>This message is permanently pinned and cannot be deleted.</span>
               </div>
-              <p style={{ color: '#aaa', fontSize: '0.85rem', margin: 0 }}>Your Cherry Picker subscription includes this saved prompt and setup guide. It will always be here whenever you need it.</p>
+              <p style={{ color: '#aaa', fontSize: '0.85rem', margin: 0 }}>Your Cherry Picker purchase includes this saved prompt and setup guide. It will always be here whenever you need it.</p>
             </div>
 
             <div style={{ marginBottom: '1.5rem' }}>
@@ -9468,7 +9468,7 @@ RULES
           return;
         }
         if (!hasCherryPicker) {
-          auth.showToast('Subscribe to Cherry Picker to generate prompts.', 'error');
+          auth.showToast('Purchase Cherry Picker to generate prompts.', 'error');
           return;
         }
         handleGenerate();
@@ -9490,15 +9490,15 @@ RULES
 
           {/* Info Box */}
           <div style={{ background: 'linear-gradient(135deg, rgba(255,110,199,0.08), rgba(157,78,221,0.08))', border: '1px solid rgba(255,110,199,0.2)', borderRadius: '14px', padding: '1.1rem 1.3rem', marginBottom: '1.5rem', fontSize: '0.85rem', color: '#ccc', lineHeight: '1.6' }}>
-            <span style={{ fontWeight: 700, color: '#ff6ec7' }}>How it works:</span> Enter competitor handles below, hit Generate, and copy the Master Prompt into a <span style={{ color: '#fff', fontWeight: 600 }}>FREE Claude account</span> with computer use. The AI scans their followers, finds repeat engagers, and delivers a ready-to-DM list — sorted by intent. <span style={{ color: '#9d4edd', fontWeight: 600 }}>$9.99/mo</span>
+            <span style={{ fontWeight: 700, color: '#ff6ec7' }}>How it works:</span> Enter competitor handles below, hit Generate, and copy the Master Prompt into a <span style={{ color: '#fff', fontWeight: 600 }}>FREE Claude account</span> with computer use. The AI scans their followers, finds repeat engagers, and delivers a ready-to-DM list — sorted by intent. <span style={{ color: '#9d4edd', fontWeight: 600 }}>One-time purchase — $9.99</span>
           </div>
 
           {/* Subscribe CTA for non-subscribers */}
           {isModel && !hasCherryPicker && (
             <div style={{ background: 'linear-gradient(135deg, rgba(157,78,221,0.15), rgba(255,110,199,0.15))', border: '1px solid rgba(157,78,221,0.3)', borderRadius: '14px', padding: '1.25rem', marginBottom: '1.5rem', textAlign: 'center' }}>
               <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', marginBottom: '0.4rem' }}>Unlock Cherry Picker</div>
-              <div style={{ fontSize: '0.85rem', color: '#999', marginBottom: '1rem' }}>$9.99/mo — Cancel anytime. Find your highest-intent fans automatically.</div>
-              <button onClick={handleSubscribe} style={{ padding: '0.7rem 2rem', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #ff6ec7, #9d4edd)', color: '#fff', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer' }}>Subscribe Now</button>
+              <div style={{ fontSize: '0.85rem', color: '#999', marginBottom: '1rem' }}>$9.99 one-time — Pay once, use forever. Find your highest-intent fans automatically.</div>
+              <button onClick={handleSubscribe} style={{ padding: '0.7rem 2rem', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #ff6ec7, #9d4edd)', color: '#fff', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer' }}>Buy Now — $9.99</button>
             </div>
           )}
 
