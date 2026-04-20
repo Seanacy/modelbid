@@ -9691,6 +9691,8 @@ REMEMBER:
       const { currentUser, profile, updateProfile } = useContext(AuthContext);
       const [data, setData] = useState(profile || {});
       const [loading, setLoading] = useState(false);
+      const [uploadingProfile, setUploadingProfile] = useState(false);
+      const [uploadingCover, setUploadingCover] = useState(false);
 
       if (!profile) {
         return <div>Loading...</div>;
@@ -9705,6 +9707,33 @@ REMEMBER:
         }
       };
 
+      const handlePhotoUpload = async (file, type) => {
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+          alert('File too large. Max 5MB.');
+          return;
+        }
+        const isProfilePic = type === 'profile';
+        isProfilePic ? setUploadingProfile(true) : setUploadingCover(true);
+        try {
+          const ext = file.name.split('.').pop();
+          const fileName = `${currentUser.id}/${type}_${Date.now()}.${ext}`;
+          const { error: uploadError } = await supabase.storage
+            .from('avatars')
+            .upload(fileName, file, { upsert: true });
+          if (uploadError) throw uploadError;
+          const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+          const url = urlData.publicUrl;
+          const field = isProfilePic ? 'profile_photo_url' : 'cover_photo_url';
+          setData(prev => ({ ...prev, [field]: url }));
+          await updateProfile({ [field]: url });
+        } catch (err) {
+          console.error('Upload error:', err);
+          alert('Upload failed: ' + err.message);
+        }
+        isProfilePic ? setUploadingProfile(false) : setUploadingCover(false);
+      };
+
       const isModel = profile.role === 'model';
 
       return (
@@ -9713,6 +9742,80 @@ REMEMBER:
 
           <div className="card">
             <h2 style={{ marginBottom: '1.5rem' }}>Edit Profile</h2>
+
+            {/* MODEL PHOTO UPLOADS */}
+            {isModel && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                {/* Profile Photo — small square */}
+                <div style={{ marginBottom: '1.2rem' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>Profile Photo</label>
+                  <p style={{ color: '#888', fontSize: '0.78rem', marginBottom: '10px', marginTop: '-4px' }}>
+                    Square headshot — this shows on your cards, browse page, and anywhere your name appears.
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{
+                      width: '90px', height: '90px', borderRadius: '50%', overflow: 'hidden',
+                      border: '2px solid var(--border-color)', background: 'var(--bg-card)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                    }}>
+                      {data.profile_photo_url ? (
+                        <img src={data.profile_photo_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ fontSize: '2.2rem' }}>{data.avatar_emoji || '📷'}</span>
+                      )}
+                    </div>
+                    <div>
+                      <label style={{
+                        display: 'inline-block', padding: '8px 18px', borderRadius: '10px',
+                        background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', color: '#fff',
+                        fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
+                        opacity: uploadingProfile ? 0.6 : 1
+                      }}>
+                        {uploadingProfile ? 'Uploading...' : (data.profile_photo_url ? 'Change Photo' : 'Upload Photo')}
+                        <input type="file" accept="image/*" style={{ display: 'none' }}
+                          onChange={(e) => handlePhotoUpload(e.target.files[0], 'profile')}
+                          disabled={uploadingProfile} />
+                      </label>
+                      <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '6px' }}>JPG, PNG — max 5MB</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cover Photo — wide horizontal */}
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>Cover Photo</label>
+                  <p style={{ color: '#888', fontSize: '0.78rem', marginBottom: '10px', marginTop: '-4px' }}>
+                    Wide horizontal banner — this is the big photo on your profile page.
+                  </p>
+                  <div style={{
+                    width: '100%', height: '160px', borderRadius: '12px', overflow: 'hidden',
+                    border: '2px dashed var(--border-color)', background: 'var(--bg-card)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    position: 'relative', cursor: 'pointer', marginBottom: '8px'
+                  }} onClick={() => document.getElementById('cover-upload').click()}>
+                    {data.cover_photo_url ? (
+                      <img src={data.cover_photo_url} alt="Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ textAlign: 'center', color: '#666' }}>
+                        <div style={{ fontSize: '2rem', marginBottom: '4px' }}>🖼️</div>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 600 }}>Click to upload cover photo</div>
+                      </div>
+                    )}
+                    {uploadingCover && (
+                      <div style={{
+                        position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: '#fff', fontWeight: 700, fontSize: '0.9rem'
+                      }}>Uploading...</div>
+                    )}
+                  </div>
+                  <input id="cover-upload" type="file" accept="image/*" style={{ display: 'none' }}
+                    onChange={(e) => handlePhotoUpload(e.target.files[0], 'cover')}
+                    disabled={uploadingCover} />
+                  <div style={{ fontSize: '0.7rem', color: '#666' }}>JPG, PNG — max 5MB. Recommended: 1200×400 or similar wide ratio.</div>
+                </div>
+              </div>
+            )}
 
             <div className="form-group">
               <label>Name</label>
