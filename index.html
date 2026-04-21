@@ -16,6 +16,9 @@
   <!-- Supabase JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+  <!-- Stripe.js -->
+  <script src="https://js.stripe.com/v3/"></script>
+
   <style>
     /* ===== CSS CUSTOM PROPERTIES & GLOBAL STYLES ===== */
     :root {
@@ -3896,6 +3899,34 @@
 
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // ===== STRIPE INITIALIZATION =====
+    const STRIPE_PUBLIC_KEY = 'pk_live_51TNi65Pk83t0B9h1dtusB7JoyzaxNOgw6rqy2i5pv3PgagLEMTyiRWodBLDH7Ivand6zzAQ4MHtriQge3ureNBeC00bKv4rCCu';
+
+    // Helper: redirect to Stripe Checkout via Edge Function
+    const redirectToCheckout = async (product) => {
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      if (!authSession?.access_token) {
+        throw new Error('You must be logged in');
+      }
+
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/create-checkout`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authSession.access_token}`,
+            'apikey': SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({ product }),
+        }
+      );
+
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      if (data.url) window.location.href = data.url;
+    };
+
     // ===== AUTH CONTEXT =====
     const AuthContext = createContext();
 
@@ -3943,6 +3974,24 @@
         };
 
         initAuth();
+
+        // Handle return from Stripe checkout
+        const hash = window.location.hash;
+        if (hash.includes('checkout=success')) {
+          // Give Stripe webhook a moment to update the profile, then re-fetch
+          setTimeout(async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+              await fetchProfile(session.user.id);
+              showToast('Payment successful! Your account has been upgraded.', 'success');
+            }
+          }, 2000);
+          // Clean up the URL
+          window.location.hash = hash.replace(/[?&]checkout=success(&product=[^&]*)?/, '');
+        } else if (hash.includes('checkout=cancel')) {
+          showToast('Checkout cancelled.', 'error');
+          window.location.hash = hash.replace(/[?&]checkout=cancel/, '');
+        }
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -4137,14 +4186,10 @@
 
       const upgradeToPremium = async () => {
         try {
-          const { error } = await supabase
-            .from('profiles')
-            .update({ subscription_tier: 'premium' })
-            .eq('id', currentUser.id);
-
-          if (error) throw error;
-          setProfile(prev => ({ ...prev, subscription_tier: 'premium' }));
-          showToast('Upgraded to Premium!', 'success');
+          // Determine which Stripe product based on user role
+          const product = profile?.role === 'model' ? 'model_premium' : 'client_access';
+          showToast('Redirecting to checkout...', 'success');
+          await redirectToCheckout(product);
           return true;
         } catch (error) {
           showToast(error.message, 'error');
@@ -4154,15 +4199,8 @@
 
       const subscribeToCherryPicker = async () => {
         try {
-          const { error } = await supabase
-            .from('profiles')
-            .update({ cherry_picker_active: true })
-            .eq('id', currentUser.id);
-
-          if (error) throw error;
-          setProfile(prev => ({ ...prev, cherry_picker_active: true }));
-          showToast('Cherry Picker unlocked! Your Master Prompt has been saved to Messages.', 'success');
-          window.location.hash = 'messages';
+          showToast('Redirecting to checkout...', 'success');
+          await redirectToCheckout('cherry_picker');
           return true;
         } catch (error) {
           showToast(error.message, 'error');
@@ -8924,7 +8962,7 @@ REMEMBER:
                 <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                   Send messages to models, receive responses, and secure bookings with premium features.
                 </p>
-                <button className="btn glow-btn" onClick={() => auth.upgradeToPremium()}>Upgrade - $9.99/month</button>
+                <button className="btn glow-btn" onClick={() => auth.upgradeToPremium()}>Upgrade - {auth.profile?.role === 'model' ? '$29.99' : '$9.99'}/month</button>
               </div>
             )}
 
@@ -10901,15 +10939,15 @@ RULES
 
           {/* Info Box */}
           <div style={{ background: 'linear-gradient(135deg, rgba(255,110,199,0.08), rgba(157,78,221,0.08))', border: '1px solid rgba(255,110,199,0.2)', borderRadius: '14px', padding: '1.1rem 1.3rem', marginBottom: '1.5rem', fontSize: '0.85rem', color: '#ccc', lineHeight: '1.6' }}>
-            <span style={{ fontWeight: 700, color: '#ff6ec7' }}>How it works:</span> Enter competitor handles below, hit Generate, and copy the Master Prompt into a <span style={{ color: '#fff', fontWeight: 600 }}>FREE Claude account</span> with computer use. The AI scans their followers, finds repeat engagers, and delivers a ready-to-DM list — sorted by intent. <span style={{ color: '#9d4edd', fontWeight: 600 }}>One-time purchase — $9.99</span>
+            <span style={{ fontWeight: 700, color: '#ff6ec7' }}>How it works:</span> Enter competitor handles below, hit Generate, and copy the Master Prompt into a <span style={{ color: '#fff', fontWeight: 600 }}>FREE Claude account</span> with computer use. The AI scans their followers, finds repeat engagers, and delivers a ready-to-DM list — sorted by intent. <span style={{ color: '#9d4edd', fontWeight: 600 }}>One-time purchase — $10.00</span>
           </div>
 
           {/* Subscribe CTA for non-subscribers */}
           {isModel && !hasCherryPicker && (
             <div style={{ background: 'linear-gradient(135deg, rgba(157,78,221,0.15), rgba(255,110,199,0.15))', border: '1px solid rgba(157,78,221,0.3)', borderRadius: '14px', padding: '1.25rem', marginBottom: '1.5rem', textAlign: 'center' }}>
               <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', marginBottom: '0.4rem' }}>Unlock Cherry Picker</div>
-              <div style={{ fontSize: '0.85rem', color: '#999', marginBottom: '1rem' }}>$9.99 one-time — Pay once, use forever. Find your highest-intent fans automatically.</div>
-              <button onClick={handleSubscribe} style={{ padding: '0.7rem 2rem', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #ff6ec7, #9d4edd)', color: '#fff', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer' }}>Buy Now — $9.99</button>
+              <div style={{ fontSize: '0.85rem', color: '#999', marginBottom: '1rem' }}>$10.00 one-time — Pay once, use forever. Find your highest-intent fans automatically.</div>
+              <button onClick={handleSubscribe} style={{ padding: '0.7rem 2rem', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #ff6ec7, #9d4edd)', color: '#fff', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer' }}>Buy Now — $10.00</button>
             </div>
           )}
 
