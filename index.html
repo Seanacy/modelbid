@@ -9667,30 +9667,6 @@ REMEMBER:
             </div>
           </div>
 
-          {/* Circle Crews */}
-          <div style={{ marginBottom: '2rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <h3 style={{ margin: 0 }}>👯‍♀️ Circle Crews</h3>
-              <button onClick={() => window.location.hash = 'crew/crew-demo'} className="btn glow-btn" style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}>Manage Crew</button>
-            </div>
-            <div onClick={() => window.location.hash = 'crew/crew-demo'} style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1.25rem', border: '1px solid var(--border-color)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ fontSize: '2rem' }}>👯‍♀️</div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>Studio Queens</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>3 members · 47 subscribers · $14.99/mo</div>
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--accent-gold)' }}>$287.45</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Your earnings</div>
-              </div>
-            </div>
-            <div style={{ marginTop: '0.75rem', textAlign: 'center' }}>
-              <button onClick={() => window.location.hash = 'crew/new'} style={{ background: 'none', border: '1px dashed var(--border-color)', borderRadius: '0.5rem', padding: '0.6rem 1.25rem', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer', width: '100%' }}>+ Create New Crew</button>
-            </div>
-          </div>
-
           {/* Booking Requests */}
           <h3 style={{ marginBottom: '1rem' }}>Booking Requests</h3>
           <div className="grid">
@@ -9962,6 +9938,30 @@ REMEMBER:
 
             {/* Revenue nudges — contextual, progression-ordered */}
             <ModelNudges context="dashboard" limit={3} />
+
+            {/* Circle Crews */}
+            <div style={{ marginBottom: '2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <h3 style={{ margin: 0 }}>👯‍♀️ Circle Crews</h3>
+                <button onClick={() => window.location.hash = 'crew/crew-demo'} className="btn glow-btn" style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}>Manage Crew</button>
+              </div>
+              <div onClick={() => window.location.hash = 'crew/crew-demo'} style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1.25rem', border: '1px solid var(--border-color)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ fontSize: '2rem' }}>👯‍♀️</div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>Studio Queens</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>3 members · 47 subscribers · $14.99/mo</div>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--accent-gold)' }}>$287.45</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Your earnings</div>
+                </div>
+              </div>
+              <div style={{ marginTop: '0.75rem', textAlign: 'center' }}>
+                <button onClick={() => window.location.hash = 'crew/new'} style={{ background: 'none', border: '1px dashed var(--border-color)', borderRadius: '0.5rem', padding: '0.6rem 1.25rem', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer', width: '100%' }}>+ Create New Crew</button>
+              </div>
+            </div>
 
             <h3 style={{ marginBottom: '1rem' }}>Booking Requests</h3>
             <div className="grid">
