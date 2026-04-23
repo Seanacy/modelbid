@@ -5820,6 +5820,7 @@
       ]);
       const [editingTier, setEditingTier] = useState(null);
       const [editPrice, setEditPrice] = useState('');
+      const [editName, setEditName] = useState('');
       const [editPerkText, setEditPerkText] = useState('');
       const [removedPerks, setRemovedPerks] = useState({});
 
@@ -5832,7 +5833,7 @@
       };
 
       const handleSaveTier = (tierId) => {
-        setTiers(prev => prev.map(t => t.id === tierId ? { ...t, price: parseFloat(editPrice) || t.price } : t));
+        setTiers(prev => prev.map(t => t.id === tierId ? { ...t, price: parseFloat(editPrice) || t.price, name: editName.trim() || t.name } : t));
         setEditingTier(null);
         auth?.showToast?.('Tier updated!', 'success');
       };
@@ -5979,7 +5980,11 @@
                 <div key={tier.id} style={{ ...cardStyle, borderLeft: `3px solid ${tier.color}` }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <div>
-                      <span style={{ fontWeight: 700, fontSize: '1rem' }}>{tier.name}</span>
+                      {editingTier === tier.id ? (
+                        <input value={editName} onChange={(e) => setEditName(e.target.value)} style={{ fontWeight: 700, fontSize: '1rem', background: 'var(--bg-card-light)', border: '1px solid var(--border-color)', borderRadius: '0.4rem', color: 'var(--text-primary)', padding: '0.25rem 0.5rem', width: '160px' }} />
+                      ) : (
+                        <span style={{ fontWeight: 700, fontSize: '1rem' }}>{tier.name}</span>
+                      )}
                       {tier.popular && <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', background: 'rgba(255,110,199,0.15)', color: 'var(--accent-pink)', padding: '0.15rem 0.5rem', borderRadius: '1rem' }}>Most Popular</span>}
                     </div>
                     {editingTier === tier.id ? (
@@ -5995,7 +6000,7 @@
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <span style={{ fontWeight: 800, fontSize: '1.2rem', color: tier.color }}>${tier.price}</span>
                         <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>/mo</span>
-                        <button onClick={() => { setEditingTier(tier.id); setEditPrice(tier.price.toString()); }}
+                        <button onClick={() => { setEditingTier(tier.id); setEditPrice(tier.price.toString()); setEditName(tier.name); }}
                           style={{ padding: '0.3rem 0.6rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer' }}>Edit</button>
                       </div>
                     )}
