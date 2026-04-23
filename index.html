@@ -4009,7 +4009,7 @@
       const fetchProfile = async (userId) => {
         try {
           const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
+            setTimeout(() => reject(new Error('Profile fetch timeout')), 8000)
           );
           const fetchPromise = supabase
             .from('profiles')
@@ -4023,8 +4023,10 @@
           setProfile(data);
         } catch (error) {
           console.error('Profile fetch error:', error);
-          // Set a minimal profile so the app doesn't hang
-          setProfile({ id: userId, display_name: '', role: 'model' });
+          // Set a minimal profile using auth metadata as fallback
+          const { data: { user } } = await supabase.auth.getUser();
+          const fallbackName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || '';
+          setProfile({ id: userId, display_name: fallbackName, role: 'model' });
         }
       };
 
