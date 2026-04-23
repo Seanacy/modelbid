@@ -6378,12 +6378,14 @@
       const isModel = auth?.profile?.role === 'model';
 
       const [isSubscribed, setIsSubscribed] = useState(false);
+      const [selectedTier, setSelectedTier] = useState(null);
       const [suggestSearch, setSuggestSearch] = useState('');
       const [showSuggest, setShowSuggest] = useState(false);
       const [likedPosts, setLikedPosts] = useState({});
 
       // Check if current user is a member of this crew (demo logic)
-      const isMember = isModel && (auth?.profile?.id === 'demo' || crewId === 'crew-demo');
+      // Only show manage view if the model is actually a crew member (not for clients browsing)
+      const isMember = isModel && auth?.profile?.id === 'demo' && crewId === 'crew-demo';
       if (isMember) return <CircleCrewManage crewId={crewId} />;
 
       // Demo crew data for client view
@@ -6394,6 +6396,11 @@
           { id: 'm1', name: 'Aria Valentina', avatar: '👩', bio: 'High fashion & editorial' },
           { id: 'm2', name: 'Luna Marquez', avatar: '👧', bio: 'Lifestyle & beauty' },
           { id: 'm3', name: 'Zara Knight', avatar: '👩‍🦱', bio: 'Fitness & activewear' },
+        ],
+        tiers: [
+          { id: 't1', name: 'Fan', price: 9.99, perks: ['Access to crew feed', 'Like & comment on posts', 'Suggest models for the crew'] },
+          { id: 't2', name: 'VIP', price: 14.99, perks: ['Everything in Fan', 'Exclusive BTS content', 'Early booking access', 'Group chat with models'], popular: true },
+          { id: 't3', name: 'Elite', price: 24.99, perks: ['Everything in VIP', '10% session discounts', 'Priority DMs', 'Monthly exclusive drops'] },
         ],
         subscribers: 47,
         totalPosts: 25,
@@ -6411,9 +6418,10 @@
         { id: 'sg3', name: 'Mika Chen', avatar: '👧🏻' },
       ].filter(m => m.name.toLowerCase().includes(suggestSearch.toLowerCase()));
 
-      const handleSubscribe = () => {
+      const handleSubscribe = (tier) => {
+        setSelectedTier(tier);
         setIsSubscribed(true);
-        auth?.showToast?.(`Subscribed to ${crew.name} for $${crew.price}/mo!`, 'success');
+        auth?.showToast?.(`Subscribed to ${crew.name} — ${tier.name} tier for $${tier.price}/mo!`, 'success');
       };
 
       const handleSuggest = (model) => {
@@ -6451,14 +6459,40 @@
               ))}
             </div>
 
-            {/* Subscribe / Subscribed button */}
+            {/* Subscription Tiers */}
             {!isSubscribed ? (
-              <button onClick={handleSubscribe} className="btn glow-btn" style={{ padding: '0.75rem 2rem', fontSize: '1rem' }}>
-                Subscribe — ${crew.price}/mo
-              </button>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap', textAlign: 'left' }}>
+                {crew.tiers.map(tier => (
+                  <div key={tier.id} style={{
+                    flex: '1 1 160px', maxWidth: '200px', padding: '1.25rem 1rem', borderRadius: '1rem',
+                    background: tier.popular ? 'linear-gradient(135deg, rgba(255,110,199,0.12), rgba(157,78,221,0.12))' : 'var(--bg-card)',
+                    border: tier.popular ? '2px solid var(--accent-pink)' : '1px solid var(--border-color)',
+                    position: 'relative',
+                  }}>
+                    {tier.popular && (
+                      <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: 'var(--accent-pink)', color: '#fff', fontSize: '0.65rem', fontWeight: 700, padding: '0.2rem 0.6rem', borderRadius: '1rem', textTransform: 'uppercase' }}>Most Popular</div>
+                    )}
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.25rem' }}>{tier.name}</div>
+                    <div style={{ fontWeight: 800, fontSize: '1.3rem', color: 'var(--accent-gold)', marginBottom: '0.75rem' }}>${tier.price}<span style={{ fontSize: '0.75rem', fontWeight: 400, color: 'var(--text-secondary)' }}>/mo</span></div>
+                    <div style={{ marginBottom: '0.75rem' }}>
+                      {tier.perks.map((perk, i) => (
+                        <div key={i} style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.3rem', display: 'flex', alignItems: 'flex-start', gap: '0.3rem' }}>
+                          <span style={{ color: 'var(--success-green)', flexShrink: 0 }}>✓</span> {perk}
+                        </div>
+                      ))}
+                    </div>
+                    <button onClick={() => handleSubscribe(tier)} className="btn glow-btn" style={{
+                      width: '100%', padding: '0.5rem', fontSize: '0.8rem',
+                      background: tier.popular ? 'linear-gradient(135deg, var(--accent-pink), var(--accent-purple))' : 'var(--bg-card-light)',
+                      color: tier.popular ? '#fff' : 'var(--text-primary)',
+                      border: tier.popular ? 'none' : '1px solid var(--border-color)',
+                    }}>Subscribe</button>
+                  </div>
+                ))}
+              </div>
             ) : (
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.5rem', borderRadius: '2rem', background: 'rgba(0,255,135,0.1)', border: '1px solid rgba(0,255,135,0.3)' }}>
-                <span style={{ color: 'var(--success-green)', fontWeight: 600 }}>✓ Subscribed</span>
+                <span style={{ color: 'var(--success-green)', fontWeight: 600 }}>✓ Subscribed — {selectedTier?.name} tier</span>
               </div>
             )}
           </div>
