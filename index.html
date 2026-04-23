@@ -1,4 +1,4 @@
-html lang="en">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -5306,11 +5306,11 @@ html lang="en">
                 </div>
               </div>
 
-              {/* Circle Crew */}
+              {/* Inner Circle */}
               <div className="profile-section" style={{ background: 'linear-gradient(135deg, rgba(255,110,199,0.08), rgba(147,51,234,0.08))', borderColor: 'rgba(255,110,199,0.25)', padding: '1.25rem', borderRadius: '1rem', border: '1px solid rgba(255,110,199,0.25)', marginBottom: '1.25rem' }}>
                 <div style={{ textAlign: 'center', marginBottom: '0.75rem' }}>
                   <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>👯‍♀️</div>
-                  <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>Circle Crew</div>
+                  <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>Inner Circle</div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Models in this crew</div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -6006,7 +6006,7 @@ html lang="en">
             <button onClick={() => window.history.back()} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.9rem', marginBottom: '1.5rem' }}>← Back</button>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
               <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>👯‍♀️</div>
-              <h2 style={{ fontWeight: 800, fontSize: '1.5rem', marginBottom: '0.5rem' }}>Create a Circle Crew</h2>
+              <h2 style={{ fontWeight: 800, fontSize: '1.5rem', marginBottom: '0.5rem' }}>Create a Inner Circle</h2>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Team up with other models. Share a subscription. Split the earnings.</p>
             </div>
 
@@ -10000,10 +10000,10 @@ REMEMBER:
             {/* Revenue nudges — contextual, progression-ordered */}
             <ModelNudges context="dashboard" limit={3} />
 
-            {/* Circle Crews */}
+            {/* Inner Circles */}
             <div style={{ marginBottom: '2rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <h3 style={{ margin: 0 }}>👯‍♀️ Circle Crews</h3>
+                <h3 style={{ margin: 0 }}>👯‍♀️ Inner Circles</h3>
                 <button onClick={() => window.location.hash = 'crew/crew-demo'} className="btn glow-btn" style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}>Manage Crew</button>
               </div>
               <div onClick={() => window.location.hash = 'crew/crew-demo'} style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1.25rem', border: '1px solid var(--border-color)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -13477,7 +13477,7 @@ RULES
                     <span className="dd-icon">⚡</span> WeStackr
                   </a>
                   <a className="nav-dropdown-item" onClick={() => window.location.hash = 'crew/crew-demo'}>
-                    <span className="dd-icon">👯‍♀️</span> Circle Crews
+                    <span className="dd-icon">👯‍♀️</span> Inner Circles
                   </a>
                   {auth.currentUser && (
                     <a className="nav-dropdown-item" onClick={() => window.location.hash = 'team'}>
