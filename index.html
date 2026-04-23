@@ -13562,7 +13562,6 @@ RULES
                 <div className="user-section">
                   <a className="nav-link" onClick={() => window.location.hash = 'messages'}>📬 Messages</a>
                   <a className="nav-link" onClick={() => window.location.hash = 'dashboard'}>Dashboard</a>
-                  <a className="nav-link" onClick={() => window.location.hash = 'edit-profile'}>⚙️ Profile</a>
                   <div className="user-info" onClick={() => window.location.hash = 'profile/' + (auth.currentUser?.id || 'demo')} style={{ cursor: 'pointer' }}>
                     <div className="avatar">{auth.profile?.avatar_emoji || '👤'}</div>
                     <div className="user-name">{auth.profile?.display_name || 'User'}</div>
