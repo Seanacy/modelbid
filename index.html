@@ -5310,6 +5310,31 @@
             </div>
           </div>
 
+          {/* Circle Crew */}
+          <div className="profile-section" style={{ background: 'linear-gradient(135deg, rgba(255,110,199,0.08), rgba(147,51,234,0.08))', borderColor: 'rgba(255,110,199,0.25)', padding: '1.25rem', borderRadius: '1rem', border: '1px solid rgba(255,110,199,0.25)', marginBottom: '1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <span style={{ fontSize: '1.2rem' }}>\ud83d\udc6f\u200d\u2640\ufe0f</span>
+              <h3 style={{ fontWeight: 700, fontSize: '1rem', margin: 0 }}>Circle Crew</h3>
+            </div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Models in this crew</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.6rem' }}>
+              {[
+                { name: 'Sophia Laurent', avatar: '\ud83d\udc69\u200d\ud83e\uddb0', role: 'Admin' },
+                { name: 'Mia Chen', avatar: '\ud83d\udc69\u200d\ud83e\uddb1', role: 'Member' },
+                { name: 'Zara Williams', avatar: '\ud83d\udc71\u200d\u2640\ufe0f', role: 'Member' }
+              ].map((m, i) => (
+                <div key={i} onClick={() => window.location.hash = 'profile/' + m.name.toLowerCase().replace(/ /g, '-')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem', borderRadius: '0.6rem', background: 'var(--bg-card-light)', cursor: 'pointer', transition: 'transform 0.15s' }}>
+                  <span style={{ fontSize: '1.5rem' }}>{m.avatar}</span>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.8rem' }}>{m.name}</div>
+                    <div style={{ fontSize: '0.7rem', color: m.role === 'Admin' ? 'var(--accent-pink)' : 'var(--text-secondary)' }}>{m.role}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => window.location.hash = 'crew/crew-demo'} style={{ width: '100%', marginTop: '0.75rem', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid rgba(255,110,199,0.3)', background: 'transparent', color: 'var(--accent-pink)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>View Full Crew Page</button>
+          </div>
+
           {/* Gallery Lightbox */}
           {selectedGalleryItem !== null && (
             <div className="modal-overlay" onClick={() => setSelectedGalleryItem(null)}>
@@ -5812,6 +5837,17 @@
       const [showCreateFlow, setShowCreateFlow] = useState(!crewId);
       const [crewName, setCrewName] = useState('');
       const [crewPrice, setCrewPrice] = useState('14.99');
+
+    const [tiers, setTiers] = useState([
+      { id: 1, name: 'Basic', price: 9.99 },
+      { id: 2, name: 'Premium', price: 14.99 },
+      { id: 3, name: 'VIP', price: 24.99 }
+    ]);
+    const [editingTier, setEditingTier] = useState(null);
+    const [editTierName, setEditTierName] = useState('');
+    const [editTierPrice, setEditTierPrice] = useState('');
+    const [editingCrewName, setEditingCrewName] = useState(false);
+    const [editNameValue, setEditNameValue] = useState('');
       const [inviteSearch, setInviteSearch] = useState('');
       const [newPostText, setNewPostText] = useState('');
       const [newPostMedia, setNewPostMedia] = useState([]);
@@ -6012,7 +6048,15 @@
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                 <span style={{ fontSize: '1.5rem' }}>👯‍♀️</span>
-                <h2 style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0 }}>{crew.name}</h2>
+                {editingCrewName ? (
+                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                  <input value={editNameValue} onChange={(e) => setEditNameValue(e.target.value)} style={{ padding: '0.3rem 0.5rem', borderRadius: '0.3rem', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '1.2rem', fontWeight: 800, width: '180px' }} />
+                  <button onClick={() => { setCrew(prev => ({...prev, name: editNameValue})); setEditingCrewName(false); }} style={{ padding: '0.25rem 0.5rem', borderRadius: '0.3rem', border: 'none', background: 'var(--accent-pink)', color: '#fff', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Save</button>
+                  <button onClick={() => setEditingCrewName(false)} style={{ padding: '0.25rem 0.5rem', borderRadius: '0.3rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer' }}>Cancel</button>
+                </div>
+              ) : (
+                <h2 onClick={() => { setEditingCrewName(true); setEditNameValue(crew.name); }} style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0, cursor: 'pointer' }} title="Click to edit">{crew.name} <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>\u270E</span></h2>
+              )}
               </div>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                 {crew.members.length} members · {crew.subscribers} subscribers · Created {crew.createdAt}
@@ -6106,15 +6150,36 @@
               <div style={cardStyle}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>Subscription Price</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>What clients pay monthly to access this crew</div>
-                  </div>
-                  <div style={{ fontWeight: 800, fontSize: '1.4rem', color: 'var(--accent-gold)' }}>${crew.price}/mo</div>
-                </div>
-              </div>
-            </div>
-          )}
 
+          {/* Subscription Tiers */}
+          <div style={cardStyle}>
+            <div style={{ fontWeight: 700, marginBottom: '0.75rem', fontSize: '0.95rem' }}>Subscription Tiers</div>
+            {tiers.map((tier, idx) => (
+              <div key={tier.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.75rem', marginBottom: '0.4rem', borderRadius: '0.5rem', background: 'var(--bg-card-light)', border: editingTier === tier.id ? '1px solid var(--accent-pink)' : '1px solid transparent' }}>
+                {editingTier === tier.id ? (
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flex: 1 }}>
+                    <input value={editTierName} onChange={(e) => setEditTierName(e.target.value)} style={{ flex: 1, padding: '0.35rem 0.5rem', borderRadius: '0.3rem', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '0.85rem' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>$</span>
+                      <input value={editTierPrice} onChange={(e) => setEditTierPrice(e.target.value)} type="number" step="0.01" style={{ width: '70px', padding: '0.35rem 0.5rem', borderRadius: '0.3rem', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '0.85rem' }} />
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>/mo</span>
+                    </div>
+                    <button onClick={() => { setTiers(prev => prev.map(t => t.id === tier.id ? { ...t, name: editTierName, price: parseFloat(editTierPrice) || tier.price } : t)); setEditingTier(null); }} style={{ padding: '0.3rem 0.6rem', borderRadius: '0.3rem', border: 'none', background: 'var(--accent-pink)', color: '#fff', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Save</button>
+                    <button onClick={() => setEditingTier(null)} style={{ padding: '0.3rem 0.6rem', borderRadius: '0.3rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer' }}>Cancel</button>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{tier.name}</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>${tier.price.toFixed(2)}/mo</div>
+                    </div>
+                    <button onClick={() => { setEditingTier(tier.id); setEditTierName(tier.name); setEditTierPrice(String(tier.price)); }} style={{ padding: '0.3rem 0.6rem', borderRadius: '0.3rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer' }}>Edit</button>
+                  </>
+                )}
+              </div>
+            ))}
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>ModelBid takes a 15% platform fee from subscriptions</div>
+          </div>
           {/* ===== MEMBERS TAB ===== */}
           {activeTab === 'members' && (
             <div>
