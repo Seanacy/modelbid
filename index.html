@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -4411,7 +4411,7 @@
       const cardStyle = (side) => ({
         flex: 1, position: 'relative', borderRadius: '16px', overflow: 'hidden',
         cursor: picked ? 'default' : 'pointer', transition: 'all 0.3s ease',
-        transform: picked === side ? 'scale(1.03)' : picked ? 'scale(0.95) opacity(0.5)' : 'scale(1)',
+        transform: picked === side ? 'scale(1.03)' : picked ? 'scale(0.95)' : 'scale(1)',
         opacity: picked && picked !== side ? 0.4 : 1,
         border: picked === side ? '3px solid #ffd700' : '2px solid rgba(255,255,255,0.08)',
         boxShadow: picked === side ? '0 0 20px rgba(255,215,0,0.3)' : 'none',
@@ -6146,12 +6146,7 @@
                 </div>
               </div>
 
-              {/* Subscription Info */}
-              <div style={cardStyle}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-
-          {/* Subscription Tiers */}
+              {/* Subscription Tiers */}
           <div style={cardStyle}>
             <div style={{ fontWeight: 700, marginBottom: '0.75rem', fontSize: '0.95rem' }}>Subscription Tiers</div>
             {tiers.map((tier, idx) => (
@@ -6180,6 +6175,8 @@
             ))}
             <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>ModelBid takes a 15% platform fee from subscriptions</div>
           </div>
+            </div>
+          )}
           {/* ===== MEMBERS TAB ===== */}
           {activeTab === 'members' && (
             <div>
@@ -6381,14 +6378,14 @@
       const auth = useContext(AuthContext);
       const isModel = auth?.profile?.role === 'model';
 
-      // Check if current user is a member of this crew (demo logic)
-      const isMember = isModel && (auth?.profile?.id === 'demo' || crewId === 'crew-demo');
-      if (isMember) return <CircleCrewManage crewId={crewId} />;
-
       const [isSubscribed, setIsSubscribed] = useState(false);
       const [suggestSearch, setSuggestSearch] = useState('');
       const [showSuggest, setShowSuggest] = useState(false);
       const [likedPosts, setLikedPosts] = useState({});
+
+      // Check if current user is a member of this crew (demo logic)
+      const isMember = isModel && (auth?.profile?.id === 'demo' || crewId === 'crew-demo');
+      if (isMember) return <CircleCrewManage crewId={crewId} />;
 
       // Demo crew data for client view
       const crew = {
@@ -9138,9 +9135,9 @@ REMEMBER:
 
       // --- DM Poll functions ---
       const handleSavePoll = async () => {
-        if (!newPollQuestion.trim()) { showToast('Enter a poll question', 'error'); return; }
+        if (!newPollQuestion.trim()) { auth.showToast('Enter a poll question', 'error'); return; }
         const validOptions = newPollOptions.filter(o => o.trim());
-        if (validOptions.length < 2) { showToast('Need at least 2 options', 'error'); return; }
+        if (validOptions.length < 2) { auth.showToast('Need at least 2 options', 'error'); return; }
         const { data, error } = await supabase
           .from('dm_polls')
           .insert({
@@ -9151,7 +9148,7 @@ REMEMBER:
           })
           .select()
           .single();
-        if (error) { showToast('Failed to save poll', 'error'); return; }
+        if (error) { auth.showToast('Failed to save poll', 'error'); return; }
         setPollLibrary(prev => [data, ...prev]);
         if (data.folder && !pollFolders.includes(data.folder)) {
           setPollFolders(prev => [...prev, data.folder]);
@@ -9160,18 +9157,18 @@ REMEMBER:
         setNewPollOptions(['', '']);
         setNewPollFolder('');
         setCreatingPoll(false);
-        showToast('Poll saved!', 'success');
+        auth.showToast('Poll saved!', 'success');
       };
 
       const handleDeletePoll = async (pollId) => {
         const { error } = await supabase.from('dm_polls').delete().eq('id', pollId);
-        if (error) { showToast('Failed to delete poll', 'error'); return; }
+        if (error) { auth.showToast('Failed to delete poll', 'error'); return; }
         setPollLibrary(prev => prev.filter(p => p.id !== pollId));
-        showToast('Poll deleted', 'success');
+        auth.showToast('Poll deleted', 'success');
       };
 
       const handleSendPoll = async (poll) => {
-        if (!selectedConvId) { showToast('Select a conversation first', 'error'); return; }
+        if (!selectedConvId) { auth.showToast('Select a conversation first', 'error'); return; }
         const content = JSON.stringify({ type: 'poll', question: poll.question, options: poll.options, poll_id: poll.id });
         const success = await auth.sendMessage(selectedConvId, content);
         if (success) {
@@ -9183,7 +9180,7 @@ REMEMBER:
             })
             .eq('id', selectedConvId);
           setShowPollLibrary(false);
-          showToast('Poll sent!', 'success');
+          auth.showToast('Poll sent!', 'success');
         }
       };
 
@@ -9196,14 +9193,14 @@ REMEMBER:
             option_index: optionIndex,
           });
         if (error) {
-          if (error.code === '23505') { showToast('You already voted', 'error'); return; }
-          showToast('Vote failed', 'error'); return;
+          if (error.code === '23505') { auth.showToast('You already voted', 'error'); return; }
+          auth.showToast('Vote failed', 'error'); return;
         }
         setPollResponses(prev => ({
           ...prev,
           [messageId]: [...(prev[messageId] || []), { message_id: messageId, voter_id: auth.currentUser.id, option_index: optionIndex }]
         }));
-        showToast('Vote recorded!', 'success');
+        auth.showToast('Vote recorded!', 'success');
       };
       // --- End DM Poll functions ---
 
