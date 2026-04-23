@@ -1,4 +1,4 @@
-<html lang="en">
+html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2159,7 +2159,7 @@
     }
 
     .ic-locked-overlay::after {
-      content: '🔒 Join Inner Circle to unlock';
+      content: '🔒 Join Private Feed to unlock';
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(10,10,15,0.85);
@@ -5288,11 +5288,11 @@
                 </div>
               </div>
 
-              {/* Step 6: Deepen — Inner Circle (after booking) */}
+              {/* Step 6: Deepen — Private Feed (after booking) */}
               <div className="profile-section" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,110,199,0.08))', borderColor: 'rgba(255,215,0,0.25)' }}>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>💎</div>
-                  <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>Inner Circle</div>
+                  <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>Private Feed</div>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
                     Exclusive BTS content, early bookings, member discounts & group chat
                   </div>
@@ -5301,7 +5301,7 @@
                   </div>
                   <button className="btn glow-btn btn-block" style={{ background: 'linear-gradient(135deg, var(--accent-gold), #ffaa00)', fontSize: '0.85rem' }}
                     onClick={() => window.location.hash = `circle/${model.id || 'demo'}`}>
-                    Join Inner Circle →
+                    Join Private Feed →
                   </button>
                 </div>
               </div>
@@ -6549,7 +6549,7 @@ function InnerCircleManage() {
 
       const handleToggle = () => {
         setCircleEnabled(!circleEnabled);
-        auth?.showToast?.(circleEnabled ? 'Inner Circle disabled' : 'Inner Circle is now live!', circleEnabled ? 'info' : 'success');
+        auth?.showToast?.(circleEnabled ? 'Private Feed disabled' : 'Private Feed is now live!', circleEnabled ? 'info' : 'success');
       };
 
       const handleSaveTier = (tierId) => {
@@ -6583,7 +6583,7 @@ function InnerCircleManage() {
         setBtsPosts(prev => [{ id: 'bts-' + Date.now(), text: newPostText, time: 'Just now', tier: newPostTier, likes: 0, media: [...newPostMedia] }, ...prev]);
         setNewPostText('');
         setNewPostMedia([]);
-        auth?.showToast?.('Post published to your Inner Circle!', 'success');
+        auth?.showToast?.('Post published to your Private Feed!', 'success');
       };
 
       const handleMediaUpload = (e) => {
@@ -6624,16 +6624,16 @@ function InnerCircleManage() {
           {/* Hero */}
           <div className="inner-circle-hero">
             <div className="ic-model-avatar">{profile.avatar_emoji || '👩'}</div>
-            <div className="ic-title">Your Inner Circle</div>
+            <div className="ic-title">Your Private Feed</div>
             <div className="ic-subtitle">Manage your tiers, content, and subscribers</div>
           </div>
 
           {/* Toggle On/Off */}
           <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontWeight: 700, fontSize: '1rem' }}>Inner Circle Status</div>
+              <div style={{ fontWeight: 700, fontSize: '1rem' }}>Private Feed Status</div>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                {circleEnabled ? 'Your Inner Circle is live — clients can subscribe now' : 'Turn this on to let clients subscribe to your Inner Circle'}
+                {circleEnabled ? 'Your Private Feed is live — clients can subscribe now' : 'Turn this on to let clients subscribe to your Private Feed'}
               </div>
             </div>
             <button onClick={handleToggle} style={{
@@ -6701,7 +6701,7 @@ function InnerCircleManage() {
                 <div style={{ ...cardStyle, background: 'linear-gradient(135deg, rgba(255,110,199,0.08), rgba(255,215,0,0.08))', borderColor: 'rgba(255,110,199,0.3)', textAlign: 'center', padding: '2rem' }}>
                   <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>💎</div>
                   <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem' }}>Ready to launch?</div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>Turn on your Inner Circle above to start earning recurring income from subscribers.</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>Turn on your Private Feed above to start earning recurring income from subscribers.</div>
                 </div>
               )}
             </div>
@@ -6711,7 +6711,7 @@ function InnerCircleManage() {
           {manageTab === 'tiers' && (
             <div>
               <div style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                Set the price and perks for each tier. Clients will see these when they visit your Inner Circle page.
+                Set the price and perks for each tier. Clients will see these when they visit your Private Feed page.
               </div>
               {tiers.map(tier => (
                 <div key={tier.id} style={{ ...cardStyle, borderLeft: `3px solid ${tier.color}` }}>
@@ -6787,7 +6787,7 @@ function InnerCircleManage() {
               {/* New post composer */}
               <div style={{ ...cardStyle, borderColor: 'rgba(255,110,199,0.3)' }}>
                 <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>📸 New BTS Post</div>
-                <textarea value={newPostText} onChange={(e) => setNewPostText(e.target.value)} placeholder="Share something with your Inner Circle members..."
+                <textarea value={newPostText} onChange={(e) => setNewPostText(e.target.value)} placeholder="Share something with your Private Feed members..."
                   style={{ width: '100%', minHeight: '100px', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.85rem', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
 
                 {/* Media upload buttons */}
@@ -7007,7 +7007,7 @@ function InnerCircleManage() {
           <div className="inner-circle-hero">
             <div className="ic-model-avatar">{model.emoji}</div>
             <div className="ic-title">
-              {model.name}'s Inner Circle
+              {model.name}'s Private Feed
             </div>
             <div className="ic-subtitle">{model.tagline}</div>
             <div className="ic-member-count">
@@ -7028,9 +7028,9 @@ function InnerCircleManage() {
           }}>
             <div style={{ fontSize: '1.5rem', flexShrink: 0 }}>ℹ️</div>
             <div>
-              <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--accent-gold)', marginBottom: '0.3rem' }}>What is Inner Circle?</div>
+              <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--accent-gold)', marginBottom: '0.3rem' }}>What is Private Feed?</div>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                Inner Circle is a paid membership that gives you exclusive access to {model.name}'s behind-the-scenes content, early booking windows before anyone else, session discounts, private group chat with the model and other members, and surprise content drops. Pick a tier that fits your budget — each one unlocks more perks.
+                Private Feed is a paid membership that gives you exclusive access to {model.name}'s behind-the-scenes content, early booking windows before anyone else, session discounts, private group chat with the model and other members, and surprise content drops. Pick a tier that fits your budget — each one unlocks more perks.
               </div>
             </div>
           </div>
@@ -7256,7 +7256,7 @@ function InnerCircleManage() {
               borderRadius: '1rem', border: '1px solid rgba(255,110,199,0.2)'
             }}>
               <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>💎</div>
-              <h3 style={{ marginBottom: '0.5rem' }}>Join {model.name}'s Inner Circle</h3>
+              <h3 style={{ marginBottom: '0.5rem' }}>Join {model.name}'s Private Feed</h3>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
                 Get exclusive content, early bookings, member discounts, and direct access. Starting at just $9.99/mo.
               </p>
@@ -9456,7 +9456,7 @@ REMEMBER:
 
     // ===== MODEL REVENUE NUDGES =====
     // Contextual cards that guide models toward their next revenue stream
-    // Ordered by progression: Bookings → Tips → Inner Circle → WeStackr
+    // Ordered by progression: Bookings → Tips → Private Feed → WeStackr
     function ModelNudges({ context, limit }) {
       const auth = useContext(AuthContext);
       if (!auth.profile || auth.profile.role !== 'model') return null;
@@ -9498,13 +9498,13 @@ REMEMBER:
         contexts: ['dashboard', 'browse']
       });
 
-      // 3. Inner Circle — the subscription play
+      // 3. Private Feed — the subscription play
       if (!hasInnerCircle) {
         allNudges.push({
           id: 'inner-circle',
           icon: '💎',
           iconBg: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,110,199,0.15))',
-          title: 'Launch your Inner Circle',
+          title: 'Launch your Private Feed',
           desc: 'Fans pay monthly for exclusive content, early booking access, and discounts. Recurring income that grows with your audience.',
           earn: 'Recurring revenue',
           earnBg: 'rgba(157,78,221,0.1)',
@@ -9634,7 +9634,7 @@ REMEMBER:
         {
           id: 'inner-circle', icon: '💎',
           iconBg: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,110,199,0.15))',
-          title: 'Launch your Inner Circle',
+          title: 'Launch your Private Feed',
           desc: 'Fans pay monthly for exclusive content, early booking access, and discounts. Recurring income that grows with your audience.',
           earn: 'Recurring revenue', earnBg: 'rgba(157,78,221,0.1)', earnColor: '#c44dff',
           link: 'circle/demo'
@@ -11828,9 +11828,9 @@ REMEMBER:
       const tiers = [
         { level: 1, name: 'Newcomer', icon: '🌱', reqSessions: 0, reqTrust: 0, perks: 'Browse and book any model, view profiles, send messages' },
         { level: 2, name: 'Bronze Member', icon: '🥉', reqSessions: 3, reqTrust: 70, perks: 'Featured on The Wall, leave public reviews' },
-        { level: 3, name: 'Silver Pro', icon: '🥈', reqSessions: 10, reqTrust: 80, perks: 'Priority booking with top models, Inner Circle discounts (5%)' },
-        { level: 4, name: 'Gold VIP', icon: '👑', reqSessions: 15, reqTrust: 85, perks: 'Priority booking queue, Inner Circle discounts (10%)' },
-        { level: 5, name: 'Platinum Elite', icon: '💎', reqSessions: 25, reqTrust: 90, perks: 'Max Inner Circle discount (15%), first access to new features, Platinum profile badge' },
+        { level: 3, name: 'Silver Pro', icon: '🥈', reqSessions: 10, reqTrust: 80, perks: 'Priority booking with top models, Private Feed discounts (5%)' },
+        { level: 4, name: 'Gold VIP', icon: '👑', reqSessions: 15, reqTrust: 85, perks: 'Priority booking queue, Private Feed discounts (10%)' },
+        { level: 5, name: 'Platinum Elite', icon: '💎', reqSessions: 25, reqTrust: 90, perks: 'Max Private Feed discount (15%), first access to new features, Platinum profile badge' },
       ];
 
       const unlocks = [
@@ -11838,10 +11838,10 @@ REMEMBER:
         { feature: 'The Wall Placement', reqLevel: 2, icon: '🏆' },
         { feature: 'Leave Public Reviews', reqLevel: 2, icon: '⭐' },
         { feature: 'Priority Booking with Top Models', reqLevel: 3, icon: '💃' },
-        { feature: 'Inner Circle Discounts (5%)', reqLevel: 3, icon: '🎯' },
+        { feature: 'Private Feed Discounts (5%)', reqLevel: 3, icon: '🎯' },
         { feature: 'Priority Booking Queue', reqLevel: 4, icon: '⚡' },
-        { feature: 'Inner Circle Discounts (10%)', reqLevel: 4, icon: '🔓' },
-        { feature: 'Max Inner Circle Discount (15%)', reqLevel: 5, icon: '💎' },
+        { feature: 'Private Feed Discounts (10%)', reqLevel: 4, icon: '🔓' },
+        { feature: 'Max Private Feed Discount (15%)', reqLevel: 5, icon: '💎' },
         { feature: 'First Access to New Features', reqLevel: 5, icon: '🎪' },
         { feature: 'Platinum Profile Badge', reqLevel: 5, icon: '🏅' },
       ];
@@ -11864,7 +11864,7 @@ REMEMBER:
 
           {/* Info Box */}
           <div className="rep-info-box">
-            <strong>What is Reputation-Gated Access?</strong> Your reputation level is based on your completed sessions and trust score. As you build trust with models, you unlock exclusive platform features — premium model access, Inner Circle discounts, and more. Every session counts toward your next tier.
+            <strong>What is Reputation-Gated Access?</strong> Your reputation level is based on your completed sessions and trust score. As you build trust with models, you unlock exclusive platform features — premium model access, Private Feed discounts, and more. Every session counts toward your next tier.
           </div>
 
           {/* Current Level Card */}
