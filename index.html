@@ -5874,7 +5874,7 @@
       // Demo crew data
       const [crew, setCrew] = useState({
         id: crewId || 'crew-demo',
-        name: 'Studio Queens',
+        name: 'Inner Circle',
         admin: { id: 'demo', name: profile.name || 'Aria Valentina', avatar: '👩' },
         price: 14.99,
         members: [
@@ -5904,7 +5904,7 @@
 
       const [notifications, setNotifications] = useState([
         { id: 'n1', type: 'suggestion', text: 'Jason R. suggested Priya Sharma join your crew', time: '3h ago', read: false },
-        { id: 'n2', type: 'subscribe', text: 'New subscriber! Alex K. joined Studio Queens', time: '6h ago', read: true },
+        { id: 'n2', type: 'subscribe', text: 'New subscriber! Alex K. joined Inner Circle', time: '6h ago', read: true },
       ]);
 
       // Available models to invite (demo)
@@ -6034,7 +6034,7 @@
               <div style={{ fontWeight: 700, marginBottom: '1rem' }}>Crew Details</div>
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>Crew Name</label>
-                <input value={crewName} onChange={(e) => setCrewName(e.target.value)} placeholder="e.g. Studio Queens, The Collective..."
+                <input value={crewName} onChange={(e) => setCrewName(e.target.value)} placeholder="e.g. Inner Circle, The Collective..."
                   style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.9rem', boxSizing: 'border-box' }} />
               </div>
               <div style={{ marginBottom: '1rem' }}>
@@ -6410,7 +6410,7 @@
 
       // Demo crew data for client view
       const crew = {
-        name: 'Studio Queens',
+        name: 'Inner Circle',
         price: 14.99,
         members: [
           { id: 'm1', name: 'Aria Valentina', avatar: '👩', bio: 'High fashion & editorial' },
@@ -10064,7 +10064,7 @@ REMEMBER:
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <div style={{ fontSize: '2rem' }}>👯‍♀️</div>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>Studio Queens</div>
+                    <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>Inner Circle</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>3 members · 47 subscribers · $14.99/mo</div>
                   </div>
                 </div>
