@@ -5801,74 +5801,499 @@
     }
 
         // ===== INNER CIRCLE — MODEL MANAGEMENT DASHBOARD =====
-    -btn" style={{ padding: '0.75rem 2rem', fontSize: '1rem' }}>
-                Subscribe — ${crew.price}/mo
-              </button>
-            ) : (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.5rem', borderRadius: '2rem', background: 'rgba(0,255,135,0.1)', border: '1px solid rgba(0,255,135,0.3)' }}>
-                <span style={{ color: 'var(--success-green)', fontWeight: 600 }}>✓ Subscribed</span>
-              </div>
-            )}
-          </div>
+    // ===== CIRCLE CREW — SHARED INNER CIRCLE FOR MODEL GROUPS =====
+    function CircleCrewManage({ crewId }) {
+      const auth = useContext(AuthContext);
+      const profile = auth?.profile || {};
 
-          {/* Suggest a Model */}
-          <div style={cardStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showSuggest ? '0.75rem' : 0 }}>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>💡 Suggest a Model</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Know someone who'd be perfect for this crew?</div>
+      // ---- State ----
+      const [activeTab, setActiveTab] = useState('overview');
+      const [crewEnabled, setCrewEnabled] = useState(true);
+      const [showCreateFlow, setShowCreateFlow] = useState(!crewId);
+      const [crewName, setCrewName] = useState('');
+      const [crewPrice, setCrewPrice] = useState('14.99');
+      const [inviteSearch, setInviteSearch] = useState('');
+      const [newPostText, setNewPostText] = useState('');
+      const [newPostMedia, setNewPostMedia] = useState([]);
+
+      // Demo crew data
+      const [crew, setCrew] = useState({
+        id: crewId || 'crew-demo',
+        name: 'Studio Queens',
+        admin: { id: 'demo', name: profile.name || 'Aria Valentina', avatar: '👩' },
+        price: 14.99,
+        members: [
+          { id: 'demo', name: profile.name || 'Aria Valentina', avatar: '👩', posts: 12, earnings: 0 },
+          { id: 'm2', name: 'Luna Marquez', avatar: '👧', posts: 8, earnings: 0 },
+          { id: 'm3', name: 'Zara Knight', avatar: '👩‍🦱', posts: 5, earnings: 0 },
+        ],
+        subscribers: 47,
+        totalEarnings: 601.23,
+        createdAt: '2 weeks ago',
+      });
+
+      const [pendingInvites, setPendingInvites] = useState([
+        { id: 'inv1', name: 'Mika Chen', avatar: '👧🏻', status: 'pending', sentAt: '1d ago' },
+      ]);
+
+      const [clientSuggestions, setClientSuggestions] = useState([
+        { id: 'sug1', clientName: 'Jason R.', suggestedModel: 'Priya Sharma', avatar: '👩🏽', suggestedAt: '3h ago' },
+        { id: 'sug2', clientName: 'Tyler M.', suggestedModel: 'Bella Rose', avatar: '👱‍♀️', suggestedAt: '1d ago' },
+      ]);
+
+      const [crewPosts, setCrewPosts] = useState([
+        { id: 'cp1', authorId: 'demo', author: profile.name || 'Aria Valentina', avatar: '👩', text: 'Just wrapped an incredible group shoot! The synergy was unreal today.', time: '2h ago', likes: 23, media: [] },
+        { id: 'cp2', authorId: 'm2', author: 'Luna Marquez', avatar: '👧', text: 'New location scouted for next week — an abandoned greenhouse. The light is perfect.', time: '5h ago', likes: 41, media: [] },
+        { id: 'cp3', authorId: 'm3', author: 'Zara Knight', avatar: '👩‍🦱', text: 'Behind the scenes from the rooftop session. Can\'t wait for you all to see the finals!', time: '1d ago', likes: 18, media: [] },
+      ]);
+
+      const [notifications, setNotifications] = useState([
+        { id: 'n1', type: 'suggestion', text: 'Jason R. suggested Priya Sharma join your crew', time: '3h ago', read: false },
+        { id: 'n2', type: 'subscribe', text: 'New subscriber! Alex K. joined Studio Queens', time: '6h ago', read: true },
+      ]);
+
+      // Available models to invite (demo)
+      const availableModels = [
+        { id: 'am1', name: 'Priya Sharma', avatar: '👩🏽', rating: 4.8 },
+        { id: 'am2', name: 'Bella Rose', avatar: '👱‍♀️', rating: 4.9 },
+        { id: 'am3', name: 'Mika Chen', avatar: '👧🏻', rating: 4.7 },
+        { id: 'am4', name: 'Sofia Laurent', avatar: '👩🏼', rating: 4.6 },
+      ].filter(m => !crew.members.find(cm => cm.name === m.name) && !pendingInvites.find(pi => pi.name === m.name));
+
+      const filteredModels = availableModels.filter(m => m.name.toLowerCase().includes(inviteSearch.toLowerCase()));
+
+      // ---- Calculations ----
+      const PLATFORM_CUT = 0.15;
+      const totalPosts = crew.members.reduce((sum, m) => sum + m.posts, 0);
+      const grossRevenue = crew.price * crew.subscribers;
+      const platformFee = grossRevenue * PLATFORM_CUT;
+      const netRevenue = grossRevenue - platformFee;
+
+      const membersWithEarnings = crew.members.map(m => {
+        const share = totalPosts > 0 ? m.posts / totalPosts : 1 / crew.members.length;
+        return { ...m, share, earnings: netRevenue * share };
+      }).sort((a, b) => b.posts - a.posts);
+
+      const maxPosts = Math.max(...membersWithEarnings.map(m => m.posts), 1);
+
+      // ---- Handlers ----
+      const handleCreateCrew = () => {
+        if (!crewName.trim()) { auth?.showToast?.('Enter a crew name', 'error'); return; }
+        if (parseFloat(crewPrice) < 4.99) { auth?.showToast?.('Minimum price is $4.99', 'error'); return; }
+        setCrew(prev => ({ ...prev, name: crewName.trim(), price: parseFloat(crewPrice), members: [{ id: 'demo', name: profile.name || 'Aria Valentina', avatar: '👩', posts: 0, earnings: 0 }], subscribers: 0 }));
+        setShowCreateFlow(false);
+        auth?.showToast?.(`"${crewName.trim()}" created! Invite models to join.`, 'success');
+      };
+
+      const sendInvite = (model) => {
+        if (crew.members.length + pendingInvites.length >= 4) { auth?.showToast?.('Max 4 members per crew', 'error'); return; }
+        setPendingInvites(prev => [...prev, { id: 'inv-' + Date.now(), name: model.name, avatar: model.avatar, status: 'pending', sentAt: 'Just now' }]);
+        auth?.showToast?.(`Invite sent to ${model.name}!`, 'success');
+      };
+
+      const cancelInvite = (invId) => {
+        setPendingInvites(prev => prev.filter(i => i.id !== invId));
+        auth?.showToast?.('Invite cancelled', 'success');
+      };
+
+      const removeMember = (memberId) => {
+        if (memberId === crew.admin.id) { auth?.showToast?.('Cannot remove the admin', 'error'); return; }
+        setCrew(prev => ({ ...prev, members: prev.members.filter(m => m.id !== memberId) }));
+        auth?.showToast?.('Member removed. Their content has been taken down.', 'success');
+      };
+
+      const handleSuggestionResponse = (sugId, accepted) => {
+        if (accepted) {
+          const sug = clientSuggestions.find(s => s.id === sugId);
+          if (sug && crew.members.length + pendingInvites.length < 4) {
+            setPendingInvites(prev => [...prev, { id: 'inv-' + Date.now(), name: sug.suggestedModel, avatar: sug.avatar, status: 'pending', sentAt: 'Just now' }]);
+            auth?.showToast?.(`Invite sent to ${sug.suggestedModel}!`, 'success');
+          } else if (crew.members.length + pendingInvites.length >= 4) {
+            auth?.showToast?.('Crew is full (max 4 members)', 'error');
+          }
+        }
+        setClientSuggestions(prev => prev.filter(s => s.id !== sugId));
+      };
+
+      const handlePost = () => {
+        if (!newPostText.trim()) return;
+        const post = {
+          id: 'cp-' + Date.now(),
+          authorId: 'demo',
+          author: profile.name || 'Aria Valentina',
+          avatar: '👩',
+          text: newPostText.trim(),
+          time: 'Just now',
+          likes: 0,
+          media: newPostMedia.map(m => ({ ...m })),
+        };
+        setCrewPosts(prev => [post, ...prev]);
+        setCrew(prev => ({ ...prev, members: prev.members.map(m => m.id === 'demo' ? { ...m, posts: m.posts + 1 } : m) }));
+        setNewPostText('');
+        setNewPostMedia([]);
+        auth?.showToast?.('Posted to crew feed!', 'success');
+      };
+
+      const deletePost = (postId) => {
+        const post = crewPosts.find(p => p.id === postId);
+        if (post && (post.authorId === 'demo' || crew.admin.id === 'demo')) {
+          setCrewPosts(prev => prev.filter(p => p.id !== postId));
+          auth?.showToast?.('Post deleted', 'success');
+        }
+      };
+
+      const handleMediaUpload = (e) => {
+        const files = Array.from(e.target.files);
+        files.forEach(file => {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            setNewPostMedia(prev => [...prev, { url: ev.target.result, type: file.type.startsWith('video') ? 'video' : 'image', name: file.name }]);
+          };
+          reader.readAsDataURL(file);
+        });
+        e.target.value = '';
+      };
+
+      const removeMedia = (idx) => setNewPostMedia(prev => prev.filter((_, i) => i !== idx));
+
+      // ---- Styles ----
+      const cardStyle = { background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1.25rem', border: '1px solid var(--border-color)', marginBottom: '1rem' };
+      const tabStyle = (tab) => ({
+        padding: '0.5rem 1rem', borderRadius: '2rem', border: activeTab === tab ? 'none' : '1px solid var(--border-color)',
+        background: activeTab === tab ? 'linear-gradient(135deg, var(--accent-pink), var(--accent-purple))' : 'transparent',
+        color: activeTab === tab ? '#fff' : 'var(--text-secondary)', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer',
+      });
+
+      // ---- CREATE FLOW ----
+      if (showCreateFlow) {
+        return (
+          <div className="page-container" style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem 1rem' }}>
+            <button onClick={() => window.history.back()} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.9rem', marginBottom: '1.5rem' }}>← Back</button>
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+              <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>👯‍♀️</div>
+              <h2 style={{ fontWeight: 800, fontSize: '1.5rem', marginBottom: '0.5rem' }}>Create a Circle Crew</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Team up with other models. Share a subscription. Split the earnings.</p>
+            </div>
+
+            <div style={cardStyle}>
+              <div style={{ fontWeight: 700, marginBottom: '1rem' }}>Crew Details</div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>Crew Name</label>
+                <input value={crewName} onChange={(e) => setCrewName(e.target.value)} placeholder="e.g. Studio Queens, The Collective..."
+                  style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.9rem', boxSizing: 'border-box' }} />
               </div>
-              <button onClick={() => setShowSuggest(!showSuggest)} style={{ padding: '0.35rem 0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer' }}>
-                {showSuggest ? 'Close' : 'Suggest'}
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>Monthly Subscription Price</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>$</span>
+                  <input value={crewPrice} onChange={(e) => setCrewPrice(e.target.value)} type="number" step="0.01" min="4.99"
+                    style={{ width: '120px', padding: '0.6rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.9rem' }} />
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>/month</span>
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>Min $4.99 · ModelBid takes 15% · Rest is split by post activity</div>
+              </div>
+              <div style={{ padding: '0.75rem', borderRadius: '0.5rem', background: 'rgba(255,110,199,0.06)', border: '1px solid rgba(255,110,199,0.15)', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                <strong style={{ color: 'var(--text-primary)' }}>How earnings work:</strong> ModelBid takes 15%. The remaining 85% is split between crew members based on who posts the most content. Post more → earn more.
+              </div>
+            </div>
+
+            <button onClick={handleCreateCrew} className="btn glow-btn" style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }}>
+              Create Crew & Start Inviting
+            </button>
+          </div>
+        );
+      }
+
+      // ---- MAIN DASHBOARD ----
+      return (
+        <div className="page-container" style={{ maxWidth: '700px', margin: '0 auto', padding: '1.5rem 1rem' }}>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                <span style={{ fontSize: '1.5rem' }}>👯‍♀️</span>
+                <h2 style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0 }}>{crew.name}</h2>
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                {crew.members.length} members · {crew.subscribers} subscribers · Created {crew.createdAt}
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {notifications.filter(n => !n.read).length > 0 && (
+                <span style={{ background: 'var(--accent-pink)', color: '#fff', borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700 }}>
+                  {notifications.filter(n => !n.read).length}
+                </span>
+              )}
+              <button onClick={() => setCrewEnabled(!crewEnabled)} style={{
+                padding: '0.4rem 0.8rem', borderRadius: '2rem', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600,
+                background: crewEnabled ? 'rgba(0,255,135,0.15)' : 'rgba(255,255,255,0.05)', color: crewEnabled ? 'var(--success-green)' : 'var(--text-secondary)',
+              }}>
+                {crewEnabled ? '● Live' : '○ Off'}
               </button>
             </div>
-            {showSuggest && (
-              <div>
-                <input value={suggestSearch} onChange={(e) => setSuggestSearch(e.target.value)} placeholder="Search models..."
-                  style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.85rem', marginBottom: '0.5rem', boxSizing: 'border-box' }} />
-                {suggestableModels.map(m => (
-                  <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.6rem', marginBottom: '0.3rem', borderRadius: '0.4rem', background: 'var(--bg-card-light)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '1.1rem' }}>{m.avatar}</span>
-                      <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{m.name}</span>
-                    </div>
-                    <button onClick={() => handleSuggest(m)} style={{ padding: '0.3rem 0.6rem', borderRadius: '0.4rem', border: 'none', background: 'var(--accent-pink)', color: '#fff', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Suggest</button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
-          {/* Posts Feed */}
-          <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>Crew Feed</div>
-          {previewPosts.map(post => (
-            <div key={post.id} style={{ ...cardStyle, opacity: post.locked ? 0.6 : 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '1.1rem' }}>{post.avatar}</span>
-                <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{post.author}</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>· {post.time}</span>
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+            <button onClick={() => setActiveTab('overview')} style={tabStyle('overview')}>📊 Overview</button>
+            <button onClick={() => setActiveTab('members')} style={tabStyle('members')}>👥 Members</button>
+            <button onClick={() => setActiveTab('feed')} style={tabStyle('feed')}>📸 Crew Feed</button>
+            <button onClick={() => setActiveTab('suggestions')} style={tabStyle('suggestions')}>
+              💡 Suggestions {clientSuggestions.length > 0 && <span style={{ marginLeft: '0.3rem', background: 'var(--accent-pink)', color: '#fff', borderRadius: '50%', padding: '0.1rem 0.4rem', fontSize: '0.65rem' }}>{clientSuggestions.length}</span>}
+            </button>
+          </div>
+
+          {/* ===== OVERVIEW TAB ===== */}
+          {activeTab === 'overview' && (
+            <div>
+              {/* Stats Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                <div style={cardStyle}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Subscribers</div>
+                  <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent-pink)' }}>{crew.subscribers}</div>
+                </div>
+                <div style={cardStyle}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Gross / mo</div>
+                  <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent-gold)' }}>${grossRevenue.toFixed(2)}</div>
+                </div>
+                <div style={cardStyle}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Platform Fee (15%)</div>
+                  <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-secondary)' }}>-${platformFee.toFixed(2)}</div>
+                </div>
+                <div style={cardStyle}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Net to Split</div>
+                  <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--success-green)' }}>${netRevenue.toFixed(2)}</div>
+                </div>
               </div>
-              <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem', lineHeight: 1.5 }}>
-                {post.locked ? (
-                  <div style={{ textAlign: 'center', padding: '1rem' }}>
-                    <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>🔒</div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Subscribe to see this post</div>
+
+              {/* Earnings Split Bar Chart */}
+              <div style={cardStyle}>
+                <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>Earnings Split by Activity</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Models who post more earn a bigger share of the revenue.</div>
+                {membersWithEarnings.map((m, i) => {
+                  const barColors = ['var(--accent-pink)', 'var(--accent-purple)', 'var(--accent-gold)', '#00ff87'];
+                  return (
+                    <div key={m.id} style={{ marginBottom: '1rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontSize: '1.1rem' }}>{m.avatar}</span>
+                          <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{m.name}</span>
+                          {m.id === crew.admin.id && <span style={{ fontSize: '0.6rem', background: 'rgba(255,215,0,0.15)', color: 'var(--accent-gold)', padding: '0.1rem 0.4rem', borderRadius: '1rem' }}>Admin</span>}
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontWeight: 700, fontSize: '0.9rem', color: barColors[i % barColors.length] }}>${m.earnings.toFixed(2)}</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>({(m.share * 100).toFixed(0)}%)</span>
+                        </div>
+                      </div>
+                      <div style={{ position: 'relative', height: '28px', borderRadius: '6px', background: 'var(--bg-card-light)', overflow: 'hidden' }}>
+                        <div style={{
+                          height: '100%', borderRadius: '6px', background: `linear-gradient(90deg, ${barColors[i % barColors.length]}, ${barColors[i % barColors.length]}88)`,
+                          width: `${(m.posts / maxPosts) * 100}%`, transition: 'width 0.6s ease', minWidth: '30px',
+                          display: 'flex', alignItems: 'center', paddingLeft: '0.6rem',
+                        }}>
+                          <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#1a1a2e' }}>{m.posts} posts</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.75rem', borderRadius: '0.5rem', background: 'rgba(255,110,199,0.06)', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  💡 Post more content to increase your share of the earnings. The split updates in real time based on post activity this billing cycle.
+                </div>
+              </div>
+
+              {/* Subscription Info */}
+              <div style={cardStyle}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>Subscription Price</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>What clients pay monthly to access this crew</div>
                   </div>
-                ) : post.text}
+                  <div style={{ fontWeight: 800, fontSize: '1.4rem', color: 'var(--accent-gold)' }}>${crew.price}/mo</div>
+                </div>
               </div>
-              {!post.locked && (
-                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  <button onClick={() => toggleLike(post.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: likedPosts[post.id] ? 'var(--accent-pink)' : 'var(--text-secondary)', fontSize: '0.75rem' }}>
-                    {likedPosts[post.id] ? '❤️' : '🤍'} {post.likes + (likedPosts[post.id] ? 1 : 0)} likes
-                  </button>
+            </div>
+          )}
+
+          {/* ===== MEMBERS TAB ===== */}
+          {activeTab === 'members' && (
+            <div>
+              {/* Current Members */}
+              <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>Current Members ({crew.members.length}/4)</div>
+              {crew.members.map(m => (
+                <div key={m.id} style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <span style={{ fontSize: '1.5rem' }}>{m.avatar}</span>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{m.name}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        {m.posts} posts · ${membersWithEarnings.find(me => me.id === m.id)?.earnings.toFixed(2) || '0.00'} earned
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {m.id === crew.admin.id ? (
+                      <span style={{ fontSize: '0.7rem', background: 'rgba(255,215,0,0.15)', color: 'var(--accent-gold)', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontWeight: 600 }}>Admin</span>
+                    ) : (
+                      <button onClick={() => removeMember(m.id)} style={{ padding: '0.3rem 0.6rem', borderRadius: '0.4rem', border: '1px solid rgba(255,82,82,0.3)', background: 'transparent', color: '#ff5252', fontSize: '0.75rem', cursor: 'pointer' }}>Remove</button>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {/* Pending Invites */}
+              {pendingInvites.length > 0 && (
+                <div style={{ marginTop: '1.5rem' }}>
+                  <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>Pending Invites</div>
+                  {pendingInvites.map(inv => (
+                    <div key={inv.id} style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '3px solid var(--accent-purple)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <span style={{ fontSize: '1.3rem' }}>{inv.avatar}</span>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{inv.name}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Sent {inv.sentAt} · ⏳ Awaiting response</div>
+                        </div>
+                      </div>
+                      <button onClick={() => cancelInvite(inv.id)} style={{ padding: '0.3rem 0.6rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer' }}>Cancel</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Invite New Members */}
+              {crew.members.length + pendingInvites.length < 4 && (
+                <div style={{ marginTop: '1.5rem' }}>
+                  <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>Invite a Model</div>
+                  <input value={inviteSearch} onChange={(e) => setInviteSearch(e.target.value)} placeholder="Search models..."
+                    style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.85rem', marginBottom: '0.75rem', boxSizing: 'border-box' }} />
+                  {filteredModels.map(m => (
+                    <div key={m.id} style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <span style={{ fontSize: '1.3rem' }}>{m.avatar}</span>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{m.name}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>⭐ {m.rating} rating</div>
+                        </div>
+                      </div>
+                      <button onClick={() => sendInvite(m)} className="btn glow-btn" style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}>Invite</button>
+                    </div>
+                  ))}
+                  {filteredModels.length === 0 && inviteSearch && (
+                    <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No models found matching "{inviteSearch}"</div>
+                  )}
+                </div>
+              )}
+
+              {crew.members.length + pendingInvites.length >= 4 && (
+                <div style={{ marginTop: '1rem', padding: '0.75rem', borderRadius: '0.5rem', background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.15)', fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
+                  🔒 This crew is full (4/4 members). Remove a member or cancel an invite to add someone new.
                 </div>
               )}
             </div>
-          ))}
-        </div>
-      );
-    }
-', borderRadius: '0.4rem', border: 'none', background: 'var(--success-green)', color: '#1a1a2e', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Send Invite</button>
+          )}
+
+          {/* ===== CREW FEED TAB ===== */}
+          {activeTab === 'feed' && (
+            <div>
+              {/* Post Composer */}
+              <div style={{ ...cardStyle, borderColor: 'rgba(255,110,199,0.3)' }}>
+                <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>📸 Post to Crew Feed</div>
+                <textarea value={newPostText} onChange={(e) => setNewPostText(e.target.value)} placeholder="Share something with your crew's subscribers..."
+                  style={{ width: '100%', minHeight: '100px', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.85rem', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+
+                {/* Media upload buttons */}
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', marginBottom: newPostMedia.length > 0 ? '0.5rem' : '0' }}>
+                  <label style={{ padding: '0.35rem 0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    📷 Photo <input type="file" accept="image/*" multiple onChange={handleMediaUpload} style={{ display: 'none' }} />
+                  </label>
+                  <label style={{ padding: '0.35rem 0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    🎬 Video <input type="file" accept="video/*" onChange={handleMediaUpload} style={{ display: 'none' }} />
+                  </label>
+                </div>
+
+                {/* Media previews */}
+                {newPostMedia.length > 0 && (
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                    {newPostMedia.map((m, i) => (
+                      <div key={i} style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                        {m.type === 'image' ? (
+                          <img src={m.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <div style={{ width: '100%', height: '100%', background: 'var(--bg-card-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>🎬</div>
+                        )}
+                        <button onClick={() => removeMedia(i)} style={{ position: 'absolute', top: '2px', right: '2px', background: 'rgba(0,0,0,0.7)', border: 'none', color: '#fff', borderRadius: '50%', width: '18px', height: '18px', fontSize: '0.6rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                  <button onClick={handlePost} className="btn glow-btn" style={{ fontSize: '0.8rem', padding: '0.5rem 1.25rem' }}>Publish to Crew</button>
+                </div>
+              </div>
+
+              {/* Post List */}
+              <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>Crew Posts ({crewPosts.length})</div>
+              {crewPosts.map(post => (
+                <div key={post.id} style={cardStyle}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '1.1rem' }}>{post.avatar}</span>
+                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{post.author}</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>· {post.time}</span>
+                      </div>
+                      <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem', lineHeight: 1.5 }}>{post.text}</div>
+                      {post.media && post.media.length > 0 && (
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                          {post.media.map((m, i) => (
+                            <div key={i} style={{ borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid var(--border-color)', maxWidth: '200px' }}>
+                              {m.type === 'image' ? (
+                                <img src={m.url} style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', display: 'block' }} />
+                              ) : (
+                                <video src={m.url} controls style={{ width: '100%', maxHeight: '200px' }} />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>❤️ {post.likes} likes</div>
+                    </div>
+                    {(post.authorId === 'demo' || crew.admin.id === 'demo') && (
+                      <button onClick={() => deletePost(post.id)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.85rem', padding: '0.25rem', opacity: 0.5 }} title="Delete post">🗑️</button>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {crewPosts.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No crew posts yet. Be the first to share!</div>
+              )}
+            </div>
+          )}
+
+          {/* ===== SUGGESTIONS TAB ===== */}
+          {activeTab === 'suggestions' && (
+            <div>
+              <div style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                Clients can suggest models they'd love to see in your crew. Both the suggested model and you get notified. You decide whether to send an invite.
+              </div>
+
+              {clientSuggestions.length > 0 ? (
+                clientSuggestions.map(sug => (
+                  <div key={sug.id} style={{ ...cardStyle, borderLeft: '3px solid var(--accent-purple)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: '0.85rem', marginBottom: '0.3rem' }}>
+                          <span style={{ fontWeight: 600 }}>{sug.clientName}</span>
+                          <span style={{ color: 'var(--text-secondary)' }}> suggested </span>
+                          <span style={{ fontWeight: 600 }}>{sug.suggestedModel}</span>
+                          <span style={{ color: 'var(--text-secondary)' }}> {sug.avatar}</span>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>🕐 {sug.suggestedAt}</div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button onClick={() => handleSuggestionResponse(sug.id, true)} style={{ padding: '0.35rem 0.75rem', borderRadius: '0.4rem', border: 'none', background: 'var(--success-green)', color: '#1a1a2e', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Send Invite</button>
                         <button onClick={() => handleSuggestionResponse(sug.id, false)} style={{ padding: '0.35rem 0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer' }}>Dismiss</button>
                       </div>
                     </div>
@@ -5967,499 +6392,74 @@
 
             {/* Subscribe / Subscribed button */}
             {!isSubscribed ? (
-              <button onClick={handleSubscribe} className="btn glowdth: '80px', height: '80px', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                        {m.type === 'image' ? (
-                          <img src={m.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                          <div style={{ width: '100%', height: '100%', background: 'var(--bg-card-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>🎬</div>
-                        )}
-                        <button onClick={() => removeMedia(i)} style={{ position: 'absolute', top: '2px', right: '2px', background: 'rgba(0,0,0,0.7)', border: 'none', color: '#fff', borderRadius: '50%', width: '18px', height: '18px', fontSize: '0.6rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-                  <button onClick={handlePost} className="btn glow-btn" style={{ fontSize: '0.8rem', padding: '0.5rem 1.25rem' }}>Publish to Crew</button>
-                </div>
+              <button onClick={handleSubscribe} className="btn glow-btn" style={{ padding: '0.75rem 2rem', fontSize: '1rem' }}>
+                Subscribe — ${crew.price}/mo
+              </button>
+            ) : (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.5rem', borderRadius: '2rem', background: 'rgba(0,255,135,0.1)', border: '1px solid rgba(0,255,135,0.3)' }}>
+                <span style={{ color: 'var(--success-green)', fontWeight: 600 }}>✓ Subscribed</span>
               </div>
-
-              {/* Post List */}
-              <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>Crew Posts ({crewPosts.length})</div>
-              {crewPosts.map(post => (
-                <div key={post.id} style={cardStyle}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                        <span style={{ fontSize: '1.1rem' }}>{post.avatar}</span>
-                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{post.author}</span>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>· {post.time}</span>
-                      </div>
-                      <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem', lineHeight: 1.5 }}>{post.text}</div>
-                      {post.media && post.media.length > 0 && (
-                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
-                          {post.media.map((m, i) => (
-                            <div key={i} style={{ borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid var(--border-color)', maxWidth: '200px' }}>
-                              {m.type === 'image' ? (
-                                <img src={m.url} style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', display: 'block' }} />
-                              ) : (
-                                <video src={m.url} controls style={{ width: '100%', maxHeight: '200px' }} />
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>❤️ {post.likes} likes</div>
-                    </div>
-                    {(post.authorId === 'demo' || crew.admin.id === 'demo') && (
-                      <button onClick={() => deletePost(post.id)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.85rem', padding: '0.25rem', opacity: 0.5 }} title="Delete post">🗑️</button>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              {crewPosts.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No crew posts yet. Be the first to share!</div>
-              )}
-            </div>
-          )}
-
-          {/* ===== SUGGESTIONS TAB ===== */}
-          {activeTab === 'suggestions' && (
-            <div>
-              <div style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                Clients can suggest models they'd love to see in your crew. Both the suggested model and you get notified. You decide whether to send an invite.
-              </div>
-
-              {clientSuggestions.length > 0 ? (
-                clientSuggestions.map(sug => (
-                  <div key={sug.id} style={{ ...cardStyle, borderLeft: '3px solid var(--accent-purple)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ fontSize: '0.85rem', marginBottom: '0.3rem' }}>
-                          <span style={{ fontWeight: 600 }}>{sug.clientName}</span>
-                          <span style={{ color: 'var(--text-secondary)' }}> suggested </span>
-                          <span style={{ fontWeight: 600 }}>{sug.suggestedModel}</span>
-                          <span style={{ color: 'var(--text-secondary)' }}> {sug.avatar}</span>
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>🕐 {sug.suggestedAt}</div>
-                      </div>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button onClick={() => handleSuggestionResponse(sug.id, true)} style={{ padding: '0.35rem 0.75rem, justifyContent: 'space-between', alignItems: 'center', borderLeft: '3px solid var(--accent-purple)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <span style={{ fontSize: '1.3rem' }}>{inv.avatar}</span>
-                        <div>
-                          <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{inv.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Sent {inv.sentAt} · ⏳ Awaiting response</div>
-                        </div>
-                      </div>
-                      <button onClick={() => cancelInvite(inv.id)} style={{ padding: '0.3rem 0.6rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer' }}>Cancel</button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Invite New Members */}
-              {crew.members.length + pendingInvites.length < 4 && (
-                <div style={{ marginTop: '1.5rem' }}>
-                  <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>Invite a Model</div>
-                  <input value={inviteSearch} onChange={(e) => setInviteSearch(e.target.value)} placeholder="Search models..."
-                    style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.85rem', marginBottom: '0.75rem', boxSizing: 'border-box' }} />
-                  {filteredModels.map(m => (
-                    <div key={m.id} style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <span style={{ fontSize: '1.3rem' }}>{m.avatar}</span>
-                        <div>
-                          <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{m.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>⭐ {m.rating} rating</div>
-                        </div>
-                      </div>
-                      <button onClick={() => sendInvite(m)} className="btn glow-btn" style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}>Invite</button>
-                    </div>
-                  ))}
-                  {filteredModels.length === 0 && inviteSearch && (
-                    <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No models found matching "{inviteSearch}"</div>
-                  )}
-                </div>
-              )}
-
-              {crew.members.length + pendingInvites.length >= 4 && (
-                <div style={{ marginTop: '1rem', padding: '0.75rem', borderRadius: '0.5rem', background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.15)', fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                  🔒 This crew is full (4/4 members). Remove a member or cancel an invite to add someone new.
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ===== CREW FEED TAB ===== */}
-          {activeTab === 'feed' && (
-            <div>
-              {/* Post Composer */}
-              <div style={{ ...cardStyle, borderColor: 'rgba(255,110,199,0.3)' }}>
-                <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>📸 Post to Crew Feed</div>
-                <textarea value={newPostText} onChange={(e) => setNewPostText(e.target.value)} placeholder="Share something with your crew's subscribers..."
-                  style={{ width: '100%', minHeight: '100px', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.85rem', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
-
-                {/* Media upload buttons */}
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', marginBottom: newPostMedia.length > 0 ? '0.5rem' : '0' }}>
-                  <label style={{ padding: '0.35rem 0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                    📷 Photo <input type="file" accept="image/*" multiple onChange={handleMediaUpload} style={{ display: 'none' }} />
-                  </label>
-                  <label style={{ padding: '0.35rem 0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                    🎬 Video <input type="file" accept="video/*" onChange={handleMediaUpload} style={{ display: 'none' }} />
-                  </label>
-                </div>
-
-                {/* Media previews */}
-                {newPostMedia.length > 0 && (
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
-                    {newPostMedia.map((m, i) => (
-                      <div key={i} style={{ position: 'relative', wintSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Models who post more earn a bigger share of the revenue.</div>
-                {membersWithEarnings.map((m, i) => {
-                  const barColors = ['var(--accent-pink)', 'var(--accent-purple)', 'var(--accent-gold)', '#00ff87'];
-                  return (
-                    <div key={m.id} style={{ marginBottom: '1rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontSize: '1.1rem' }}>{m.avatar}</span>
-                          <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{m.name}</span>
-                          {m.id === crew.admin.id && <span style={{ fontSize: '0.6rem', background: 'rgba(255,215,0,0.15)', color: 'var(--accent-gold)', padding: '0.1rem 0.4rem', borderRadius: '1rem' }}>Admin</span>}
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <span style={{ fontWeight: 700, fontSize: '0.9rem', color: barColors[i % barColors.length] }}>${m.earnings.toFixed(2)}</span>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>({(m.share * 100).toFixed(0)}%)</span>
-                        </div>
-                      </div>
-                      <div style={{ position: 'relative', height: '28px', borderRadius: '6px', background: 'var(--bg-card-light)', overflow: 'hidden' }}>
-                        <div style={{
-                          height: '100%', borderRadius: '6px', background: `linear-gradient(90deg, ${barColors[i % barColors.length]}, ${barColors[i % barColors.length]}88)`,
-                          width: `${(m.posts / maxPosts) * 100}%`, transition: 'width 0.6s ease', minWidth: '30px',
-                          display: 'flex', alignItems: 'center', paddingLeft: '0.6rem',
-                        }}>
-                          <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#1a1a2e' }}>{m.posts} posts</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-                <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.75rem', borderRadius: '0.5rem', background: 'rgba(255,110,199,0.06)', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  💡 Post more content to increase your share of the earnings. The split updates in real time based on post activity this billing cycle.
-                </div>
-              </div>
-
-              {/* Subscription Info */}
-              <div style={cardStyle}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>Subscription Price</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>What clients pay monthly to access this crew</div>
-                  </div>
-                  <div style={{ fontWeight: 800, fontSize: '1.4rem', color: 'var(--accent-gold)' }}>${crew.price}/mo</div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ===== MEMBERS TAB ===== */}
-          {activeTab === 'members' && (
-            <div>
-              {/* Current Members */}
-              <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>Current Members ({crew.members.length}/4)</div>
-              {crew.members.map(m => (
-                <div key={m.id} style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <span style={{ fontSize: '1.5rem' }}>{m.avatar}</span>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{m.name}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                        {m.posts} posts · ${membersWithEarnings.find(me => me.id === m.id)?.earnings.toFixed(2) || '0.00'} earned
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    {m.id === crew.admin.id ? (
-                      <span style={{ fontSize: '0.7rem', background: 'rgba(255,215,0,0.15)', color: 'var(--accent-gold)', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontWeight: 600 }}>Admin</span>
-                    ) : (
-                      <button onClick={() => removeMember(m.id)} style={{ padding: '0.3rem 0.6rem', borderRadius: '0.4rem', border: '1px solid rgba(255,82,82,0.3)', background: 'transparent', color: '#ff5252', fontSize: '0.75rem', cursor: 'pointer' }}>Remove</button>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              {/* Pending Invites */}
-              {pendingInvites.length > 0 && (
-                <div style={{ marginTop: '1.5rem' }}>
-                  <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>Pending Invites</div>
-                  {pendingInvites.map(inv => (
-                    <div key={inv.id} style={{ ...cardStyle, display: 'flex'', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>Min $4.99 · ModelBid takes 15% · Rest is split by post activity</div>
-              </div>
-              <div style={{ padding: '0.75rem', borderRadius: '0.5rem', background: 'rgba(255,110,199,0.06)', border: '1px solid rgba(255,110,199,0.15)', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                <strong style={{ color: 'var(--text-primary)' }}>How earnings work:</strong> ModelBid takes 15%. The remaining 85% is split between crew members based on who posts the most content. Post more → earn more.
-              </div>
-            </div>
-
-            <button onClick={handleCreateCrew} className="btn glow-btn" style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }}>
-              Create Crew & Start Inviting
-            </button>
+            )}
           </div>
-        );
-      }
 
-      // ---- MAIN DASHBOARD ----
-      return (
-        <div className="page-container" style={{ maxWidth: '700px', margin: '0 auto', padding: '1.5rem 1rem' }}>
-          {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                <span style={{ fontSize: '1.5rem' }}>👯‍♀️</span>
-                <h2 style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0 }}>{crew.name}</h2>
+          {/* Suggest a Model */}
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showSuggest ? '0.75rem' : 0 }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>💡 Suggest a Model</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Know someone who'd be perfect for this crew?</div>
               </div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                {crew.members.length} members · {crew.subscribers} subscribers · Created {crew.createdAt}
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              {notifications.filter(n => !n.read).length > 0 && (
-                <span style={{ background: 'var(--accent-pink)', color: '#fff', borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700 }}>
-                  {notifications.filter(n => !n.read).length}
-                </span>
-              )}
-              <button onClick={() => setCrewEnabled(!crewEnabled)} style={{
-                padding: '0.4rem 0.8rem', borderRadius: '2rem', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600,
-                background: crewEnabled ? 'rgba(0,255,135,0.15)' : 'rgba(255,255,255,0.05)', color: crewEnabled ? 'var(--success-green)' : 'var(--text-secondary)',
-              }}>
-                {crewEnabled ? '● Live' : '○ Off'}
+              <button onClick={() => setShowSuggest(!showSuggest)} style={{ padding: '0.35rem 0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer' }}>
+                {showSuggest ? 'Close' : 'Suggest'}
               </button>
             </div>
-          </div>
-
-          {/* Tabs */}
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-            <button onClick={() => setActiveTab('overview')} style={tabStyle('overview')}>📊 Overview</button>
-            <button onClick={() => setActiveTab('members')} style={tabStyle('members')}>👥 Members</button>
-            <button onClick={() => setActiveTab('feed')} style={tabStyle('feed')}>📸 Crew Feed</button>
-            <button onClick={() => setActiveTab('suggestions')} style={tabStyle('suggestions')}>
-              💡 Suggestions {clientSuggestions.length > 0 && <span style={{ marginLeft: '0.3rem', background: 'var(--accent-pink)', color: '#fff', borderRadius: '50%', padding: '0.1rem 0.4rem', fontSize: '0.65rem' }}>{clientSuggestions.length}</span>}
-            </button>
-          </div>
-
-          {/* ===== OVERVIEW TAB ===== */}
-          {activeTab === 'overview' && (
-            <div>
-              {/* Stats Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                <div style={cardStyle}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Subscribers</div>
-                  <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent-pink)' }}>{crew.subscribers}</div>
-                </div>
-                <div style={cardStyle}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Gross / mo</div>
-                  <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent-gold)' }}>${grossRevenue.toFixed(2)}</div>
-                </div>
-                <div style={cardStyle}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Platform Fee (15%)</div>
-                  <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-secondary)' }}>-${platformFee.toFixed(2)}</div>
-                </div>
-                <div style={cardStyle}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Net to Split</div>
-                  <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--success-green)' }}>${netRevenue.toFixed(2)}</div>
-                </div>
+            {showSuggest && (
+              <div>
+                <input value={suggestSearch} onChange={(e) => setSuggestSearch(e.target.value)} placeholder="Search models..."
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.85rem', marginBottom: '0.5rem', boxSizing: 'border-box' }} />
+                {suggestableModels.map(m => (
+                  <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.6rem', marginBottom: '0.3rem', borderRadius: '0.4rem', background: 'var(--bg-card-light)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '1.1rem' }}>{m.avatar}</span>
+                      <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{m.name}</span>
+                    </div>
+                    <button onClick={() => handleSuggest(m)} style={{ padding: '0.3rem 0.6rem', borderRadius: '0.4rem', border: 'none', background: 'var(--accent-pink)', color: '#fff', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Suggest</button>
+                  </div>
+                ))}
               </div>
+            )}
+          </div>
 
-              {/* Earnings Split Bar Chart */}
-              <div style={cardStyle}>
-                <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>Earnings Split by Activity</div>
-                <div style={{ foId) }));
-        auth?.showToast?.('Member removed. Their content has been taken down.', 'success');
-      };
-
-      const handleSuggestionResponse = (sugId, accepted) => {
-        if (accepted) {
-          const sug = clientSuggestions.find(s => s.id === sugId);
-          if (sug && crew.members.length + pendingInvites.length < 4) {
-            setPendingInvites(prev => [...prev, { id: 'inv-' + Date.now(), name: sug.suggestedModel, avatar: sug.avatar, status: 'pending', sentAt: 'Just now' }]);
-            auth?.showToast?.(`Invite sent to ${sug.suggestedModel}!`, 'success');
-          } else if (crew.members.length + pendingInvites.length >= 4) {
-            auth?.showToast?.('Crew is full (max 4 members)', 'error');
-          }
-        }
-        setClientSuggestions(prev => prev.filter(s => s.id !== sugId));
-      };
-
-      const handlePost = () => {
-        if (!newPostText.trim()) return;
-        const post = {
-          id: 'cp-' + Date.now(),
-          authorId: 'demo',
-          author: profile.name || 'Aria Valentina',
-          avatar: '👩',
-          text: newPostText.trim(),
-          time: 'Just now',
-          likes: 0,
-          media: newPostMedia.map(m => ({ ...m })),
-        };
-        setCrewPosts(prev => [post, ...prev]);
-        setCrew(prev => ({ ...prev, members: prev.members.map(m => m.id === 'demo' ? { ...m, posts: m.posts + 1 } : m) }));
-        setNewPostText('');
-        setNewPostMedia([]);
-        auth?.showToast?.('Posted to crew feed!', 'success');
-      };
-
-      const deletePost = (postId) => {
-        const post = crewPosts.find(p => p.id === postId);
-        if (post && (post.authorId === 'demo' || crew.admin.id === 'demo')) {
-          setCrewPosts(prev => prev.filter(p => p.id !== postId));
-          auth?.showToast?.('Post deleted', 'success');
-        }
-      };
-
-      const handleMediaUpload = (e) => {
-        const files = Array.from(e.target.files);
-        files.forEach(file => {
-          const reader = new FileReader();
-          reader.onload = (ev) => {
-            setNewPostMedia(prev => [...prev, { url: ev.target.result, type: file.type.startsWith('video') ? 'video' : 'image', name: file.name }]);
-          };
-          reader.readAsDataURL(file);
-        });
-        e.target.value = '';
-      };
-
-      const removeMedia = (idx) => setNewPostMedia(prev => prev.filter((_, i) => i !== idx));
-
-      // ---- Styles ----
-      const cardStyle = { background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1.25rem', border: '1px solid var(--border-color)', marginBottom: '1rem' };
-      const tabStyle = (tab) => ({
-        padding: '0.5rem 1rem', borderRadius: '2rem', border: activeTab === tab ? 'none' : '1px solid var(--border-color)',
-        background: activeTab === tab ? 'linear-gradient(135deg, var(--accent-pink), var(--accent-purple))' : 'transparent',
-        color: activeTab === tab ? '#fff' : 'var(--text-secondary)', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer',
-      });
-
-      // ---- CREATE FLOW ----
-      if (showCreateFlow) {
-        return (
-          <div className="page-container" style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem 1rem' }}>
-            <button onClick={() => window.history.back()} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.9rem', marginBottom: '1.5rem' }}>← Back</button>
-            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>👯‍♀️</div>
-              <h2 style={{ fontWeight: 800, fontSize: '1.5rem', marginBottom: '0.5rem' }}>Create a Circle Crew</h2>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Team up with other models. Share a subscription. Split the earnings.</p>
+          {/* Posts Feed */}
+          <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>Crew Feed</div>
+          {previewPosts.map(post => (
+            <div key={post.id} style={{ ...cardStyle, opacity: post.locked ? 0.6 : 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '1.1rem' }}>{post.avatar}</span>
+                <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{post.author}</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>· {post.time}</span>
+              </div>
+              <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem', lineHeight: 1.5 }}>
+                {post.locked ? (
+                  <div style={{ textAlign: 'center', padding: '1rem' }}>
+                    <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>🔒</div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Subscribe to see this post</div>
+                  </div>
+                ) : post.text}
+              </div>
+              {!post.locked && (
+                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  <button onClick={() => toggleLike(post.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: likedPosts[post.id] ? 'var(--accent-pink)' : 'var(--text-secondary)', fontSize: '0.75rem' }}>
+                    {likedPosts[post.id] ? '❤️' : '🤍'} {post.likes + (likedPosts[post.id] ? 1 : 0)} likes
+                  </button>
+                </div>
+              )}
             </div>
-
-            <div style={cardStyle}>
-              <div style={{ fontWeight: 700, marginBottom: '1rem' }}>Crew Details</div>
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>Crew Name</label>
-                <input value={crewName} onChange={(e) => setCrewName(e.target.value)} placeholder="e.g. Studio Queens, The Collective..."
-                  style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.9rem', boxSizing: 'border-box' }} />
-              </div>
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>Monthly Subscription Price</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>$</span>
-                  <input value={crewPrice} onChange={(e) => setCrewPrice(e.target.value)} type="number" step="0.01" min="4.99"
-                    style={{ width: '120px', padding: '0.6rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.9rem' }} />
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>/month</span>
-                </div>
-                <div style={{ fontSize: '0.75rem    // ===== CIRCLE CREW — SHARED INNER CIRCLE FOR MODEL GROUPS =====
-    function CircleCrewManage({ crewId }) {
-      const auth = useContext(AuthContext);
-      const profile = auth?.profile || {};
-
-      // ---- State ----
-      const [activeTab, setActiveTab] = useState('overview');
-      const [crewEnabled, setCrewEnabled] = useState(true);
-      const [showCreateFlow, setShowCreateFlow] = useState(!crewId);
-      const [crewName, setCrewName] = useState('');
-      const [crewPrice, setCrewPrice] = useState('14.99');
-      const [inviteSearch, setInviteSearch] = useState('');
-      const [newPostText, setNewPostText] = useState('');
-      const [newPostMedia, setNewPostMedia] = useState([]);
-
-      // Demo crew data
-      const [crew, setCrew] = useState({
-        id: crewId || 'crew-demo',
-        name: 'Studio Queens',
-        admin: { id: 'demo', name: profile.name || 'Aria Valentina', avatar: '👩' },
-        price: 14.99,
-        members: [
-          { id: 'demo', name: profile.name || 'Aria Valentina', avatar: '👩', posts: 12, earnings: 0 },
-          { id: 'm2', name: 'Luna Marquez', avatar: '👧', posts: 8, earnings: 0 },
-          { id: 'm3', name: 'Zara Knight', avatar: '👩‍🦱', posts: 5, earnings: 0 },
-        ],
-        subscribers: 47,
-        totalEarnings: 601.23,
-        createdAt: '2 weeks ago',
-      });
-
-      const [pendingInvites, setPendingInvites] = useState([
-        { id: 'inv1', name: 'Mika Chen', avatar: '👧🏻', status: 'pending', sentAt: '1d ago' },
-      ]);
-
-      const [clientSuggestions, setClientSuggestions] = useState([
-        { id: 'sug1', clientName: 'Jason R.', suggestedModel: 'Priya Sharma', avatar: '👩🏽', suggestedAt: '3h ago' },
-        { id: 'sug2', clientName: 'Tyler M.', suggestedModel: 'Bella Rose', avatar: '👱‍♀️', suggestedAt: '1d ago' },
-      ]);
-
-      const [crewPosts, setCrewPosts] = useState([
-        { id: 'cp1', authorId: 'demo', author: profile.name || 'Aria Valentina', avatar: '👩', text: 'Just wrapped an incredible group shoot! The synergy was unreal today.', time: '2h ago', likes: 23, media: [] },
-        { id: 'cp2', authorId: 'm2', author: 'Luna Marquez', avatar: '👧', text: 'New location scouted for next week — an abandoned greenhouse. The light is perfect.', time: '5h ago', likes: 41, media: [] },
-        { id: 'cp3', authorId: 'm3', author: 'Zara Knight', avatar: '👩‍🦱', text: 'Behind the scenes from the rooftop session. Can\'t wait for you all to see the finals!', time: '1d ago', likes: 18, media: [] },
-      ]);
-
-      const [notifications, setNotifications] = useState([
-        { id: 'n1', type: 'suggestion', text: 'Jason R. suggested Priya Sharma join your crew', time: '3h ago', read: false },
-        { id: 'n2', type: 'subscribe', text: 'New subscriber! Alex K. joined Studio Queens', time: '6h ago', read: true },
-      ]);
-
-      // Available models to invite (demo)
-      const availableModels = [
-        { id: 'am1', name: 'Priya Sharma', avatar: '👩🏽', rating: 4.8 },
-        { id: 'am2', name: 'Bella Rose', avatar: '👱‍♀️', rating: 4.9 },
-        { id: 'am3', name: 'Mika Chen', avatar: '👧🏻', rating: 4.7 },
-        { id: 'am4', name: 'Sofia Laurent', avatar: '👩🏼', rating: 4.6 },
-      ].filter(m => !crew.members.find(cm => cm.name === m.name) && !pendingInvites.find(pi => pi.name === m.name));
-
-      const filteredModels = availableModels.filter(m => m.name.toLowerCase().includes(inviteSearch.toLowerCase()));
-
-      // ---- Calculations ----
-      const PLATFORM_CUT = 0.15;
-      const totalPosts = crew.members.reduce((sum, m) => sum + m.posts, 0);
-      const grossRevenue = crew.price * crew.subscribers;
-      const platformFee = grossRevenue * PLATFORM_CUT;
-      const netRevenue = grossRevenue - platformFee;
-
-      const membersWithEarnings = crew.members.map(m => {
-        const share = totalPosts > 0 ? m.posts / totalPosts : 1 / crew.members.length;
-        return { ...m, share, earnings: netRevenue * share };
-      }).sort((a, b) => b.posts - a.posts);
-
-      const maxPosts = Math.max(...membersWithEarnings.map(m => m.posts), 1);
-
-      // ---- Handlers ----
-      const handleCreateCrew = () => {
-        if (!crewName.trim()) { auth?.showToast?.('Enter a crew name', 'error'); return; }
-        if (parseFloat(crewPrice) < 4.99) { auth?.showToast?.('Minimum price is $4.99', 'error'); return; }
-        setCrew(prev => ({ ...prev, name: crewName.trim(), price: parseFloat(crewPrice), members: [{ id: 'demo', name: profile.name || 'Aria Valentina', avatar: '👩', posts: 0, earnings: 0 }], subscribers: 0 }));
-        setShowCreateFlow(false);
-        auth?.showToast?.(`"${crewName.trim()}" created! Invite models to join.`, 'success');
-      };
-
-      const sendInvite = (model) => {
-        if (crew.members.length + pendingInvites.length >= 4) { auth?.showToast?.('Max 4 members per crew', 'error'); return; }
-        setPendingInvites(prev => [...prev, { id: 'inv-' + Date.now(), name: model.name, avatar: model.avatar, status: 'pending', sentAt: 'Just now' }]);
-        auth?.showToast?.(`Invite sent to ${model.name}!`, 'success');
-      };
-
-      const cancelInvite = (invId) => {
-        setPendingInvites(prev => prev.filter(i => i.id !== invId));
-        auth?.showToast?.('Invite cancelled', 'success');
-      };
-
-      const removeMember = (memberId) => {
-        if (memberId === crew.admin.id) { auth?.showToast?.('Cannot remove the admin', 'error'); return; }
-        setCrew(prev => ({ ...prev, members: prev.members.filter(m => m.id !== memberfunction InnerCircleManage() {
+          ))}
+        </div>
+      );
+    }
+function InnerCircleManage() {
       const auth = useContext(AuthContext);
       const profile = auth?.profile || {};
       const [manageTab, setManageTab] = useState('overview');
