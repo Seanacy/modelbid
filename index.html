@@ -5306,32 +5306,32 @@
                 </div>
               </div>
 
-            </div>
-          </div>
-
-          {/* Circle Crew */}
-          <div className="profile-section" style={{ background: 'linear-gradient(135deg, rgba(255,110,199,0.08), rgba(147,51,234,0.08))', borderColor: 'rgba(255,110,199,0.25)', padding: '1.25rem', borderRadius: '1rem', border: '1px solid rgba(255,110,199,0.25)', marginBottom: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-              <span style={{ fontSize: '1.2rem' }}>\ud83d\udc6f\u200d\u2640\ufe0f</span>
-              <h3 style={{ fontWeight: 700, fontSize: '1rem', margin: 0 }}>Circle Crew</h3>
-            </div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Models in this crew</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.6rem' }}>
-              {[
-                { name: 'Sophia Laurent', avatar: '\ud83d\udc69\u200d\ud83e\uddb0', role: 'Admin' },
-                { name: 'Mia Chen', avatar: '\ud83d\udc69\u200d\ud83e\uddb1', role: 'Member' },
-                { name: 'Zara Williams', avatar: '\ud83d\udc71\u200d\u2640\ufe0f', role: 'Member' }
-              ].map((m, i) => (
-                <div key={i} onClick={() => window.location.hash = 'profile/' + m.name.toLowerCase().replace(/ /g, '-')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem', borderRadius: '0.6rem', background: 'var(--bg-card-light)', cursor: 'pointer', transition: 'transform 0.15s' }}>
-                  <span style={{ fontSize: '1.5rem' }}>{m.avatar}</span>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: '0.8rem' }}>{m.name}</div>
-                    <div style={{ fontSize: '0.7rem', color: m.role === 'Admin' ? 'var(--accent-pink)' : 'var(--text-secondary)' }}>{m.role}</div>
-                  </div>
+              {/* Circle Crew */}
+              <div className="profile-section" style={{ background: 'linear-gradient(135deg, rgba(255,110,199,0.08), rgba(147,51,234,0.08))', borderColor: 'rgba(255,110,199,0.25)', padding: '1.25rem', borderRadius: '1rem', border: '1px solid rgba(255,110,199,0.25)', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                  <span style={{ fontSize: '1.2rem' }}>👯‍♀️</span>
+                  <h3 style={{ fontWeight: 700, fontSize: '1rem', margin: 0 }}>Circle Crew</h3>
                 </div>
-              ))}
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Models in this crew</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.6rem' }}>
+                  {[
+                    { name: 'Sophia Laurent', avatar: '👩‍🦰', role: 'Admin' },
+                    { name: 'Mia Chen', avatar: '👩‍🦱', role: 'Member' },
+                    { name: 'Zara Williams', avatar: '👱‍♀️', role: 'Member' }
+                  ].map((m, i) => (
+                    <div key={i} onClick={() => window.location.hash = 'profile/' + m.name.toLowerCase().replace(/ /g, '-')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem', borderRadius: '0.6rem', background: 'var(--bg-card-light)', cursor: 'pointer', transition: 'transform 0.15s' }}>
+                      <span style={{ fontSize: '1.5rem' }}>{m.avatar}</span>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.8rem' }}>{m.name}</div>
+                        <div style={{ fontSize: '0.7rem', color: m.role === 'Admin' ? 'var(--accent-pink)' : 'var(--text-secondary)' }}>{m.role}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={() => window.location.hash = 'crew/crew-demo'} style={{ width: '100%', marginTop: '0.75rem', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid rgba(255,110,199,0.3)', background: 'transparent', color: 'var(--accent-pink)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>View Full Crew Page</button>
+              </div>
+
             </div>
-            <button onClick={() => window.location.hash = 'crew/crew-demo'} style={{ width: '100%', marginTop: '0.75rem', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid rgba(255,110,199,0.3)', background: 'transparent', color: 'var(--accent-pink)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>View Full Crew Page</button>
           </div>
 
           {/* Gallery Lightbox */}
