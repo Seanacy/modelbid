@@ -6054,7 +6054,7 @@
                   <button onClick={() => setEditingCrewName(false)} style={{ padding: '0.25rem 0.5rem', borderRadius: '0.3rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer' }}>Cancel</button>
                 </div>
               ) : (
-                <h2 onClick={() => { setEditingCrewName(true); setEditNameValue(crew.name); }} style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0, cursor: 'pointer' }} title="Click to edit">{crew.name} <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>\u270E</span></h2>
+                <h2 onClick={() => { setEditingCrewName(true); setEditNameValue(crew.name); }} style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0, cursor: 'pointer' }} title="Click to edit">{crew.name} <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>✏️</span></h2>
               )}
               </div>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
