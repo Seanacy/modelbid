@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -5126,6 +5126,18 @@
                 {model.location && <div className="profile-location">📍 {model.location}</div>}
               </div>
             </div>
+            {/* Edit/Settings button — only visible on your own profile */}
+            {auth.currentUser && (modelId === auth.currentUser.id || modelId === 'demo') && (
+              <button onClick={() => window.location.hash = 'edit-profile'} style={{
+                position: 'absolute', top: '1rem', right: '1rem',
+                padding: '0.5rem 1rem', borderRadius: '0.5rem',
+                background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255,255,255,0.2)', color: '#fff',
+                fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '0.4rem',
+                transition: 'background 0.2s',
+              }}>⚙️ Edit Profile</button>
+            )}
           </div>
 
           {/* Stats Bar */}
@@ -13551,7 +13563,7 @@ RULES
                   <a className="nav-link" onClick={() => window.location.hash = 'messages'}>📬 Messages</a>
                   <a className="nav-link" onClick={() => window.location.hash = 'dashboard'}>Dashboard</a>
                   <a className="nav-link" onClick={() => window.location.hash = 'edit-profile'}>⚙️ Profile</a>
-                  <div className="user-info">
+                  <div className="user-info" onClick={() => window.location.hash = 'profile/' + (auth.currentUser?.id || 'demo')} style={{ cursor: 'pointer' }}>
                     <div className="avatar">{auth.profile?.avatar_emoji || '👤'}</div>
                     <div className="user-name">{auth.profile?.display_name || 'User'}</div>
                   </div>
