@@ -5821,6 +5821,7 @@
       const [editingTier, setEditingTier] = useState(null);
       const [editPrice, setEditPrice] = useState('');
       const [editPerkText, setEditPerkText] = useState('');
+      const [removedPerks, setRemovedPerks] = useState({});
 
       // Demo stats
       const stats = { totalMembers: circleEnabled ? 89 : 0, bronze: 52, silver: 28, gold: 9, monthlyRevenue: circleEnabled ? 1847.52 : 0, growthPct: 12 };
@@ -5843,7 +5844,17 @@
       };
 
       const removePerk = (tierId, perkIdx) => {
+        const perkText = tiers.find(t => t.id === tierId)?.perks[perkIdx];
+        if (!perkText) return;
+        setRemovedPerks(prev => ({ ...prev, [tierId]: [...(prev[tierId] || []), perkText] }));
         setTiers(prev => prev.map(t => t.id === tierId ? { ...t, perks: t.perks.filter((_, i) => i !== perkIdx) } : t));
+      };
+
+      const restorePerk = (tierId, perkIdx) => {
+        const perk = removedPerks[tierId]?.[perkIdx];
+        if (!perk) return;
+        setTiers(prev => prev.map(t => t.id === tierId ? { ...t, perks: [...t.perks, perk] } : t));
+        setRemovedPerks(prev => ({ ...prev, [tierId]: prev[tierId].filter((_, i) => i !== perkIdx) }));
       };
 
       const handlePost = () => {
@@ -6008,6 +6019,19 @@
                         style={{ flex: 1, padding: '0.4rem 0.6rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.8rem' }}
                         onKeyDown={(e) => e.key === 'Enter' && addPerk(tier.id)} />
                       <button onClick={() => addPerk(tier.id)} style={{ padding: '0.4rem 0.75rem', borderRadius: '0.4rem', border: 'none', background: 'var(--accent-pink)', color: '#fff', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>+ Add</button>
+                    </div>
+                  )}
+
+                  {/* Removed Perks */}
+                  {removedPerks[tier.id] && removedPerks[tier.id].length > 0 && (
+                    <div style={{ marginTop: '0.75rem', padding: '0.75rem', borderRadius: '0.5rem', background: 'rgba(255,255,255,0.03)', border: '1px dashed var(--border-color)' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', fontWeight: 600 }}>Removed Perks:</div>
+                      {removedPerks[tier.id].map((perk, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.35rem 0.6rem', marginBottom: '0.25rem', borderRadius: '0.4rem', background: 'rgba(255,255,255,0.02)', fontSize: '0.8rem', opacity: 0.5 }}>
+                          <span style={{ textDecoration: 'line-through' }}>{perk}</span>
+                          <button onClick={() => restorePerk(tier.id, i)} style={{ background: 'none', border: '1px solid var(--accent-pink)', color: 'var(--accent-pink)', cursor: 'pointer', fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '0.3rem', opacity: 1 }}>Restore</button>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
