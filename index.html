@@ -5800,7 +5800,286 @@
       );
     }
 
+        // ===== INNER CIRCLE — MODEL MANAGEMENT DASHBOARD =====
+    function InnerCircleManage() {
+      const auth = useContext(AuthContext);
+      const profile = auth?.profile || {};
+      const [manageTab, setManageTab] = useState('overview');
+      const [circleEnabled, setCircleEnabled] = useState(false);
+      const [saving, setSaving] = useState(false);
+      const [newPostText, setNewPostText] = useState('');
+      const [newPostTier, setNewPostTier] = useState('bronze');
+      const [btsPosts, setBtsPosts] = useState([
+        { id: 'bts1', text: 'Just finished setting up the studio for tomorrow\'s shoot. The new lighting rig is INSANE.', time: '3h ago', tier: 'bronze', likes: 34 },
+        { id: 'bts2', text: 'New outfits just arrived! Sneak peek at the luxury lingerie collection for April sessions.', time: '1d ago', tier: 'bronze', likes: 67 },
+      ]);
+      const [tiers, setTiers] = useState([
+        { id: 'bronze', name: 'Bronze Circle', price: 9.99, color: '#cd7f32', perks: ['Behind-the-scenes feed access', 'New content drop notifications', 'Group chat access (read only)', 'Bronze badge on your profile'] },
+        { id: 'silver', name: 'Silver Circle', price: 19.99, color: '#c0c0c0', popular: true, perks: ['All Bronze perks included', '24-hour early booking window', 'Full group chat access (post & react)', '10% off all session bookings', 'Monthly exclusive content drop', 'Priority DM responses'] },
+        { id: 'gold', name: 'Gold Circle', price: 34.99, color: '#ffd700', perks: ['All Silver perks included', '48-hour early booking window', '20% off all session bookings', '1-on-1 monthly video call (15 min)', 'Vote on upcoming session themes', 'Quarterly surprise content bundle', 'Gold badge + featured in your profile'] },
+      ]);
+      const [editingTier, setEditingTier] = useState(null);
+      const [editPrice, setEditPrice] = useState('');
+      const [editPerkText, setEditPerkText] = useState('');
+
+      // Demo stats
+      const stats = { totalMembers: circleEnabled ? 89 : 0, bronze: 52, silver: 28, gold: 9, monthlyRevenue: circleEnabled ? 1847.52 : 0, growthPct: 12 };
+
+      const handleToggle = () => {
+        setCircleEnabled(!circleEnabled);
+        auth?.showToast?.(circleEnabled ? 'Inner Circle disabled' : 'Inner Circle is now live!', circleEnabled ? 'info' : 'success');
+      };
+
+      const handleSaveTier = (tierId) => {
+        setTiers(prev => prev.map(t => t.id === tierId ? { ...t, price: parseFloat(editPrice) || t.price } : t));
+        setEditingTier(null);
+        auth?.showToast?.('Tier updated!', 'success');
+      };
+
+      const addPerk = (tierId) => {
+        if (!editPerkText.trim()) return;
+        setTiers(prev => prev.map(t => t.id === tierId ? { ...t, perks: [...t.perks, editPerkText.trim()] } : t));
+        setEditPerkText('');
+      };
+
+      const removePerk = (tierId, perkIdx) => {
+        setTiers(prev => prev.map(t => t.id === tierId ? { ...t, perks: t.perks.filter((_, i) => i !== perkIdx) } : t));
+      };
+
+      const handlePost = () => {
+        if (!newPostText.trim()) return;
+        setBtsPosts(prev => [{ id: 'bts-' + Date.now(), text: newPostText, time: 'Just now', tier: newPostTier, likes: 0 }, ...prev]);
+        setNewPostText('');
+        auth?.showToast?.('Post published to your Inner Circle!', 'success');
+      };
+
+      const deletePost = (postId) => {
+        setBtsPosts(prev => prev.filter(p => p.id !== postId));
+        auth?.showToast?.('Post deleted', 'info');
+      };
+
+      const tabStyle = (key) => ({
+        padding: '0.6rem 1.2rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
+        background: manageTab === key ? 'linear-gradient(135deg, var(--accent-pink), var(--accent-purple))' : 'var(--bg-card-light)',
+        color: manageTab === key ? '#fff' : 'var(--text-secondary)', transition: 'all 0.2s'
+      });
+
+      const cardStyle = {
+        background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem'
+      };
+
+      return (
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+          <button className="btn btn-secondary" onClick={() => window.history.back()} style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>← Back</button>
+
+          {/* Hero */}
+          <div className="inner-circle-hero">
+            <div className="ic-model-avatar">{profile.avatar_emoji || '👩'}</div>
+            <div className="ic-title">Your Inner Circle</div>
+            <div className="ic-subtitle">Manage your tiers, content, and subscribers</div>
+          </div>
+
+          {/* Toggle On/Off */}
+          <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '1rem' }}>Inner Circle Status</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                {circleEnabled ? 'Your Inner Circle is live — clients can subscribe now' : 'Turn this on to let clients subscribe to your Inner Circle'}
+              </div>
+            </div>
+            <button onClick={handleToggle} style={{
+              padding: '0.5rem 1.5rem', borderRadius: '2rem', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem',
+              background: circleEnabled ? 'var(--success-green)' : 'var(--bg-card-light)',
+              color: circleEnabled ? '#1a1a2e' : 'var(--text-secondary)', transition: 'all 0.3s'
+            }}>
+              {circleEnabled ? '● Live' : '○ Off'}
+            </button>
+          </div>
+
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+            <button onClick={() => setManageTab('overview')} style={tabStyle('overview')}>📊 Overview</button>
+            <button onClick={() => setManageTab('tiers')} style={tabStyle('tiers')}>💎 Tiers & Pricing</button>
+            <button onClick={() => setManageTab('posts')} style={tabStyle('posts')}>📸 BTS Feed</button>
+          </div>
+
+          {/* ===== OVERVIEW TAB ===== */}
+          {manageTab === 'overview' && (
+            <div>
+              {/* Stats Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div style={cardStyle}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Members</div>
+                  <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-pink)' }}>{stats.totalMembers}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--success-green)' }}>↑ {stats.growthPct}% this month</div>
+                </div>
+                <div style={cardStyle}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Monthly Revenue</div>
+                  <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-gold)' }}>${stats.monthlyRevenue.toFixed(2)}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>recurring</div>
+                </div>
+                <div style={cardStyle}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>BTS Posts</div>
+                  <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-purple)' }}>{btsPosts.length}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>published</div>
+                </div>
+              </div>
+
+              {/* Members by tier */}
+              <div style={cardStyle}>
+                <div style={{ fontWeight: 700, marginBottom: '1rem' }}>Members by Tier</div>
+                {[
+                  { name: 'Bronze', count: stats.bronze, color: '#cd7f32', icon: '🥉' },
+                  { name: 'Silver', count: stats.silver, color: '#c0c0c0', icon: '🥈' },
+                  { name: 'Gold', count: stats.gold, color: '#ffd700', icon: '🥇' },
+                ].map(t => (
+                  <div key={t.name} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                    <span style={{ fontSize: '1.2rem' }}>{t.icon}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{t.name}</span>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{t.count} members</span>
+                      </div>
+                      <div style={{ height: '6px', borderRadius: '3px', background: 'var(--bg-card-light)' }}>
+                        <div style={{ height: '100%', borderRadius: '3px', background: t.color, width: `${(t.count / stats.totalMembers) * 100}%`, transition: 'width 0.5s' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {!circleEnabled && (
+                <div style={{ ...cardStyle, background: 'linear-gradient(135deg, rgba(255,110,199,0.08), rgba(255,215,0,0.08))', borderColor: 'rgba(255,110,199,0.3)', textAlign: 'center', padding: '2rem' }}>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>💎</div>
+                  <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem' }}>Ready to launch?</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>Turn on your Inner Circle above to start earning recurring income from subscribers.</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ===== TIERS TAB ===== */}
+          {manageTab === 'tiers' && (
+            <div>
+              <div style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                Set the price and perks for each tier. Clients will see these when they visit your Inner Circle page.
+              </div>
+              {tiers.map(tier => (
+                <div key={tier.id} style={{ ...cardStyle, borderLeft: `3px solid ${tier.color}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <div>
+                      <span style={{ fontWeight: 700, fontSize: '1rem' }}>{tier.name}</span>
+                      {tier.popular && <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', background: 'rgba(255,110,199,0.15)', color: 'var(--accent-pink)', padding: '0.15rem 0.5rem', borderRadius: '1rem' }}>Most Popular</span>}
+                    </div>
+                    {editingTier === tier.id ? (
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>$</span>
+                        <input value={editPrice} onChange={(e) => setEditPrice(e.target.value)} type="number" step="0.01" min="0.99"
+                          style={{ width: '80px', padding: '0.4rem 0.5rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.9rem' }} />
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>/mo</span>
+                        <button onClick={() => handleSaveTier(tier.id)} style={{ padding: '0.35rem 0.75rem', borderRadius: '0.4rem', border: 'none', background: 'var(--success-green)', color: '#1a1a2e', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>Save</button>
+                        <button onClick={() => setEditingTier(null)} style={{ padding: '0.35rem 0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer' }}>Cancel</button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontWeight: 800, fontSize: '1.2rem', color: tier.color }}>${tier.price}</span>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>/mo</span>
+                        <button onClick={() => { setEditingTier(tier.id); setEditPrice(tier.price.toString()); }}
+                          style={{ padding: '0.3rem 0.6rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer' }}>Edit</button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Perks list */}
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', fontWeight: 600 }}>Perks:</div>
+                    {tier.perks.map((perk, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.4rem 0.6rem', marginBottom: '0.3rem', borderRadius: '0.4rem', background: 'var(--bg-card-light)', fontSize: '0.8rem' }}>
+                        <span>✦ {perk}</span>
+                        <button onClick={() => removePerk(tier.id, i)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.9rem', padding: '0 0.3rem', opacity: 0.5 }} title="Remove perk">✕</button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Add perk */}
+                  {editingTier === tier.id && (
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <input value={editPerkText} onChange={(e) => setEditPerkText(e.target.value)} placeholder="Add a new perk..."
+                        style={{ flex: 1, padding: '0.4rem 0.6rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.8rem' }}
+                        onKeyDown={(e) => e.key === 'Enter' && addPerk(tier.id)} />
+                      <button onClick={() => addPerk(tier.id)} style={{ padding: '0.4rem 0.75rem', borderRadius: '0.4rem', border: 'none', background: 'var(--accent-pink)', color: '#fff', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>+ Add</button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ===== BTS FEED TAB ===== */}
+          {manageTab === 'posts' && (
+            <div>
+              {/* New post composer */}
+              <div style={{ ...cardStyle, borderColor: 'rgba(255,110,199,0.3)' }}>
+                <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>📸 New BTS Post</div>
+                <textarea value={newPostText} onChange={(e) => setNewPostText(e.target.value)} placeholder="Share something with your Inner Circle members..."
+                  style={{ width: '100%', minHeight: '100px', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.85rem', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Visible to:</span>
+                    {['bronze', 'silver', 'gold'].map(t => (
+                      <button key={t} onClick={() => setNewPostTier(t)} style={{
+                        padding: '0.3rem 0.6rem', borderRadius: '1rem', border: newPostTier === t ? 'none' : '1px solid var(--border-color)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600,
+                        background: newPostTier === t ? (t === 'bronze' ? '#cd7f32' : t === 'silver' ? '#c0c0c0' : '#ffd700') : 'transparent',
+                        color: newPostTier === t ? '#1a1a2e' : 'var(--text-secondary)'
+                      }}>
+                        {t === 'bronze' ? '🥉 Bronze+' : t === 'silver' ? '🥈 Silver+' : '🥇 Gold only'}
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={handlePost} className="btn glow-btn" style={{ fontSize: '0.8rem', padding: '0.5rem 1.25rem' }}>
+                    Publish
+                  </button>
+                </div>
+              </div>
+
+              {/* Post list */}
+              <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>Your Posts ({btsPosts.length})</div>
+              {btsPosts.map(post => (
+                <div key={post.id} style={cardStyle}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem', lineHeight: 1.5 }}>{post.text}</div>
+                      <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        <span>🕐 {post.time}</span>
+                        <span>❤️ {post.likes} likes</span>
+                        <span className={`ic-tier-badge ${post.tier}`} style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem' }}>
+                          {post.tier === 'bronze' ? '🥉 Bronze+' : post.tier === 'silver' ? '🥈 Silver+' : '🥇 Gold'}
+                        </span>
+                      </div>
+                    </div>
+                    <button onClick={() => deletePost(post.id)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.85rem', padding: '0.25rem', opacity: 0.5 }} title="Delete post">🗑️</button>
+                  </div>
+                </div>
+              ))}
+
+              {btsPosts.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                  No posts yet. Write your first BTS post above!
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     function InnerCirclePage({ modelId }) {
+      const auth = useContext(AuthContext);
+      const isOwner = auth?.profile?.role === 'model' && (auth?.profile?.id === modelId || modelId === 'demo');
+
+      // If the model is viewing their own page, show the management dashboard
+      if (isOwner) return <InnerCircleManage />;
+
       const auth = useContext(AuthContext);
       const [activeSection, setActiveSection] = useState('perks');
       const [isMember, setIsMember] = useState(false);
