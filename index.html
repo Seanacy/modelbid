@@ -5809,6 +5809,7 @@
       const [saving, setSaving] = useState(false);
       const [newPostText, setNewPostText] = useState('');
       const [newPostTier, setNewPostTier] = useState('bronze');
+      const [newPostMedia, setNewPostMedia] = useState([]);
       const [btsPosts, setBtsPosts] = useState([
         { id: 'bts1', text: 'Just finished setting up the studio for tomorrow\'s shoot. The new lighting rig is INSANE.', time: '3h ago', tier: 'bronze', likes: 34 },
         { id: 'bts2', text: 'New outfits just arrived! Sneak peek at the luxury lingerie collection for April sessions.', time: '1d ago', tier: 'bronze', likes: 67 },
@@ -5859,10 +5860,27 @@
       };
 
       const handlePost = () => {
-        if (!newPostText.trim()) return;
-        setBtsPosts(prev => [{ id: 'bts-' + Date.now(), text: newPostText, time: 'Just now', tier: newPostTier, likes: 0 }, ...prev]);
+        if (!newPostText.trim() && newPostMedia.length === 0) return;
+        setBtsPosts(prev => [{ id: 'bts-' + Date.now(), text: newPostText, time: 'Just now', tier: newPostTier, likes: 0, media: [...newPostMedia] }, ...prev]);
         setNewPostText('');
+        setNewPostMedia([]);
         auth?.showToast?.('Post published to your Inner Circle!', 'success');
+      };
+
+      const handleMediaUpload = (e) => {
+        const files = Array.from(e.target.files);
+        files.forEach(file => {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            setNewPostMedia(prev => [...prev, { url: ev.target.result, type: file.type.startsWith('video') ? 'video' : 'image', name: file.name }]);
+          };
+          reader.readAsDataURL(file);
+        });
+        e.target.value = '';
+      };
+
+      const removeMedia = (idx) => {
+        setNewPostMedia(prev => prev.filter((_, i) => i !== idx));
       };
 
       const deletePost = (postId) => {
@@ -6052,6 +6070,36 @@
                 <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>📸 New BTS Post</div>
                 <textarea value={newPostText} onChange={(e) => setNewPostText(e.target.value)} placeholder="Share something with your Inner Circle members..."
                   style={{ width: '100%', minHeight: '100px', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.85rem', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+
+                {/* Media upload buttons */}
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.4rem 0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s' }}>
+                    <span style={{ fontSize: '1rem' }}>📷</span> Photo
+                    <input type="file" accept="image/*" multiple onChange={handleMediaUpload} style={{ display: 'none' }} />
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.4rem 0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s' }}>
+                    <span style={{ fontSize: '1rem' }}>🎬</span> Video
+                    <input type="file" accept="video/*" onChange={handleMediaUpload} style={{ display: 'none' }} />
+                  </label>
+                  {newPostMedia.length > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--accent-pink)' }}>{newPostMedia.length} file{newPostMedia.length > 1 ? 's' : ''} attached</span>}
+                </div>
+
+                {/* Media previews */}
+                {newPostMedia.length > 0 && (
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                    {newPostMedia.map((m, i) => (
+                      <div key={i} style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                        {m.type === 'image' ? (
+                          <img src={m.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card-light)', fontSize: '1.5rem' }}>🎬</div>
+                        )}
+                        <button onClick={() => removeMedia(i)} style={{ position: 'absolute', top: '2px', right: '2px', width: '18px', height: '18px', borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: '0.6rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Visible to:</span>
@@ -6078,6 +6126,19 @@
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem', lineHeight: 1.5 }}>{post.text}</div>
+                      {post.media && post.media.length > 0 && (
+                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                          {post.media.map((m, i) => (
+                            <div key={i} style={{ width: '120px', height: '80px', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                              {m.type === 'image' ? (
+                                <img src={m.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ) : (
+                                <video src={m.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                         <span>🕐 {post.time}</span>
                         <span>❤️ {post.likes} likes</span>
