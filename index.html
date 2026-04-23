@@ -6080,7 +6080,6 @@
       // If the model is viewing their own page, show the management dashboard
       if (isOwner) return <InnerCircleManage />;
 
-      const auth = useContext(AuthContext);
       const [activeSection, setActiveSection] = useState('perks');
       const [isMember, setIsMember] = useState(false);
       const [selectedTier, setSelectedTier] = useState(null);
