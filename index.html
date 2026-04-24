@@ -4005,16 +4005,8 @@
 
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Separate Supabase client for admin panel — no auth session, no token lock conflicts
-    let supabaseAdmin;
-    try {
-      supabaseAdmin = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'sb-admin-auth' }
-      });
-    } catch(e) {
-      console.error('Failed to create admin supabase client:', e);
-      supabaseAdmin = supabase; // fallback to main client
-    }
+    // Admin panel uses direct REST fetch calls instead of Supabase JS client
+    // to avoid auth token lock conflicts
 
     // ===== STRIPE INITIALIZATION =====
     const STRIPE_PUBLIC_KEY = 'pk_live_51TNi65Pk83t0B9h1dtusB7JoyzaxNOgw6rqy2i5pv3PgagLEMTyiRWodBLDH7Ivand6zzAQ4MHtriQge3ureNBeC00bKv4rCCu';
@@ -9978,70 +9970,101 @@ REMEMBER:
       const [newDays, setNewDays] = useState(90);
       const [copied, setCopied] = useState(null);
 
+      // Direct REST helper to avoid Supabase JS auth lock issues
+      const adminFetch = async (table, { method = 'GET', filters = '', body = null, select = '*' } = {}) => {
+        const url = `${SUPABASE_URL}/rest/v1/${table}?select=${select}${filters}`;
+        const headers = { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': method === 'GET' ? 'return=representation' : 'return=representation' };
+        if (method === 'GET') headers['Accept'] = 'application/vnd.pgrst.object+json';
+        const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : null });
+        if (!res.ok) { const err = await res.text(); throw new Error(err); }
+        return res.json();
+      };
+
+      const adminFetchAll = async (table, { filters = '', select = '*', order = '', limit = '' } = {}) => {
+        let url = `${SUPABASE_URL}/rest/v1/${table}?select=${select}${filters}`;
+        if (order) url += `&order=${order}`;
+        if (limit) url += `&limit=${limit}`;
+        const res = await fetch(url, { method: 'GET', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } });
+        if (!res.ok) { const err = await res.text(); throw new Error(err); }
+        return res.json();
+      };
+
+      const adminMutate = async (table, { method = 'POST', filters = '', body = null } = {}) => {
+        const url = `${SUPABASE_URL}/rest/v1/${table}?${filters}`;
+        const res = await fetch(url, { method, headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' }, body: body ? JSON.stringify(body) : null });
+        if (!res.ok) { const err = await res.text(); throw new Error(err); }
+        const text = await res.text();
+        return text ? JSON.parse(text) : [];
+      };
+
       const handleAdminLogin = async () => {
         setLoginError('');
-        const { data, error } = await supabaseAdmin.from('admin_settings').select('password').eq('id', 1).single();
-        if (error || !data) { setLoginError('System error: ' + (error ? error.message : 'no data')); console.error('Admin login error:', error); return; }
-        if (passwordInput === data.password) {
-          setAdminAuthed(true);
-        } else {
-          setLoginError('Wrong password');
-        }
+        try {
+          const data = await adminFetch('admin_settings', { filters: '&id=eq.1', select: 'password' });
+          if (passwordInput === data.password) {
+            setAdminAuthed(true);
+          } else {
+            setLoginError('Wrong password');
+          }
+        } catch(e) { setLoginError('System error: ' + e.message); console.error('Admin login error:', e); }
       };
 
       const handleChangePassword = async () => {
         if (!newPassword.trim()) return;
         if (newPassword !== confirmNewPassword) { alert('Passwords do not match'); return; }
-        const { error } = await supabaseAdmin.from('admin_settings').update({ password: newPassword, updated_at: new Date().toISOString() }).eq('id', 1);
-        if (error) { alert('Failed to change password'); return; }
-        setShowChangePassword(false);
-        setNewPassword('');
-        setConfirmNewPassword('');
-        alert('Password changed!');
+        try {
+          await adminMutate('admin_settings', { method: 'PATCH', filters: 'id=eq.1', body: { password: newPassword, updated_at: new Date().toISOString() } });
+          setShowChangePassword(false);
+          setNewPassword('');
+          setConfirmNewPassword('');
+          alert('Password changed!');
+        } catch(e) { alert('Failed to change password: ' + e.message); }
       };
 
       // Fetch stats only after admin login
       useEffect(() => {
         if (!adminAuthed) return;
         const fetchStats = async () => {
-          const [profiles, bookings, posts, promos, teams, convos] = await Promise.all([
-            supabaseAdmin.from('profiles').select('id, role, created_at, promo_code_used', { count: 'exact' }),
-            supabaseAdmin.from('bookings').select('id, status', { count: 'exact' }),
-            supabaseAdmin.from('posts').select('id', { count: 'exact' }),
-            supabaseAdmin.from('promo_codes').select('*'),
-            supabaseAdmin.from('team_members').select('id', { count: 'exact' }),
-            supabaseAdmin.from('conversations').select('id', { count: 'exact' }),
-          ]);
-          const allProfiles = profiles.data || [];
-          const models = allProfiles.filter(p => p.role === 'model').length;
-          const clients = allProfiles.filter(p => p.role === 'client').length;
-          const promoUsers = allProfiles.filter(p => p.promo_code_used).length;
-          const allBookingsData = bookings.data || [];
-          const pending = allBookingsData.filter(b => b.status === 'pending').length;
-          const accepted = allBookingsData.filter(b => b.status === 'accepted').length;
-          const totalPromoUses = (promos.data || []).reduce((sum, p) => sum + p.times_used, 0);
+          try {
+            const [allProfiles, allBookingsData, postsData, promosData, teamsData, convosData] = await Promise.all([
+              adminFetchAll('profiles', { select: 'id,role,created_at,promo_code_used' }),
+              adminFetchAll('bookings', { select: 'id,status' }),
+              adminFetchAll('posts', { select: 'id' }),
+              adminFetchAll('promo_codes'),
+              adminFetchAll('team_members', { select: 'id' }),
+              adminFetchAll('conversations', { select: 'id' }),
+            ]);
+            const models = allProfiles.filter(p => p.role === 'model').length;
+            const clients = allProfiles.filter(p => p.role === 'client').length;
+            const promoUsers = allProfiles.filter(p => p.promo_code_used).length;
+            const pending = allBookingsData.filter(b => b.status === 'pending').length;
+            const accepted = allBookingsData.filter(b => b.status === 'accepted').length;
+            const totalPromoUses = promosData.reduce((sum, p) => sum + (p.times_used || 0), 0);
 
-          setStats({
-            totalUsers: allProfiles.length, models, clients,
-            totalBookings: allBookingsData.length, pending, accepted,
-            totalPosts: (posts.data || []).length,
-            totalTeamMembers: (teams.data || []).length,
-            totalConversations: (convos.data || []).length,
-            totalPromoCodes: (promos.data || []).length,
-            totalPromoRedemptions: totalPromoUses,
-            promoUsers,
-            recentSignups: allProfiles.filter(p => {
-              const d = new Date(p.created_at);
-              const now = new Date();
-              return (now - d) < 7 * 24 * 60 * 60 * 1000;
-            }).length,
-          });
+            setStats({
+              totalUsers: allProfiles.length, models, clients,
+              totalBookings: allBookingsData.length, pending, accepted,
+              totalPosts: postsData.length,
+              totalTeamMembers: teamsData.length,
+              totalConversations: convosData.length,
+              totalPromoCodes: promosData.length,
+              totalPromoRedemptions: totalPromoUses,
+              promoUsers,
+              recentSignups: allProfiles.filter(p => {
+                const d = new Date(p.created_at);
+                const now = new Date();
+                return (now - d) < 7 * 24 * 60 * 60 * 1000;
+              }).length,
+            });
+          } catch(e) { console.error('Stats fetch error:', e); }
         };
         fetchStats();
         // Also fetch promo codes
         const fetchCodes = async () => {
-          const { data } = await supabaseAdmin.from('promo_codes').select('*').order('created_at', { ascending: false });
-          if (data) setCodes(data);
+          try {
+            const data = await adminFetchAll('promo_codes', { order: 'created_at.desc' });
+            setCodes(data);
+          } catch(e) { console.error('Promo fetch error:', e); }
         };
         fetchCodes();
       }, [adminAuthed]);
@@ -10049,24 +10072,30 @@ REMEMBER:
       // Fetch users
       const fetchUsers = async () => {
         setLoadingUsers(true);
-        const { data } = await supabaseAdmin.from('profiles').select('*').order('created_at', { ascending: false });
-        if (data) setUsers(data);
+        try {
+          const data = await adminFetchAll('profiles', { order: 'created_at.desc' });
+          setUsers(data);
+        } catch(e) { console.error('Users fetch error:', e); }
         setLoadingUsers(false);
       };
 
       // Fetch bookings
       const fetchBookings = async () => {
         setLoadingBookings(true);
-        const { data } = await supabaseAdmin.from('bookings').select('*').order('created_at', { ascending: false }).limit(50);
-        if (data) setAllBookings(data);
+        try {
+          const data = await adminFetchAll('bookings', { order: 'created_at.desc', limit: '50' });
+          setAllBookings(data);
+        } catch(e) { console.error('Bookings fetch error:', e); }
         setLoadingBookings(false);
       };
 
       // Fetch posts
       const fetchPosts = async () => {
         setLoadingPosts(true);
-        const { data } = await supabaseAdmin.from('posts').select('*').order('created_at', { ascending: false }).limit(50);
-        if (data) setAllPosts(data);
+        try {
+          const data = await adminFetchAll('posts', { order: 'created_at.desc', limit: '50' });
+          setAllPosts(data);
+        } catch(e) { console.error('Posts fetch error:', e); }
         setLoadingPosts(false);
       };
 
@@ -10082,57 +10111,64 @@ REMEMBER:
 
       const handleUpdateUser = async () => {
         if (!editingUser) return;
-        const { error } = await supabaseAdmin.from('profiles').update(editForm).eq('id', editingUser.id);
-        if (error) { showAdminToast('Update failed: ' + error.message); return; }
-        setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...editForm } : u));
-        setEditingUser(null);
-        showAdminToast('User updated');
+        try {
+          await adminMutate('profiles', { method: 'PATCH', filters: `id=eq.${editingUser.id}`, body: editForm });
+          setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...editForm } : u));
+          setEditingUser(null);
+          showAdminToast('User updated');
+        } catch(e) { showAdminToast('Update failed: ' + e.message); }
       };
 
       const handleDeleteUser = async (userId) => {
-        const { error } = await supabaseAdmin.from('profiles').delete().eq('id', userId);
-        if (error) { showAdminToast('Delete failed: ' + error.message); return; }
-        setUsers(prev => prev.filter(u => u.id !== userId));
-        setConfirmDelete(null);
-        showAdminToast('User deleted');
+        try {
+          await adminMutate('profiles', { method: 'DELETE', filters: `id=eq.${userId}` });
+          setUsers(prev => prev.filter(u => u.id !== userId));
+          setConfirmDelete(null);
+          showAdminToast('User deleted');
+        } catch(e) { showAdminToast('Delete failed: ' + e.message); }
       };
 
       const handleDeletePost = async (postId) => {
-        const { error } = await supabaseAdmin.from('posts').delete().eq('id', postId);
-        if (!error) {
+        try {
+          await adminMutate('posts', { method: 'DELETE', filters: `id=eq.${postId}` });
           setAllPosts(prev => prev.filter(p => p.id !== postId));
           showAdminToast('Post deleted');
-        }
+        } catch(e) { console.error(e); }
       };
 
       const handleDeleteBooking = async (bookingId) => {
-        const { error } = await supabaseAdmin.from('bookings').delete().eq('id', bookingId);
-        if (!error) {
+        try {
+          await adminMutate('bookings', { method: 'DELETE', filters: `id=eq.${bookingId}` });
           setAllBookings(prev => prev.filter(b => b.id !== bookingId));
           showAdminToast('Booking deleted');
-        }
+        } catch(e) { console.error(e); }
       };
 
       // Promo code handlers
       const handleCreatePromo = async () => {
         if (!newCode.trim()) { showAdminToast('Enter a code'); return; }
-        const { data, error } = await supabaseAdmin.from('promo_codes').insert({
-          code: newCode.trim().toUpperCase(), max_uses: parseInt(newMaxUses) || 10, duration_days: parseInt(newDays) || 90,
-        }).select().single();
-        if (error) { showAdminToast(error.code === '23505' ? 'Code already exists' : 'Failed'); return; }
-        setCodes(prev => [data, ...prev]);
-        setNewCode(''); setNewMaxUses(10); setNewDays(90); setShowCreatePromo(false);
-        showAdminToast('Promo code created!');
+        try {
+          const result = await adminMutate('promo_codes', { body: { code: newCode.trim().toUpperCase(), max_uses: parseInt(newMaxUses) || 10, duration_days: parseInt(newDays) || 90 } });
+          const data = Array.isArray(result) ? result[0] : result;
+          setCodes(prev => [data, ...prev]);
+          setNewCode(''); setNewMaxUses(10); setNewDays(90); setShowCreatePromo(false);
+          showAdminToast('Promo code created!');
+        } catch(e) { showAdminToast(e.message.includes('23505') ? 'Code already exists' : 'Failed: ' + e.message); }
       };
 
       const togglePromoActive = async (code) => {
-        const { error } = await supabaseAdmin.from('promo_codes').update({ active: !code.active }).eq('id', code.id);
-        if (!error) setCodes(prev => prev.map(c => c.id === code.id ? { ...c, active: !c.active } : c));
+        try {
+          await adminMutate('promo_codes', { method: 'PATCH', filters: `id=eq.${code.id}`, body: { active: !code.active } });
+          setCodes(prev => prev.map(c => c.id === code.id ? { ...c, active: !c.active } : c));
+        } catch(e) { console.error(e); }
       };
 
       const deletePromo = async (code) => {
-        const { error } = await supabaseAdmin.from('promo_codes').delete().eq('id', code.id);
-        if (!error) { setCodes(prev => prev.filter(c => c.id !== code.id)); showAdminToast('Code deleted'); }
+        try {
+          await adminMutate('promo_codes', { method: 'DELETE', filters: `id=eq.${code.id}` });
+          setCodes(prev => prev.filter(c => c.id !== code.id));
+          showAdminToast('Code deleted');
+        } catch(e) { console.error(e); }
       };
 
       const copyCode = (code) => {
