@@ -4005,6 +4005,11 @@
 
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // Separate Supabase client for admin panel — no auth session, no token lock conflicts
+    const supabaseAdmin = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+    });
+
     // ===== STRIPE INITIALIZATION =====
     const STRIPE_PUBLIC_KEY = 'pk_live_51TNi65Pk83t0B9h1dtusB7JoyzaxNOgw6rqy2i5pv3PgagLEMTyiRWodBLDH7Ivand6zzAQ4MHtriQge3ureNBeC00bKv4rCCu';
 
@@ -9956,7 +9961,7 @@ REMEMBER:
 
       const handleAdminLogin = async () => {
         setLoginError('');
-        const { data, error } = await supabase.from('admin_settings').select('password').eq('id', 1).single();
+        const { data, error } = await supabaseAdmin.from('admin_settings').select('password').eq('id', 1).single();
         if (error || !data) { setLoginError('System error: ' + (error ? error.message : 'no data')); console.error('Admin login error:', error); return; }
         if (passwordInput === data.password) {
           setAdminAuthed(true);
@@ -9968,7 +9973,7 @@ REMEMBER:
       const handleChangePassword = async () => {
         if (!newPassword.trim()) return;
         if (newPassword !== confirmNewPassword) { alert('Passwords do not match'); return; }
-        const { error } = await supabase.from('admin_settings').update({ password: newPassword, updated_at: new Date().toISOString() }).eq('id', 1);
+        const { error } = await supabaseAdmin.from('admin_settings').update({ password: newPassword, updated_at: new Date().toISOString() }).eq('id', 1);
         if (error) { alert('Failed to change password'); return; }
         setShowChangePassword(false);
         setNewPassword('');
@@ -9981,12 +9986,12 @@ REMEMBER:
         if (!adminAuthed) return;
         const fetchStats = async () => {
           const [profiles, bookings, posts, promos, teams, convos] = await Promise.all([
-            supabase.from('profiles').select('id, role, created_at, promo_code_used', { count: 'exact' }),
-            supabase.from('bookings').select('id, status', { count: 'exact' }),
-            supabase.from('posts').select('id', { count: 'exact' }),
-            supabase.from('promo_codes').select('*'),
-            supabase.from('team_members').select('id', { count: 'exact' }),
-            supabase.from('conversations').select('id', { count: 'exact' }),
+            supabaseAdmin.from('profiles').select('id, role, created_at, promo_code_used', { count: 'exact' }),
+            supabaseAdmin.from('bookings').select('id, status', { count: 'exact' }),
+            supabaseAdmin.from('posts').select('id', { count: 'exact' }),
+            supabaseAdmin.from('promo_codes').select('*'),
+            supabaseAdmin.from('team_members').select('id', { count: 'exact' }),
+            supabaseAdmin.from('conversations').select('id', { count: 'exact' }),
           ]);
           const allProfiles = profiles.data || [];
           const models = allProfiles.filter(p => p.role === 'model').length;
@@ -10016,7 +10021,7 @@ REMEMBER:
         fetchStats();
         // Also fetch promo codes
         const fetchCodes = async () => {
-          const { data } = await supabase.from('promo_codes').select('*').order('created_at', { ascending: false });
+          const { data } = await supabaseAdmin.from('promo_codes').select('*').order('created_at', { ascending: false });
           if (data) setCodes(data);
         };
         fetchCodes();
@@ -10025,7 +10030,7 @@ REMEMBER:
       // Fetch users
       const fetchUsers = async () => {
         setLoadingUsers(true);
-        const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+        const { data } = await supabaseAdmin.from('profiles').select('*').order('created_at', { ascending: false });
         if (data) setUsers(data);
         setLoadingUsers(false);
       };
@@ -10033,7 +10038,7 @@ REMEMBER:
       // Fetch bookings
       const fetchBookings = async () => {
         setLoadingBookings(true);
-        const { data } = await supabase.from('bookings').select('*').order('created_at', { ascending: false }).limit(50);
+        const { data } = await supabaseAdmin.from('bookings').select('*').order('created_at', { ascending: false }).limit(50);
         if (data) setAllBookings(data);
         setLoadingBookings(false);
       };
@@ -10041,7 +10046,7 @@ REMEMBER:
       // Fetch posts
       const fetchPosts = async () => {
         setLoadingPosts(true);
-        const { data } = await supabase.from('posts').select('*').order('created_at', { ascending: false }).limit(50);
+        const { data } = await supabaseAdmin.from('posts').select('*').order('created_at', { ascending: false }).limit(50);
         if (data) setAllPosts(data);
         setLoadingPosts(false);
       };
@@ -10058,7 +10063,7 @@ REMEMBER:
 
       const handleUpdateUser = async () => {
         if (!editingUser) return;
-        const { error } = await supabase.from('profiles').update(editForm).eq('id', editingUser.id);
+        const { error } = await supabaseAdmin.from('profiles').update(editForm).eq('id', editingUser.id);
         if (error) { showAdminToast('Update failed: ' + error.message); return; }
         setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...editForm } : u));
         setEditingUser(null);
@@ -10066,7 +10071,7 @@ REMEMBER:
       };
 
       const handleDeleteUser = async (userId) => {
-        const { error } = await supabase.from('profiles').delete().eq('id', userId);
+        const { error } = await supabaseAdmin.from('profiles').delete().eq('id', userId);
         if (error) { showAdminToast('Delete failed: ' + error.message); return; }
         setUsers(prev => prev.filter(u => u.id !== userId));
         setConfirmDelete(null);
@@ -10074,7 +10079,7 @@ REMEMBER:
       };
 
       const handleDeletePost = async (postId) => {
-        const { error } = await supabase.from('posts').delete().eq('id', postId);
+        const { error } = await supabaseAdmin.from('posts').delete().eq('id', postId);
         if (!error) {
           setAllPosts(prev => prev.filter(p => p.id !== postId));
           showAdminToast('Post deleted');
@@ -10082,7 +10087,7 @@ REMEMBER:
       };
 
       const handleDeleteBooking = async (bookingId) => {
-        const { error } = await supabase.from('bookings').delete().eq('id', bookingId);
+        const { error } = await supabaseAdmin.from('bookings').delete().eq('id', bookingId);
         if (!error) {
           setAllBookings(prev => prev.filter(b => b.id !== bookingId));
           showAdminToast('Booking deleted');
@@ -10092,7 +10097,7 @@ REMEMBER:
       // Promo code handlers
       const handleCreatePromo = async () => {
         if (!newCode.trim()) { showAdminToast('Enter a code'); return; }
-        const { data, error } = await supabase.from('promo_codes').insert({
+        const { data, error } = await supabaseAdmin.from('promo_codes').insert({
           code: newCode.trim().toUpperCase(), max_uses: parseInt(newMaxUses) || 10, duration_days: parseInt(newDays) || 90,
         }).select().single();
         if (error) { showAdminToast(error.code === '23505' ? 'Code already exists' : 'Failed'); return; }
@@ -10102,12 +10107,12 @@ REMEMBER:
       };
 
       const togglePromoActive = async (code) => {
-        const { error } = await supabase.from('promo_codes').update({ active: !code.active }).eq('id', code.id);
+        const { error } = await supabaseAdmin.from('promo_codes').update({ active: !code.active }).eq('id', code.id);
         if (!error) setCodes(prev => prev.map(c => c.id === code.id ? { ...c, active: !c.active } : c));
       };
 
       const deletePromo = async (code) => {
-        const { error } = await supabase.from('promo_codes').delete().eq('id', code.id);
+        const { error } = await supabaseAdmin.from('promo_codes').delete().eq('id', code.id);
         if (!error) { setCodes(prev => prev.filter(c => c.id !== code.id)); showAdminToast('Code deleted'); }
       };
 
