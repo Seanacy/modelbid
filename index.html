@@ -14774,7 +14774,7 @@ RULES
       };
 
       // Admin page renders standalone — no nav, no mobile menu, no wrapper
-      if (page === 'admin') return <AdminPanel />;
+      if (currentPage === 'admin') return <AdminPanel />;
 
       return (
         <div className="app-container">
