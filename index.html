@@ -4127,6 +4127,17 @@
           const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
 
           if (error) throw error;
+
+          // Check if promo access has expired
+          if (data && data.promo_expires_at && new Date(data.promo_expires_at) < new Date()) {
+            await supabase.from('profiles').update({
+              cherry_picker_active: false,
+              subscription_waived: false,
+            }).eq('id', userId);
+            data.cherry_picker_active = false;
+            data.subscription_waived = false;
+          }
+
           setProfile(data);
         } catch (error) {
           console.error('Profile fetch error:', error);
@@ -11525,6 +11536,53 @@ REMEMBER:
       const [role, setRole] = useState('client');
       const [error, setError] = useState('');
       const [loading, setLoading] = useState(false);
+      const [promoCode, setPromoCode] = useState('');
+      const [promoStatus, setPromoStatus] = useState('');
+
+      const redeemPromoCode = async (userId, code) => {
+        if (!code.trim()) return;
+        try {
+          const { data: promo, error: fetchErr } = await supabase
+            .from('promo_codes')
+            .select('*')
+            .eq('code', code.trim().toUpperCase())
+            .eq('active', true)
+            .single();
+          if (fetchErr || !promo) return;
+          if (promo.times_used >= promo.max_uses) return;
+          if (promo.expires_at && new Date(promo.expires_at) < new Date()) return;
+
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + promo.duration_days);
+
+          await supabase.from('profiles').update({
+            promo_code_used: promo.code,
+            promo_expires_at: expiresAt.toISOString(),
+            cherry_picker_active: true,
+            subscription_waived: true,
+          }).eq('id', userId);
+
+          await supabase.from('promo_codes').update({
+            times_used: promo.times_used + 1,
+          }).eq('id', promo.id);
+        } catch (err) {
+          console.error('Promo redeem error:', err);
+        }
+      };
+
+      const validatePromoCode = async () => {
+        if (!promoCode.trim()) return;
+        const { data, error: err } = await supabase
+          .from('promo_codes')
+          .select('code, max_uses, times_used, expires_at')
+          .eq('code', promoCode.trim().toUpperCase())
+          .eq('active', true)
+          .single();
+        if (err || !data) { setPromoStatus('invalid'); return; }
+        if (data.times_used >= data.max_uses) { setPromoStatus('used_up'); return; }
+        if (data.expires_at && new Date(data.expires_at) < new Date()) { setPromoStatus('expired'); return; }
+        setPromoStatus('valid');
+      };
 
       const handleSignup = async () => {
         setError('');
@@ -11532,10 +11590,22 @@ REMEMBER:
           setError('Please fill in all fields');
           return;
         }
+        if (promoCode.trim() && promoStatus !== 'valid') {
+          await validatePromoCode();
+          if (promoStatus === 'invalid') { setError('Invalid promo code'); return; }
+          if (promoStatus === 'used_up') { setError('This promo code has been fully redeemed'); return; }
+          if (promoStatus === 'expired') { setError('This promo code has expired'); return; }
+        }
         setLoading(true);
         const success = await signup(displayName, email, password, role);
         setLoading(false);
         if (success) {
+          if (promoCode.trim() && promoStatus === 'valid') {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await redeemPromoCode(user.id, promoCode);
+            }
+          }
           window.location.hash = 'login';
         }
       };
@@ -11614,6 +11684,48 @@ REMEMBER:
                 placeholder="••••••••"
                 onKeyPress={(e) => e.key === 'Enter' && handleSignup()}
               />
+            </div>
+
+            <div className="form-group">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span>Promo Code</span>
+                <span style={{ fontSize: '0.75rem', color: '#888', fontWeight: 400 }}>(optional)</span>
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  value={promoCode}
+                  onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoStatus(''); }}
+                  onBlur={validatePromoCode}
+                  placeholder="Enter promo code"
+                  style={{
+                    textTransform: 'uppercase',
+                    letterSpacing: '2px',
+                    fontWeight: 700,
+                    borderColor: promoStatus === 'valid' ? '#00e676' : promoStatus === 'invalid' || promoStatus === 'used_up' || promoStatus === 'expired' ? '#ff5252' : undefined,
+                  }}
+                />
+                {promoStatus === 'valid' && (
+                  <div style={{ marginTop: '6px', fontSize: '0.78rem', color: '#00e676', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span>✓</span> Valid! 3 months full access will be applied
+                  </div>
+                )}
+                {promoStatus === 'invalid' && (
+                  <div style={{ marginTop: '6px', fontSize: '0.78rem', color: '#ff5252' }}>
+                    Code not recognized
+                  </div>
+                )}
+                {promoStatus === 'used_up' && (
+                  <div style={{ marginTop: '6px', fontSize: '0.78rem', color: '#ff5252' }}>
+                    This code has been fully redeemed
+                  </div>
+                )}
+                {promoStatus === 'expired' && (
+                  <div style={{ marginTop: '6px', fontSize: '0.78rem', color: '#ff5252' }}>
+                    This code has expired
+                  </div>
+                )}
+              </div>
             </div>
 
             {error && <div className="form-error">{error}</div>}
