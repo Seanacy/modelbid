@@ -10372,6 +10372,7 @@ REMEMBER:
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                             <input value={editForm.display_name || ''} onChange={(e) => setEditForm({...editForm, display_name: e.target.value})} placeholder="Name" style={{ flex: 1, padding: '0.5rem', borderRadius: 6, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#fff', minWidth: '150px' }} />
+                            <input value={editForm.email || ''} onChange={(e) => setEditForm({...editForm, email: e.target.value})} placeholder="Email" style={{ flex: 1, padding: '0.5rem', borderRadius: 6, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#fff', minWidth: '180px' }} />
                             <select value={editForm.role || 'client'} onChange={(e) => setEditForm({...editForm, role: e.target.value})} style={{ padding: '0.5rem', borderRadius: 6, border: '1px solid var(--border-color)', background: '#1a1a2e', color: '#fff' }}>
                               <option value="model">Model</option>
                               <option value="client">Client</option>
@@ -10410,7 +10411,7 @@ REMEMBER:
                             </div>
                           </div>
                           <div style={{ display: 'flex', gap: '0.3rem' }}>
-                            <button onClick={() => { setEditingUser(user); setEditForm({ display_name: user.display_name, role: user.role, cherry_picker_active: user.cherry_picker_active, subscription_waived: user.subscription_waived, verified: user.verified }); }}
+                            <button onClick={() => { setEditingUser(user); setEditForm({ display_name: user.display_name, email: user.email, role: user.role, cherry_picker_active: user.cherry_picker_active, subscription_waived: user.subscription_waived, verified: user.verified }); }}
                               style={{ padding: '0.35rem 0.7rem', borderRadius: 6, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#ccc', fontSize: '0.75rem', cursor: 'pointer' }}>Edit</button>
                             {confirmDelete === user.id ? (
                               <>
