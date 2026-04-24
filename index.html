@@ -10001,11 +10001,10 @@ REMEMBER:
         setLoginError('');
         try {
           const data = await adminFetch('admin_settings', { filters: '&id=eq.1', select: 'password' });
-          console.log('DEBUG admin login:', JSON.stringify(data), 'type:', typeof data, 'password field:', JSON.stringify(data.password), 'input:', JSON.stringify(passwordInput));
           if (passwordInput === data.password) {
             setAdminAuthed(true);
           } else {
-            setLoginError('Wrong password — got: [' + JSON.stringify(data) + '] type: ' + typeof data);
+            setLoginError('Wrong password');
           }
         } catch(e) { setLoginError('System error: ' + e.message); console.error('Admin login error:', e); }
       };
