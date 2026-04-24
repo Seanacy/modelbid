@@ -9082,12 +9082,8 @@ function InnerCircleManage() {
         fetchPollResponses();
       }, [messages]);
 
-      // Auto-select pinned message when cherry picker becomes available
-      useEffect(() => {
-        if (hasCherryPicker && !conversationId && !selectedConvId) {
-          setViewingPinned(true);
-        }
-      }, [hasCherryPicker]);
+      // Cherry Picker pinned message is available in the sidebar but NOT auto-opened
+      // User must click on it to view it
 
       const cherryPickerPrompt = `You are a high-intent audience researcher. Your sole job is to find REPEAT ENGAGERS -- people who consistently like, comment, repost, and interact with creators in a specific niche. You are looking for fans who show up again and again, not one-time visitors.
 
