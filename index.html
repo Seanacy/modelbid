@@ -9937,6 +9937,19 @@ REMEMBER:
       );
     }
 
+    class AdminErrorBoundary extends React.Component {
+      constructor(props) { super(props); this.state = { error: null }; }
+      static getDerivedStateFromError(error) { return { error }; }
+      render() {
+        if (this.state.error) return React.createElement('div', { style: { color: '#ff5252', padding: '2rem', background: '#0a0a14', minHeight: '100vh' } },
+          React.createElement('h2', null, 'Admin Panel Error'),
+          React.createElement('pre', { style: { whiteSpace: 'pre-wrap', color: '#fff' } }, this.state.error.toString()),
+          React.createElement('pre', { style: { whiteSpace: 'pre-wrap', color: '#888', marginTop: '1rem' } }, this.state.error.stack)
+        );
+        return this.props.children;
+      }
+    }
+
     function AdminPanel() {
       const [adminAuthed, setAdminAuthed] = useState(false);
       const [passwordInput, setPasswordInput] = useState('');
@@ -14785,7 +14798,7 @@ RULES
       };
 
       // Admin page renders standalone — no nav, no mobile menu, no wrapper
-      if (currentPage === 'admin') return <AdminPanel />;
+      if (currentPage === 'admin') return <AdminErrorBoundary><AdminPanel /></AdminErrorBoundary>;
 
       return (
         <div className="app-container">
