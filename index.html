@@ -13717,25 +13717,26 @@ RULES
           const vh = window.innerHeight;
           const tooltipW = Math.min(380, vw - 40);
           let tTop, tLeft, arrow;
-          // Try placing below the element
-          if (sr.top + sr.height + 220 < vh) {
+          // If element is wider than 70% of viewport, it's a full-page element — center tooltip
+          if (sr.width > vw * 0.7) {
+            tTop = Math.max(100, Math.min(sr.top + 40, vh / 2 - 120));
+            tLeft = Math.max(20, (vw - tooltipW) / 2);
+            arrow = 'none';
+          } else if (sr.top + sr.height + 260 < vh) {
+            // Place below element
             tTop = sr.top + sr.height + 16;
             tLeft = Math.max(20, Math.min(sr.left + sr.width / 2 - tooltipW / 2, vw - tooltipW - 20));
             arrow = 'top';
-          } else {
-            // Place above
-            tTop = sr.top - 220;
+          } else if (sr.top - 260 > 80) {
+            // Place above element
+            tTop = sr.top - 260;
             tLeft = Math.max(20, Math.min(sr.left + sr.width / 2 - tooltipW / 2, vw - tooltipW - 20));
             arrow = 'bottom';
-            if (tTop < 80) {
-              tTop = Math.max(80, sr.top);
-              tLeft = sr.left + sr.width + 16;
-              arrow = 'left';
-              if (tLeft + tooltipW > vw - 20) {
-                tLeft = sr.left - tooltipW - 16;
-                arrow = 'right';
-              }
-            }
+          } else {
+            // Center on screen as fallback
+            tTop = Math.max(100, vh / 2 - 120);
+            tLeft = Math.max(20, (vw - tooltipW) / 2);
+            arrow = 'none';
           }
           setTooltipPos({ top: tTop, left: tLeft, arrowSide: arrow });
         }, 400);
