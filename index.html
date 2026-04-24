@@ -13701,8 +13701,9 @@ RULES
           setSpotRect(null);
           return;
         }
-        // Scroll element into view
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Scroll element into view — on mobile, position toward top so bottom sheet doesn't cover it
+        const isMobileView = window.innerWidth < 768;
+        el.scrollIntoView({ behavior: 'smooth', block: isMobileView ? 'start' : 'center' });
         setTimeout(() => {
           const rect = el.getBoundingClientRect();
           const sr = {
@@ -13807,7 +13808,24 @@ RULES
       // Tooltip content
       const renderTooltip = () => {
         const isCenter = !spotRect;
-        const tooltipStyle = isCenter ? {
+        const isMobile = window.innerWidth < 768;
+
+        // On mobile: always pin to bottom as a sheet
+        // On desktop with no target: center on screen
+        // On desktop with target: position near the element
+        const tooltipStyle = isMobile ? {
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 10001,
+          background: '#1a1a2e',
+          borderTop: '2px solid ' + accentColor,
+          borderRadius: '1.25rem 1.25rem 0 0',
+          padding: '1.25rem 1.25rem 1.5rem',
+          boxShadow: '0 -10px 40px rgba(0,0,0,0.8), 0 0 20px ' + accentColor + '33',
+          animation: 'slideUp 0.3s ease',
+        } : isCenter ? {
           position: 'fixed',
           top: '50%',
           left: '50%',
@@ -13850,7 +13868,7 @@ RULES
                 letterSpacing: '0.08em',
                 background: isMM ? 'rgba(255,215,0,0.15)' : 'rgba(255,110,199,0.15)',
                 color: accentColor,
-                marginBottom: '0.75rem',
+                marginBottom: '0.5rem',
               }}>
                 {isMM ? '💰 MONEY MAKER' : '🛠️ ASSIST TOOL'}
               </div>
@@ -13859,31 +13877,29 @@ RULES
             {/* Big tool name */}
             <h2 style={{
               fontWeight: 900,
-              fontSize: isCenter ? '1.8rem' : '1.5rem',
-              margin: '0 0 0.5rem 0',
+              fontSize: isMobile ? '1.3rem' : (isCenter ? '1.8rem' : '1.5rem'),
+              margin: '0 0 0.4rem 0',
               color: '#fff',
-              textAlign: isCenter ? 'center' : 'left',
               textShadow: '0 0 20px ' + accentColor + '66',
             }}>{currentStep.title}</h2>
 
             {/* Description */}
             <p style={{
               color: '#ccc',
-              fontSize: '0.9rem',
-              lineHeight: 1.6,
-              margin: '0 0 1.25rem 0',
-              textAlign: isCenter ? 'center' : 'left',
+              fontSize: isMobile ? '0.8rem' : '0.9rem',
+              lineHeight: 1.5,
+              margin: '0 0 1rem 0',
             }}>{currentStep.subtitle}</p>
 
             {/* Progress bar */}
-            <div style={{ height: '3px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', marginBottom: '1rem' }}>
+            <div style={{ height: '3px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', marginBottom: '0.75rem' }}>
               <div style={{ height: '100%', width: progress + '%', background: 'linear-gradient(90deg, #ff6ec7, #ffd700)', borderRadius: '2px', transition: 'width 0.4s ease' }} />
             </div>
 
             {/* Navigation */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <button onClick={goBack} disabled={isFirst} style={{
-                padding: '0.5rem 1rem', borderRadius: '0.5rem',
+                padding: isMobile ? '0.6rem 1rem' : '0.5rem 1rem', borderRadius: '0.5rem',
                 border: '1px solid rgba(255,255,255,0.2)', background: 'transparent',
                 color: isFirst ? 'rgba(255,255,255,0.2)' : '#fff',
                 cursor: isFirst ? 'default' : 'pointer',
