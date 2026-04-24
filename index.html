@@ -9957,7 +9957,7 @@ REMEMBER:
       const handleAdminLogin = async () => {
         setLoginError('');
         const { data, error } = await supabase.from('admin_settings').select('password').eq('id', 1).single();
-        if (error || !data) { setLoginError('System error'); return; }
+        if (error || !data) { setLoginError('System error: ' + (error ? error.message : 'no data')); console.error('Admin login error:', error); return; }
         if (passwordInput === data.password) {
           setAdminAuthed(true);
         } else {
