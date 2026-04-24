@@ -14765,13 +14765,16 @@ RULES
         if (page === 'cherry-picker') return auth.profile?.role === 'client' ? <FeedPage /> : <CherryPickerPage />;
         if (page === 'team') return auth.currentUser ? <TeamFamSaucePage /> : <LoginPage />;
         if (page === 'bidboard') return <BidBoardPage />;
-        if (page === 'admin') return <AdminPanel />;
+        // admin page handled above with early return (standalone, no nav)
         if (page === 'dashboard') return auth.currentUser ? <DashboardPage /> : <LoginPage />;
         if (page === 'messages' && params[0]) return auth.currentUser ? <MessagesPage conversationId={params[0]} /> : <LoginPage />;
         if (page === 'messages') return auth.currentUser ? <MessagesPage conversationId={null} /> : <LoginPage />;
         if (page === 'edit-profile') return auth.currentUser ? <EditProfilePage /> : <LoginPage />;
         return !auth.currentUser ? <HomePage /> : <BrowseModelsPage />;
       };
+
+      // Admin page renders standalone — no nav, no mobile menu, no wrapper
+      if (page === 'admin') return <AdminPanel />;
 
       return (
         <div className="app-container">
