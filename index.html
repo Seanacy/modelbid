@@ -13666,198 +13666,314 @@ RULES
 
     // ===== MONEY TOUR COMPONENT =====
     function MoneyTour({ onClose }) {
+      const auth = useContext(AuthContext);
       const [step, setStep] = useState(0);
+      const [transitioning, setTransitioning] = useState(false);
+      const prevPageRef = React.useRef(window.location.hash);
 
-      const slides = [
-        // --- Intro ---
+      const tourSteps = [
+        // --- Intro (no navigation) ---
         {
           section: null,
           emoji: '💰',
-          title: 'The Money Tour',
-          subtitle: 'Let\'s walk through every tool that puts money in your pocket.',
+          title: 'The Getting Money Tour',
+          subtitle: 'We\'re about to walk you through every tool on ModelBid that puts money in your pocket. Each step takes you to the actual page where the tool lives.',
           body: null,
+          page: null,
+          highlight: null,
         },
-        // --- Main Money Makers ---
+        // --- MONEY MAKERS ---
         {
           section: 'Money Makers',
           emoji: '📅',
           title: 'Ready to Book?',
           subtitle: 'Clients can book you through your profile page.',
-          body: 'Your profile is your storefront. Clients browse, find you, and book a session — all without leaving ModelBid.',
+          body: 'Look behind this panel — you\'re on your profile page right now. Clients see a "Book Session" button right here. They pick a date, send a request, and you get paid.',
+          page: 'profile/' + ('demo'),
+          highlight: 'booking',
         },
         {
           section: 'Money Makers',
           emoji: '🔒',
           title: 'Private Feed',
           subtitle: 'Clients can subscribe to your Private Feed.',
-          body: 'Set your own monthly price. Post exclusive content. Fans pay to access it. You keep posting, they keep paying — recurring income every single month.',
+          body: 'This is on your profile page too — scroll down and you\'ll see your Private Feed box. Set your monthly price. Post exclusive content. Fans pay every month to see it. Recurring income.',
+          page: 'profile/' + ('demo'),
+          highlight: 'private-feed',
         },
         {
           section: 'Money Makers',
           emoji: '👯‍♀️',
           title: 'Inner Circle',
           subtitle: 'Team up with other models, create a combined private feed, revenue is distributed in proportion to content production.',
-          body: 'More models means more content, more subscribers, and more money — split fairly based on who posts the most.',
+          body: 'We just navigated you to the Inner Circle page. This is where you and other models team up, share one subscription feed, and split revenue based on who posts the most.',
+          page: 'crew/crew-demo',
+          highlight: 'inner-circle',
         },
-        // --- Divider slide ---
+        // --- Divider (no navigation) ---
         {
           section: null,
           emoji: '🛠️',
           title: 'Items That Assist You In Making Money',
-          subtitle: 'These tools help you attract clients, get booked, and grow your income.',
+          subtitle: 'Now let\'s look at the tools that help you attract clients, get booked faster, and grow your income.',
           body: null,
+          page: null,
+          highlight: null,
         },
-        // --- Assist Items ---
+        // --- ASSIST TOOLS ---
         {
           section: 'Assists',
           emoji: '👗',
           title: '360° Outfit Viewer',
           subtitle: 'Helps clients get a better idea of what you look like in certain outfits.',
-          body: 'Upload outfit photos and clients can browse your wardrobe before booking. No surprises — just confidence.',
+          body: 'We\'re back on your profile page. Scroll down to find the 360° Outfit Viewer section. Upload outfit photos so clients can browse your wardrobe before they book.',
+          page: 'profile/' + ('demo'),
+          highlight: '360-viewer',
         },
         {
           section: 'Assists',
           emoji: '📆',
           title: 'Availability',
           subtitle: 'Clients can see your availability and book ASAP.',
-          body: 'Show when you\'re free so clients don\'t have to guess. Open slots get filled faster.',
+          body: 'Still on your profile — look for the Availability calendar. When clients see you\'re free, they book faster. No back-and-forth messaging needed.',
+          page: 'profile/' + ('demo'),
+          highlight: 'availability',
         },
         {
           section: 'Assists',
           emoji: '⚡',
           title: 'Ready to Book?',
           subtitle: 'Easy booking option on your page.',
-          body: 'One-tap booking right on your profile. No back-and-forth messages — just a simple "Book Now" button.',
+          body: 'This is the one-tap booking button on your profile. Clients don\'t have to search or ask — they just hit "Book Session" and it\'s done.',
+          page: 'profile/' + ('demo'),
+          highlight: 'booking',
         },
         {
           section: 'Assists',
           emoji: '👥',
           title: 'The Team',
           subtitle: 'Add the right fans to your team so they can promote you and help you grow.',
-          body: 'Your biggest supporters become your street team. They share your page, hype you up, and bring in new clients.',
+          body: 'We just took you to The Team page. This is where your biggest supporters sign up to promote you. They share your page, hype you up, and bring in new paying clients.',
+          page: 'team',
+          highlight: 'team',
         },
         {
           section: 'Assists',
           emoji: '💸',
           title: 'WeStackr',
           subtitle: 'Raise funds for your dream photo or project.',
-          body: 'Got a big idea? Let your fans fund it. Set a goal, share it, and watch your community stack up the support.',
+          body: 'Welcome to WeStackr. Got a big idea for a shoot? Set a funding goal, share it with your fans, and let your community stack up the cash to make it happen.',
+          page: 'westackr',
+          highlight: 'westackr',
         },
         {
           section: 'Assists',
           emoji: '🍒',
           title: 'Cherry Picker',
           subtitle: 'Uses a unique AI prompt along with your assistance to find the perfect potential customers that are ready to support and subscribe.',
-          body: 'AI-powered client finder. Answer a few questions and Cherry Picker hunts down people who are most likely to book and subscribe.',
+          body: 'This is Cherry Picker. Answer a few questions and the AI hunts down people who are most likely to book you and subscribe to your feed.',
+          page: 'cherry-picker',
+          highlight: 'cherry-picker',
         },
         {
           section: 'Assists',
           emoji: '📋',
           title: 'Bid Board',
           subtitle: 'Clients post shoot ideas they\'re ready to fund.',
-          body: 'Clients come with money and ideas. You pick the ones you like. It\'s like a job board — but for photo sessions.',
+          body: 'We\'re on the Bid Board now. Clients come here with money and ideas for shoots. You browse, pick the ones you like, and get paid. It\'s like a job board for photo sessions.',
+          page: 'bidboard',
+          highlight: 'bidboard',
         },
       ];
 
-      const slide = slides[step];
-      const isFirst = step === 0;
-      const isLast = step === slides.length - 1;
-      const progress = ((step + 1) / slides.length) * 100;
+      // Navigate to the correct page when step changes
+      React.useEffect(() => {
+        const currentStep = tourSteps[step];
+        if (currentStep.page) {
+          window.location.hash = currentStep.page;
+        }
+      }, [step]);
 
-      // Determine section badge color
+      // On close, go back to where user was before tour
+      const handleClose = () => {
+        window.location.hash = prevPageRef.current.slice(1) || 'home';
+        onClose();
+      };
+
+      const goNext = () => {
+        if (step < tourSteps.length - 1) {
+          setTransitioning(true);
+          setTimeout(() => {
+            setStep(step + 1);
+            setTransitioning(false);
+          }, 200);
+        }
+      };
+
+      const goBack = () => {
+        if (step > 0) {
+          setTransitioning(true);
+          setTimeout(() => {
+            setStep(step - 1);
+            setTransitioning(false);
+          }, 200);
+        }
+      };
+
+      const slide = tourSteps[step];
+      const isFirst = step === 0;
+      const isLast = step === tourSteps.length - 1;
+      const progress = ((step + 1) / tourSteps.length) * 100;
+
       const sectionColor = slide.section === 'Money Makers'
         ? 'var(--accent-gold)'
         : slide.section === 'Assists'
           ? 'var(--accent-pink)'
           : null;
 
+      // Tour panel is pinned to bottom of screen so user can see the page behind it
       return (
-        <div className="modal-overlay" onClick={onClose}>
-          <div onClick={(e) => e.stopPropagation()} style={{
+        <div style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+          pointerEvents: 'none',
+        }}>
+          {/* Semi-transparent top overlay so user knows tour is active */}
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '60px',
+            background: 'linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%)',
+            pointerEvents: 'none',
+            zIndex: 9998,
+          }} />
+
+          {/* Floating "TOUR ACTIVE" indicator at top */}
+          <div style={{
+            position: 'fixed',
+            top: '70px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'linear-gradient(135deg, var(--accent-pink), var(--accent-purple))',
+            color: '#fff',
+            padding: '0.3rem 1rem',
+            borderRadius: '2rem',
+            fontSize: '0.7rem',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            pointerEvents: 'auto',
+            boxShadow: '0 4px 20px rgba(255,110,199,0.4)',
+            zIndex: 9999,
+            animation: 'fadeIn 0.3s ease',
+          }}>
+            💰 Getting Money Tour — Step {step + 1} of {tourSteps.length}
+          </div>
+
+          {/* Bottom panel */}
+          <div style={{
+            pointerEvents: 'auto',
             background: 'var(--bg-card)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '1.25rem',
-            padding: '0',
-            maxWidth: '480px',
-            width: '92%',
-            animation: 'slideUp 0.3s ease',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
-            overflow: 'hidden',
+            borderTop: '2px solid var(--accent-pink)',
+            borderRadius: '1.25rem 1.25rem 0 0',
+            boxShadow: '0 -10px 40px rgba(0,0,0,0.6)',
+            maxWidth: '100%',
+            opacity: transitioning ? 0 : 1,
+            transform: transitioning ? 'translateY(10px)' : 'translateY(0)',
+            transition: 'opacity 0.2s ease, transform 0.2s ease',
           }}>
             {/* Progress bar */}
-            <div style={{ height: '4px', background: 'var(--bg-card-light)' }}>
+            <div style={{ height: '4px', background: 'var(--bg-card-light)', borderRadius: '2px 2px 0 0' }}>
               <div style={{
                 height: '100%',
                 width: progress + '%',
                 background: 'linear-gradient(90deg, var(--accent-pink), var(--accent-gold))',
                 borderRadius: '2px',
-                transition: 'width 0.3s ease',
+                transition: 'width 0.4s ease',
               }} />
             </div>
 
-            {/* Content */}
-            <div style={{ padding: '2rem 1.75rem 1.5rem' }}>
-              {/* Close button */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
-                <button onClick={onClose} style={{
+            <div style={{ padding: '1.25rem 1.5rem 1rem' }}>
+              {/* Top row: section badge + close */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                <div>
+                  {slide.section ? (
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '0.2rem 0.7rem',
+                      borderRadius: '1rem',
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      background: sectionColor === 'var(--accent-gold)' ? 'rgba(255,215,0,0.15)' : 'rgba(255,110,199,0.15)',
+                      color: sectionColor,
+                    }}>
+                      {slide.section === 'Money Makers' ? '💰 Money Maker' : '🛠️ Assist Tool'}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Getting Money Tour</span>
+                  )}
+                </div>
+                <button onClick={handleClose} style={{
                   background: 'none', border: 'none', color: 'var(--text-secondary)',
-                  fontSize: '1.2rem', cursor: 'pointer', padding: '0.25rem',
+                  fontSize: '1.1rem', cursor: 'pointer', padding: '0.25rem',
                 }}>✕</button>
               </div>
 
-              {/* Section badge */}
-              {slide.section && (
-                <div style={{
-                  display: 'inline-block',
-                  padding: '0.2rem 0.7rem',
-                  borderRadius: '1rem',
-                  fontSize: '0.7rem',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  background: sectionColor === 'var(--accent-gold)' ? 'rgba(255,215,0,0.15)' : 'rgba(255,110,199,0.15)',
-                  color: sectionColor,
-                  marginBottom: '1rem',
-                }}>
-                  {slide.section === 'Money Makers' ? '💰 Money Maker' : '🛠️ Assist Tool'}
-                </div>
-              )}
-
-              {/* Emoji */}
-              <div style={{ fontSize: '3.5rem', marginBottom: '0.75rem', textAlign: 'center' }}>{slide.emoji}</div>
-
-              {/* Title */}
-              <h2 style={{
-                fontWeight: 800,
-                fontSize: '1.4rem',
-                marginBottom: '0.5rem',
-                textAlign: 'center',
-                background: slide.section === 'Money Makers' ? 'linear-gradient(135deg, var(--accent-gold), #fff)' : 'linear-gradient(135deg, var(--accent-pink), #fff)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}>{slide.title}</h2>
+              {/* Title row with emoji */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '2rem' }}>{slide.emoji}</span>
+                <h3 style={{
+                  fontWeight: 800,
+                  fontSize: '1.2rem',
+                  margin: 0,
+                  background: slide.section === 'Money Makers' ? 'linear-gradient(135deg, var(--accent-gold), #fff)' : 'linear-gradient(135deg, var(--accent-pink), #fff)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}>{slide.title}</h3>
+              </div>
 
               {/* Subtitle */}
               <p style={{
-                color: 'var(--text-secondary)',
-                fontSize: '0.9rem',
-                textAlign: 'center',
+                color: 'var(--text-primary)',
+                fontSize: '0.85rem',
                 lineHeight: 1.5,
-                marginBottom: slide.body ? '1rem' : '0.5rem',
+                margin: '0 0 0.5rem 0',
+                fontWeight: 600,
               }}>{slide.subtitle}</p>
 
-              {/* Body */}
+              {/* Body description */}
               {slide.body && (
-                <div style={{
-                  background: 'var(--bg-card-light)',
-                  borderRadius: '0.75rem',
-                  padding: '1rem',
-                  fontSize: '0.85rem',
+                <p style={{
                   color: 'var(--text-secondary)',
-                  lineHeight: 1.6,
+                  fontSize: '0.8rem',
+                  lineHeight: 1.5,
+                  margin: '0 0 0.5rem 0',
+                  padding: '0.75rem',
+                  background: 'var(--bg-card-light)',
+                  borderRadius: '0.5rem',
                   borderLeft: '3px solid ' + (sectionColor || 'var(--accent-purple)'),
+                }}>{slide.body}</p>
+              )}
+
+              {/* Where to look hint */}
+              {slide.page && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  fontSize: '0.7rem',
+                  color: 'var(--accent-pink)',
+                  fontWeight: 600,
+                  marginBottom: '0.25rem',
                 }}>
-                  {slide.body}
+                  <span>👆</span> Look above — you are on this page right now
                 </div>
               )}
             </div>
@@ -13867,11 +13983,11 @@ RULES
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              padding: '1rem 1.75rem 1.5rem',
+              padding: '0.75rem 1.5rem 1.25rem',
               borderTop: '1px solid var(--border-color)',
             }}>
               <button
-                onClick={() => setStep(Math.max(0, step - 1))}
+                onClick={goBack}
                 disabled={isFirst}
                 style={{
                   padding: '0.5rem 1.25rem',
@@ -13887,12 +14003,12 @@ RULES
               >← Back</button>
 
               <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                {step + 1} / {slides.length}
+                {step + 1} / {tourSteps.length}
               </span>
 
               {isLast ? (
                 <button
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="btn glow-btn"
                   style={{
                     padding: '0.5rem 1.25rem',
@@ -13903,7 +14019,7 @@ RULES
                 >Let's Get It 💰</button>
               ) : (
                 <button
-                  onClick={() => setStep(step + 1)}
+                  onClick={goNext}
                   style={{
                     padding: '0.5rem 1.25rem',
                     borderRadius: '0.5rem',
