@@ -9926,10 +9926,10 @@ REMEMBER:
       );
     }
 
-    const ADMIN_ID = 'bda70d5b-4155-4d7c-afc7-8429eadb00a2';
-
     function AdminPanel() {
-      const auth = useContext(AuthContext);
+      const [adminAuthed, setAdminAuthed] = useState(false);
+      const [passwordInput, setPasswordInput] = useState('');
+      const [loginError, setLoginError] = useState('');
       const [tab, setTab] = useState('stats');
       const [stats, setStats] = useState(null);
       const [users, setUsers] = useState([]);
@@ -9943,13 +9943,42 @@ REMEMBER:
       const [editingUser, setEditingUser] = useState(null);
       const [editForm, setEditForm] = useState({});
       const [confirmDelete, setConfirmDelete] = useState(null);
+      const [showChangePassword, setShowChangePassword] = useState(false);
+      const [newPassword, setNewPassword] = useState('');
+      const [confirmNewPassword, setConfirmNewPassword] = useState('');
+      // Promo code state
+      const [codes, setCodes] = useState([]);
+      const [showCreatePromo, setShowCreatePromo] = useState(false);
+      const [newCode, setNewCode] = useState('');
+      const [newMaxUses, setNewMaxUses] = useState(10);
+      const [newDays, setNewDays] = useState(90);
+      const [copied, setCopied] = useState(null);
 
-      if (!auth.currentUser || auth.currentUser.id !== ADMIN_ID) {
-        return <div style={{ padding: '3rem', textAlign: 'center', color: '#ff5252' }}>Access denied.</div>;
-      }
+      const handleAdminLogin = async () => {
+        setLoginError('');
+        const { data, error } = await supabase.from('admin_settings').select('password').eq('id', 1).single();
+        if (error || !data) { setLoginError('System error'); return; }
+        if (passwordInput === data.password) {
+          setAdminAuthed(true);
+        } else {
+          setLoginError('Wrong password');
+        }
+      };
 
-      // Fetch stats
+      const handleChangePassword = async () => {
+        if (!newPassword.trim()) return;
+        if (newPassword !== confirmNewPassword) { alert('Passwords do not match'); return; }
+        const { error } = await supabase.from('admin_settings').update({ password: newPassword, updated_at: new Date().toISOString() }).eq('id', 1);
+        if (error) { alert('Failed to change password'); return; }
+        setShowChangePassword(false);
+        setNewPassword('');
+        setConfirmNewPassword('');
+        alert('Password changed!');
+      };
+
+      // Fetch stats only after admin login
       useEffect(() => {
+        if (!adminAuthed) return;
         const fetchStats = async () => {
           const [profiles, bookings, posts, promos, teams, convos] = await Promise.all([
             supabase.from('profiles').select('id, role, created_at, promo_code_used', { count: 'exact' }),
@@ -9963,14 +9992,14 @@ REMEMBER:
           const models = allProfiles.filter(p => p.role === 'model').length;
           const clients = allProfiles.filter(p => p.role === 'client').length;
           const promoUsers = allProfiles.filter(p => p.promo_code_used).length;
-          const allBookings = bookings.data || [];
-          const pending = allBookings.filter(b => b.status === 'pending').length;
-          const accepted = allBookings.filter(b => b.status === 'accepted').length;
+          const allBookingsData = bookings.data || [];
+          const pending = allBookingsData.filter(b => b.status === 'pending').length;
+          const accepted = allBookingsData.filter(b => b.status === 'accepted').length;
           const totalPromoUses = (promos.data || []).reduce((sum, p) => sum + p.times_used, 0);
 
           setStats({
             totalUsers: allProfiles.length, models, clients,
-            totalBookings: allBookings.length, pending, accepted,
+            totalBookings: allBookingsData.length, pending, accepted,
             totalPosts: (posts.data || []).length,
             totalTeamMembers: (teams.data || []).length,
             totalConversations: (convos.data || []).length,
@@ -9985,7 +10014,13 @@ REMEMBER:
           });
         };
         fetchStats();
-      }, []);
+        // Also fetch promo codes
+        const fetchCodes = async () => {
+          const { data } = await supabase.from('promo_codes').select('*').order('created_at', { ascending: false });
+          if (data) setCodes(data);
+        };
+        fetchCodes();
+      }, [adminAuthed]);
 
       // Fetch users
       const fetchUsers = async () => {
@@ -10012,33 +10047,37 @@ REMEMBER:
       };
 
       useEffect(() => {
+        if (!adminAuthed) return;
         if (tab === 'users' && users.length === 0) fetchUsers();
         if (tab === 'bookings' && allBookings.length === 0) fetchBookings();
         if (tab === 'posts' && allPosts.length === 0) fetchPosts();
-      }, [tab]);
+      }, [tab, adminAuthed]);
+
+      const [adminToast, setAdminToast] = useState('');
+      const showAdminToast = (msg) => { setAdminToast(msg); setTimeout(() => setAdminToast(''), 3000); };
 
       const handleUpdateUser = async () => {
         if (!editingUser) return;
         const { error } = await supabase.from('profiles').update(editForm).eq('id', editingUser.id);
-        if (error) { auth.showToast('Update failed: ' + error.message, 'error'); return; }
+        if (error) { showAdminToast('Update failed: ' + error.message); return; }
         setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...editForm } : u));
         setEditingUser(null);
-        auth.showToast('User updated', 'success');
+        showAdminToast('User updated');
       };
 
       const handleDeleteUser = async (userId) => {
         const { error } = await supabase.from('profiles').delete().eq('id', userId);
-        if (error) { auth.showToast('Delete failed: ' + error.message, 'error'); return; }
+        if (error) { showAdminToast('Delete failed: ' + error.message); return; }
         setUsers(prev => prev.filter(u => u.id !== userId));
         setConfirmDelete(null);
-        auth.showToast('User deleted', 'success');
+        showAdminToast('User deleted');
       };
 
       const handleDeletePost = async (postId) => {
         const { error } = await supabase.from('posts').delete().eq('id', postId);
         if (!error) {
           setAllPosts(prev => prev.filter(p => p.id !== postId));
-          auth.showToast('Post deleted', 'success');
+          showAdminToast('Post deleted');
         }
       };
 
@@ -10046,8 +10085,36 @@ REMEMBER:
         const { error } = await supabase.from('bookings').delete().eq('id', bookingId);
         if (!error) {
           setAllBookings(prev => prev.filter(b => b.id !== bookingId));
-          auth.showToast('Booking deleted', 'success');
+          showAdminToast('Booking deleted');
         }
+      };
+
+      // Promo code handlers
+      const handleCreatePromo = async () => {
+        if (!newCode.trim()) { showAdminToast('Enter a code'); return; }
+        const { data, error } = await supabase.from('promo_codes').insert({
+          code: newCode.trim().toUpperCase(), max_uses: parseInt(newMaxUses) || 10, duration_days: parseInt(newDays) || 90,
+        }).select().single();
+        if (error) { showAdminToast(error.code === '23505' ? 'Code already exists' : 'Failed'); return; }
+        setCodes(prev => [data, ...prev]);
+        setNewCode(''); setNewMaxUses(10); setNewDays(90); setShowCreatePromo(false);
+        showAdminToast('Promo code created!');
+      };
+
+      const togglePromoActive = async (code) => {
+        const { error } = await supabase.from('promo_codes').update({ active: !code.active }).eq('id', code.id);
+        if (!error) setCodes(prev => prev.map(c => c.id === code.id ? { ...c, active: !c.active } : c));
+      };
+
+      const deletePromo = async (code) => {
+        const { error } = await supabase.from('promo_codes').delete().eq('id', code.id);
+        if (!error) { setCodes(prev => prev.filter(c => c.id !== code.id)); showAdminToast('Code deleted'); }
+      };
+
+      const copyCode = (code) => {
+        navigator.clipboard.writeText(code);
+        setCopied(code);
+        setTimeout(() => setCopied(null), 2000);
       };
 
       const filteredUsers = users.filter(u => {
@@ -10062,20 +10129,80 @@ REMEMBER:
         color: tab === t ? '#fff' : '#aaa',
       });
 
+      // Admin login screen
+      if (!adminAuthed) {
+        return (
+          <div style={{ minHeight: '100vh', background: '#0a0a14', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ maxWidth: '380px', width: '90%', background: '#12121e', borderRadius: '1rem', padding: '2.5rem', border: '1px solid rgba(255,110,199,0.2)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+              <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔒</div>
+                <h2 style={{ margin: 0, fontSize: '1.4rem', color: '#fff' }}>ModelBid Admin</h2>
+                <p style={{ color: '#666', fontSize: '0.85rem', marginTop: '0.5rem' }}>Enter admin password to continue</p>
+              </div>
+              <input
+                type="password"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleAdminLogin()}
+                placeholder="Password"
+                style={{ width: '100%', padding: '0.8rem', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '1rem', marginBottom: '1rem', boxSizing: 'border-box', textAlign: 'center', letterSpacing: '2px' }}
+              />
+              {loginError && <div style={{ color: '#ff5252', fontSize: '0.85rem', textAlign: 'center', marginBottom: '1rem' }}>{loginError}</div>}
+              <button onClick={handleAdminLogin} style={{ width: '100%', padding: '0.8rem', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #ff6ec7, #9d4edd)', color: '#fff', fontWeight: 700, fontSize: '1rem', cursor: 'pointer' }}>
+                Sign In
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      // Admin panel (standalone, no ModelBid nav)
       return (
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-            <h2 style={{ margin: 0, flex: 1 }}>Admin Panel</h2>
-            <span style={{ fontSize: '0.75rem', color: '#888', background: 'rgba(255,110,199,0.1)', padding: '4px 10px', borderRadius: 20, fontWeight: 700, color: '#ff6ec7' }}>ADMIN ONLY</span>
+        <div style={{ minHeight: '100vh', background: '#0a0a14' }}>
+          {/* Admin toast */}
+          {adminToast && (
+            <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 99999, background: '#1a1a2e', border: '1px solid rgba(255,110,199,0.3)', color: '#fff', padding: '0.8rem 1.5rem', borderRadius: 10, fontWeight: 600, fontSize: '0.85rem', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+              {adminToast}
+            </div>
+          )}
+
+          {/* Admin header */}
+          <div style={{ background: '#12121e', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '0.8rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span style={{ fontSize: '1.3rem' }}>⚙️</span>
+              <span style={{ fontWeight: 700, fontSize: '1.1rem', color: '#fff' }}>ModelBid Admin</span>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button onClick={() => setShowChangePassword(!showChangePassword)} style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#888', fontSize: '0.78rem', cursor: 'pointer' }}>
+                Change Password
+              </button>
+              <button onClick={() => { setAdminAuthed(false); setPasswordInput(''); }} style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: '1px solid rgba(255,82,82,0.3)', background: 'rgba(255,82,82,0.08)', color: '#ff5252', fontSize: '0.78rem', cursor: 'pointer' }}>
+                Sign Out
+              </button>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '4px' }}>
-            <button onClick={() => setTab('stats')} style={tabStyle('stats')}>Overview</button>
-            <button onClick={() => setTab('users')} style={tabStyle('users')}>Users</button>
-            <button onClick={() => setTab('promos')} style={tabStyle('promos')}>Promo Codes</button>
-            <button onClick={() => setTab('bookings')} style={tabStyle('bookings')}>Bookings</button>
-            <button onClick={() => setTab('posts')} style={tabStyle('posts')}>Posts</button>
-          </div>
+          {/* Change password modal */}
+          {showChangePassword && (
+            <div style={{ maxWidth: '400px', margin: '1rem auto', background: '#12121e', borderRadius: '0.75rem', padding: '1.25rem', border: '1px solid rgba(255,110,199,0.2)' }}>
+              <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem' }}>Change Admin Password</h3>
+              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New password" style={{ width: '100%', padding: '0.6rem', borderRadius: 8, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: '#fff', marginBottom: '0.5rem', boxSizing: 'border-box' }} />
+              <input type="password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} placeholder="Confirm new password" style={{ width: '100%', padding: '0.6rem', borderRadius: 8, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: '#fff', marginBottom: '0.75rem', boxSizing: 'border-box' }} />
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button onClick={handleChangePassword} style={{ flex: 1, padding: '0.6rem', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #ff6ec7, #9d4edd)', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Save</button>
+                <button onClick={() => setShowChangePassword(false)} style={{ padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#aaa', cursor: 'pointer' }}>Cancel</button>
+              </div>
+            </div>
+          )}
+
+          <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '4px' }}>
+              <button onClick={() => setTab('stats')} style={tabStyle('stats')}>Overview</button>
+              <button onClick={() => setTab('users')} style={tabStyle('users')}>Users</button>
+              <button onClick={() => setTab('promos')} style={tabStyle('promos')}>Promo Codes</button>
+              <button onClick={() => setTab('bookings')} style={tabStyle('bookings')}>Bookings</button>
+              <button onClick={() => setTab('posts')} style={tabStyle('posts')}>Posts</button>
+            </div>
 
           {/* STATS TAB */}
           {tab === 'stats' && (
@@ -10228,7 +10355,73 @@ REMEMBER:
           )}
 
           {/* PROMO CODES TAB */}
-          {tab === 'promos' && <PromoCodeManager auth={auth} />}
+          {tab === 'promos' && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.8rem', color: '#888' }}>{codes.length} promo code{codes.length !== 1 ? 's' : ''}</div>
+                <button onClick={() => setShowCreatePromo(!showCreatePromo)} style={{ padding: '0.5rem 1rem', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #ff6ec7, #9d4edd)', color: '#fff', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
+                  {showCreatePromo ? 'Cancel' : '+ New Code'}
+                </button>
+              </div>
+
+              {showCreatePromo && (
+                <div style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1.25rem', border: '1px solid var(--border-color)', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.8rem', color: '#888', marginBottom: '4px', display: 'block' }}>Code Name</label>
+                      <input type="text" value={newCode} onChange={(e) => setNewCode(e.target.value.toUpperCase())} placeholder="e.g. FIRSTWAVE"
+                        style={{ width: '100%', padding: '0.6rem', borderRadius: 8, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#fff', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 700, fontSize: '0.95rem', boxSizing: 'border-box' }} />
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.75rem' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: '0.8rem', color: '#888', marginBottom: '4px', display: 'block' }}>Max Uses</label>
+                        <input type="number" value={newMaxUses} onChange={(e) => setNewMaxUses(e.target.value)} min="1"
+                          style={{ width: '100%', padding: '0.6rem', borderRadius: 8, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#fff', boxSizing: 'border-box' }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: '0.8rem', color: '#888', marginBottom: '4px', display: 'block' }}>Duration (days)</label>
+                        <input type="number" value={newDays} onChange={(e) => setNewDays(e.target.value)} min="1"
+                          style={{ width: '100%', padding: '0.6rem', borderRadius: 8, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#fff', boxSizing: 'border-box' }} />
+                      </div>
+                    </div>
+                    <button onClick={handleCreatePromo} style={{ width: '100%', padding: '0.7rem', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #ff6ec7, #9d4edd)', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Create Code</button>
+                  </div>
+                </div>
+              )}
+
+              {codes.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#888', padding: '1.5rem', background: 'var(--bg-card)', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>
+                  No promo codes yet. Create one above!
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {codes.map(code => (
+                    <div key={code.id} style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1rem 1.25rem', border: '1px solid var(--border-color)', opacity: code.active ? 1 : 0.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div style={{ flex: 1, minWidth: '200px' }}>
+                        <div style={{ fontWeight: 700, fontSize: '1rem', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          {code.code}
+                          <button onClick={() => copyCode(code.code)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: copied === code.code ? '#00e676' : '#888', padding: '2px' }}>
+                            {copied === code.code ? '✓' : '📋'}
+                          </button>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '2px' }}>
+                          {code.times_used}/{code.max_uses} used · {code.duration_days} days · {code.active ? '🟢 Active' : '🔴 Inactive'}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <button onClick={() => togglePromoActive(code)} style={{ padding: '0.35rem 0.7rem', borderRadius: 6, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: code.active ? '#ff5252' : '#00e676', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600 }}>
+                          {code.active ? 'Disable' : 'Enable'}
+                        </button>
+                        <button onClick={() => deletePromo(code)} style={{ padding: '0.35rem 0.7rem', borderRadius: 6, border: '1px solid rgba(255,82,82,0.3)', background: 'rgba(255,82,82,0.08)', color: '#ff5252', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600 }}>
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* BOOKINGS TAB */}
           {tab === 'bookings' && (
@@ -10288,159 +10481,7 @@ REMEMBER:
       );
     }
 
-    function PromoCodeManager({ auth }) {
-      const [codes, setCodes] = useState([]);
-      const [loading, setLoading] = useState(true);
-      const [showCreate, setShowCreate] = useState(false);
-      const [newCode, setNewCode] = useState('');
-      const [newMaxUses, setNewMaxUses] = useState(10);
-      const [newDays, setNewDays] = useState(90);
-      const [copied, setCopied] = useState(null);
-
-      useEffect(() => {
-        const fetchCodes = async () => {
-          const { data } = await supabase.from('promo_codes').select('*').order('created_at', { ascending: false });
-          if (data) setCodes(data);
-          setLoading(false);
-        };
-        fetchCodes();
-      }, []);
-
-      const handleCreate = async () => {
-        if (!newCode.trim()) { auth.showToast('Enter a code', 'error'); return; }
-        const { data, error } = await supabase.from('promo_codes').insert({
-          code: newCode.trim().toUpperCase(),
-          max_uses: parseInt(newMaxUses) || 10,
-          duration_days: parseInt(newDays) || 90,
-        }).select().single();
-        if (error) {
-          if (error.code === '23505') auth.showToast('That code already exists', 'error');
-          else auth.showToast('Failed to create code', 'error');
-          return;
-        }
-        setCodes(prev => [data, ...prev]);
-        setNewCode(''); setNewMaxUses(10); setNewDays(90); setShowCreate(false);
-        auth.showToast('Promo code created!', 'success');
-      };
-
-      const toggleActive = async (code) => {
-        const { error } = await supabase.from('promo_codes').update({ active: !code.active }).eq('id', code.id);
-        if (!error) setCodes(prev => prev.map(c => c.id === code.id ? { ...c, active: !c.active } : c));
-      };
-
-      const deleteCode = async (code) => {
-        const { error } = await supabase.from('promo_codes').delete().eq('id', code.id);
-        if (!error) {
-          setCodes(prev => prev.filter(c => c.id !== code.id));
-          auth.showToast('Code deleted', 'success');
-        }
-      };
-
-      const copyCode = (code) => {
-        navigator.clipboard.writeText(code);
-        setCopied(code);
-        setTimeout(() => setCopied(null), 2000);
-      };
-
-      return (
-        <div style={{ marginBottom: '2rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0 }}>🎟️ Promo Codes</h3>
-            <button onClick={() => setShowCreate(!showCreate)} className="btn glow-btn" style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}>
-              {showCreate ? 'Cancel' : '+ New Code'}
-            </button>
-          </div>
-
-          {showCreate && (
-            <div style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1.25rem', border: '1px solid var(--border-color)', marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>Code Name</label>
-                  <input
-                    type="text"
-                    value={newCode}
-                    onChange={(e) => setNewCode(e.target.value.toUpperCase())}
-                    placeholder="e.g. FIRSTWAVE"
-                    style={{ width: '100%', padding: '0.6rem', borderRadius: 8, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#fff', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 700, fontSize: '0.95rem', boxSizing: 'border-box' }}
-                  />
-                </div>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>Max Uses</label>
-                    <input
-                      type="number"
-                      value={newMaxUses}
-                      onChange={(e) => setNewMaxUses(e.target.value)}
-                      min="1"
-                      style={{ width: '100%', padding: '0.6rem', borderRadius: 8, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#fff', boxSizing: 'border-box' }}
-                    />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>Duration (days)</label>
-                    <input
-                      type="number"
-                      value={newDays}
-                      onChange={(e) => setNewDays(e.target.value)}
-                      min="1"
-                      style={{ width: '100%', padding: '0.6rem', borderRadius: 8, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#fff', boxSizing: 'border-box' }}
-                    />
-                  </div>
-                </div>
-                <button onClick={handleCreate} className="btn glow-btn" style={{ width: '100%' }}>Create Code</button>
-              </div>
-            </div>
-          )}
-
-          {loading ? (
-            <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '1rem' }}>Loading...</div>
-          ) : codes.length === 0 ? (
-            <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '1.5rem', background: 'var(--bg-card)', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>
-              No promo codes yet. Create one above!
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {codes.map(code => (
-                <div key={code.id} style={{
-                  background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1rem 1.25rem',
-                  border: '1px solid var(--border-color)', opacity: code.active ? 1 : 0.5,
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: '200px' }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '1rem', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        {code.code}
-                        <button onClick={() => copyCode(code.code)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: copied === code.code ? '#00e676' : '#888', padding: '2px' }}>
-                          {copied === code.code ? '✓' : '📋'}
-                        </button>
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                        {code.times_used}/{code.max_uses} used · {code.duration_days} days · {code.active ? '🟢 Active' : '🔴 Inactive'}
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.4rem' }}>
-                    <button onClick={() => toggleActive(code)} style={{
-                      padding: '0.35rem 0.7rem', borderRadius: 6, border: '1px solid var(--border-color)',
-                      background: 'rgba(255,255,255,0.05)', color: code.active ? '#ff5252' : '#00e676',
-                      fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600
-                    }}>
-                      {code.active ? 'Disable' : 'Enable'}
-                    </button>
-                    <button onClick={() => deleteCode(code)} style={{
-                      padding: '0.35rem 0.7rem', borderRadius: 6, border: '1px solid rgba(255,82,82,0.3)',
-                      background: 'rgba(255,82,82,0.08)', color: '#ff5252',
-                      fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600
-                    }}>
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      );
-    }
+    // PromoCodeManager removed — promo management is now inline in AdminPanel
 
     function DashboardPage() {
       const auth = useContext(AuthContext);
@@ -10707,7 +10748,7 @@ REMEMBER:
               </div>
             </div>
 
-            {auth.currentUser?.id === 'bda70d5b-4155-4d7c-afc7-8429eadb00a2' && <PromoCodeManager auth={auth} />}
+            {/* PromoCodeManager removed — promo management is in admin panel */}
 
             <h3 style={{ marginBottom: '1rem' }}>Booking Requests</h3>
             <div className="grid">
@@ -14723,7 +14764,7 @@ RULES
         if (page === 'cherry-picker') return auth.profile?.role === 'client' ? <FeedPage /> : <CherryPickerPage />;
         if (page === 'team') return auth.currentUser ? <TeamFamSaucePage /> : <LoginPage />;
         if (page === 'bidboard') return <BidBoardPage />;
-        if (page === 'admin') return auth.currentUser ? <AdminPanel /> : <LoginPage />;
+        if (page === 'admin') return <AdminPanel />;
         if (page === 'dashboard') return auth.currentUser ? <DashboardPage /> : <LoginPage />;
         if (page === 'messages' && params[0]) return auth.currentUser ? <MessagesPage conversationId={params[0]} /> : <LoginPage />;
         if (page === 'messages') return auth.currentUser ? <MessagesPage conversationId={null} /> : <LoginPage />;
@@ -14799,7 +14840,7 @@ RULES
                 <div className="user-section">
                   <a className="nav-link" onClick={() => window.location.hash = 'messages'}>📬 Messages</a>
                   <a className="nav-link" onClick={() => window.location.hash = 'dashboard'}>Dashboard</a>
-                  {auth.currentUser?.id === ADMIN_ID && <a className="nav-link" onClick={() => window.location.hash = 'admin'} style={{ color: '#ff6ec7' }}>Admin</a>}
+                  {/* Admin link removed — admin panel is standalone at #admin */}
                   <div className="user-info" onClick={() => window.location.hash = 'profile/' + (auth.currentUser?.id || 'demo')} style={{ cursor: 'pointer' }}>
                     <div className="avatar">{auth.profile?.avatar_emoji || '👤'}</div>
                     <div className="user-name">{auth.profile?.display_name || 'User'}</div>
@@ -14851,11 +14892,7 @@ RULES
                   <span className="mm-icon">📊</span> Dashboard
                 </div>
               )}
-              {auth.currentUser?.id === ADMIN_ID && (
-                <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'admin'; }}>
-                  <span className="mm-icon">⚙️</span> Admin Panel
-                </div>
-              )}
+              {/* Admin link removed — admin panel is standalone at #admin */}
             </div>
 
             <div className="mobile-menu-section">
