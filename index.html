@@ -9926,6 +9926,368 @@ REMEMBER:
       );
     }
 
+    const ADMIN_ID = 'bda70d5b-4155-4d7c-afc7-8429eadb00a2';
+
+    function AdminPanel() {
+      const auth = useContext(AuthContext);
+      const [tab, setTab] = useState('stats');
+      const [stats, setStats] = useState(null);
+      const [users, setUsers] = useState([]);
+      const [userSearch, setUserSearch] = useState('');
+      const [userFilter, setUserFilter] = useState('all');
+      const [allBookings, setAllBookings] = useState([]);
+      const [allPosts, setAllPosts] = useState([]);
+      const [loadingUsers, setLoadingUsers] = useState(false);
+      const [loadingBookings, setLoadingBookings] = useState(false);
+      const [loadingPosts, setLoadingPosts] = useState(false);
+      const [editingUser, setEditingUser] = useState(null);
+      const [editForm, setEditForm] = useState({});
+      const [confirmDelete, setConfirmDelete] = useState(null);
+
+      if (!auth.currentUser || auth.currentUser.id !== ADMIN_ID) {
+        return <div style={{ padding: '3rem', textAlign: 'center', color: '#ff5252' }}>Access denied.</div>;
+      }
+
+      // Fetch stats
+      useEffect(() => {
+        const fetchStats = async () => {
+          const [profiles, bookings, posts, promos, teams, convos] = await Promise.all([
+            supabase.from('profiles').select('id, role, created_at, promo_code_used', { count: 'exact' }),
+            supabase.from('bookings').select('id, status', { count: 'exact' }),
+            supabase.from('posts').select('id', { count: 'exact' }),
+            supabase.from('promo_codes').select('*'),
+            supabase.from('team_members').select('id', { count: 'exact' }),
+            supabase.from('conversations').select('id', { count: 'exact' }),
+          ]);
+          const allProfiles = profiles.data || [];
+          const models = allProfiles.filter(p => p.role === 'model').length;
+          const clients = allProfiles.filter(p => p.role === 'client').length;
+          const promoUsers = allProfiles.filter(p => p.promo_code_used).length;
+          const allBookings = bookings.data || [];
+          const pending = allBookings.filter(b => b.status === 'pending').length;
+          const accepted = allBookings.filter(b => b.status === 'accepted').length;
+          const totalPromoUses = (promos.data || []).reduce((sum, p) => sum + p.times_used, 0);
+
+          setStats({
+            totalUsers: allProfiles.length, models, clients,
+            totalBookings: allBookings.length, pending, accepted,
+            totalPosts: (posts.data || []).length,
+            totalTeamMembers: (teams.data || []).length,
+            totalConversations: (convos.data || []).length,
+            totalPromoCodes: (promos.data || []).length,
+            totalPromoRedemptions: totalPromoUses,
+            promoUsers,
+            recentSignups: allProfiles.filter(p => {
+              const d = new Date(p.created_at);
+              const now = new Date();
+              return (now - d) < 7 * 24 * 60 * 60 * 1000;
+            }).length,
+          });
+        };
+        fetchStats();
+      }, []);
+
+      // Fetch users
+      const fetchUsers = async () => {
+        setLoadingUsers(true);
+        const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+        if (data) setUsers(data);
+        setLoadingUsers(false);
+      };
+
+      // Fetch bookings
+      const fetchBookings = async () => {
+        setLoadingBookings(true);
+        const { data } = await supabase.from('bookings').select('*').order('created_at', { ascending: false }).limit(50);
+        if (data) setAllBookings(data);
+        setLoadingBookings(false);
+      };
+
+      // Fetch posts
+      const fetchPosts = async () => {
+        setLoadingPosts(true);
+        const { data } = await supabase.from('posts').select('*').order('created_at', { ascending: false }).limit(50);
+        if (data) setAllPosts(data);
+        setLoadingPosts(false);
+      };
+
+      useEffect(() => {
+        if (tab === 'users' && users.length === 0) fetchUsers();
+        if (tab === 'bookings' && allBookings.length === 0) fetchBookings();
+        if (tab === 'posts' && allPosts.length === 0) fetchPosts();
+      }, [tab]);
+
+      const handleUpdateUser = async () => {
+        if (!editingUser) return;
+        const { error } = await supabase.from('profiles').update(editForm).eq('id', editingUser.id);
+        if (error) { auth.showToast('Update failed: ' + error.message, 'error'); return; }
+        setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...editForm } : u));
+        setEditingUser(null);
+        auth.showToast('User updated', 'success');
+      };
+
+      const handleDeleteUser = async (userId) => {
+        const { error } = await supabase.from('profiles').delete().eq('id', userId);
+        if (error) { auth.showToast('Delete failed: ' + error.message, 'error'); return; }
+        setUsers(prev => prev.filter(u => u.id !== userId));
+        setConfirmDelete(null);
+        auth.showToast('User deleted', 'success');
+      };
+
+      const handleDeletePost = async (postId) => {
+        const { error } = await supabase.from('posts').delete().eq('id', postId);
+        if (!error) {
+          setAllPosts(prev => prev.filter(p => p.id !== postId));
+          auth.showToast('Post deleted', 'success');
+        }
+      };
+
+      const handleDeleteBooking = async (bookingId) => {
+        const { error } = await supabase.from('bookings').delete().eq('id', bookingId);
+        if (!error) {
+          setAllBookings(prev => prev.filter(b => b.id !== bookingId));
+          auth.showToast('Booking deleted', 'success');
+        }
+      };
+
+      const filteredUsers = users.filter(u => {
+        const matchesSearch = !userSearch || (u.display_name || '').toLowerCase().includes(userSearch.toLowerCase()) || (u.email || '').toLowerCase().includes(userSearch.toLowerCase());
+        const matchesFilter = userFilter === 'all' || u.role === userFilter || (userFilter === 'promo' && u.promo_code_used);
+        return matchesSearch && matchesFilter;
+      });
+
+      const tabStyle = (t) => ({
+        padding: '0.6rem 1.2rem', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem',
+        background: tab === t ? 'linear-gradient(135deg, #ff6ec7, #9d4edd)' : 'rgba(255,255,255,0.05)',
+        color: tab === t ? '#fff' : '#aaa',
+      });
+
+      return (
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+            <h2 style={{ margin: 0, flex: 1 }}>Admin Panel</h2>
+            <span style={{ fontSize: '0.75rem', color: '#888', background: 'rgba(255,110,199,0.1)', padding: '4px 10px', borderRadius: 20, fontWeight: 700, color: '#ff6ec7' }}>ADMIN ONLY</span>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '4px' }}>
+            <button onClick={() => setTab('stats')} style={tabStyle('stats')}>Overview</button>
+            <button onClick={() => setTab('users')} style={tabStyle('users')}>Users</button>
+            <button onClick={() => setTab('promos')} style={tabStyle('promos')}>Promo Codes</button>
+            <button onClick={() => setTab('bookings')} style={tabStyle('bookings')}>Bookings</button>
+            <button onClick={() => setTab('posts')} style={tabStyle('posts')}>Posts</button>
+          </div>
+
+          {/* STATS TAB */}
+          {tab === 'stats' && (
+            <div>
+              {!stats ? <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Loading stats...</div> : (
+                <>
+                  <div className="dashboard-grid" style={{ marginBottom: '1.5rem' }}>
+                    <div className="stat-card gradient">
+                      <div className="stat-value">{stats.totalUsers}</div>
+                      <div className="stat-label">Total Users</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">{stats.models}</div>
+                      <div className="stat-label">Models</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">{stats.clients}</div>
+                      <div className="stat-label">Clients</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">{stats.recentSignups}</div>
+                      <div className="stat-label">Signups (7d)</div>
+                    </div>
+                  </div>
+                  <div className="dashboard-grid" style={{ marginBottom: '1.5rem' }}>
+                    <div className="stat-card">
+                      <div className="stat-value">{stats.totalBookings}</div>
+                      <div className="stat-label">Total Bookings</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">{stats.pending}</div>
+                      <div className="stat-label">Pending</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">{stats.totalPosts}</div>
+                      <div className="stat-label">Posts</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">{stats.totalConversations}</div>
+                      <div className="stat-label">Conversations</div>
+                    </div>
+                  </div>
+                  <div className="dashboard-grid">
+                    <div className="stat-card">
+                      <div className="stat-value">{stats.totalPromoCodes}</div>
+                      <div className="stat-label">Promo Codes</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">{stats.totalPromoRedemptions}</div>
+                      <div className="stat-label">Redemptions</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">{stats.promoUsers}</div>
+                      <div className="stat-label">Promo Users</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">{stats.totalTeamMembers}</div>
+                      <div className="stat-label">Team Members</div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* USERS TAB */}
+          {tab === 'users' && (
+            <div>
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                <input
+                  type="text" placeholder="Search by name or email..."
+                  value={userSearch} onChange={(e) => setUserSearch(e.target.value)}
+                  style={{ flex: 1, minWidth: '200px', padding: '0.6rem', borderRadius: 8, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+                />
+                <select value={userFilter} onChange={(e) => setUserFilter(e.target.value)}
+                  style={{ padding: '0.6rem', borderRadius: 8, border: '1px solid var(--border-color)', background: '#1a1a2e', color: '#fff' }}>
+                  <option value="all">All</option>
+                  <option value="model">Models</option>
+                  <option value="client">Clients</option>
+                  <option value="promo">Promo Users</option>
+                </select>
+                <button onClick={fetchUsers} style={{ padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#aaa', cursor: 'pointer' }}>↻ Refresh</button>
+              </div>
+
+              {loadingUsers ? <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Loading...</div> : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>{filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''}</div>
+                  {filteredUsers.map(user => (
+                    <div key={user.id} style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid var(--border-color)' }}>
+                      {editingUser?.id === user.id ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <input value={editForm.display_name || ''} onChange={(e) => setEditForm({...editForm, display_name: e.target.value})} placeholder="Name" style={{ flex: 1, padding: '0.5rem', borderRadius: 6, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#fff', minWidth: '150px' }} />
+                            <select value={editForm.role || 'client'} onChange={(e) => setEditForm({...editForm, role: e.target.value})} style={{ padding: '0.5rem', borderRadius: 6, border: '1px solid var(--border-color)', background: '#1a1a2e', color: '#fff' }}>
+                              <option value="model">Model</option>
+                              <option value="client">Client</option>
+                            </select>
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#ccc' }}>
+                              <input type="checkbox" checked={editForm.cherry_picker_active || false} onChange={(e) => setEditForm({...editForm, cherry_picker_active: e.target.checked})} /> Cherry Picker
+                            </label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#ccc' }}>
+                              <input type="checkbox" checked={editForm.subscription_waived || false} onChange={(e) => setEditForm({...editForm, subscription_waived: e.target.checked})} /> Sub Waived
+                            </label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#ccc' }}>
+                              <input type="checkbox" checked={editForm.verified || false} onChange={(e) => setEditForm({...editForm, verified: e.target.checked})} /> Verified
+                            </label>
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button onClick={handleUpdateUser} className="btn glow-btn" style={{ fontSize: '0.8rem', padding: '0.4rem 1rem' }}>Save</button>
+                            <button onClick={() => setEditingUser(null)} style={{ fontSize: '0.8rem', padding: '0.4rem 1rem', borderRadius: 6, border: '1px solid var(--border-color)', background: 'transparent', color: '#aaa', cursor: 'pointer' }}>Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          <div style={{ flex: 1, minWidth: '200px' }}>
+                            <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                              {user.display_name || 'No name'}
+                              <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: 20, fontWeight: 700, background: user.role === 'model' ? 'rgba(255,110,199,0.15)' : 'rgba(100,200,255,0.15)', color: user.role === 'model' ? '#ff6ec7' : '#64c8ff' }}>
+                                {user.role?.toUpperCase()}
+                              </span>
+                              {user.verified && <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: 20, background: 'rgba(0,230,118,0.15)', color: '#00e676', fontWeight: 700 }}>VERIFIED</span>}
+                              {user.promo_code_used && <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: 20, background: 'rgba(255,215,0,0.15)', color: '#ffd700', fontWeight: 700 }}>PROMO: {user.promo_code_used}</span>}
+                            </div>
+                            <div style={{ fontSize: '0.78rem', color: '#888', marginTop: '2px' }}>
+                              {user.email || 'No email'} · Joined {new Date(user.created_at).toLocaleDateString()}
+                              {user.promo_expires_at && <span> · Promo expires {new Date(user.promo_expires_at).toLocaleDateString()}</span>}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.3rem' }}>
+                            <button onClick={() => { setEditingUser(user); setEditForm({ display_name: user.display_name, role: user.role, cherry_picker_active: user.cherry_picker_active, subscription_waived: user.subscription_waived, verified: user.verified }); }}
+                              style={{ padding: '0.35rem 0.7rem', borderRadius: 6, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#ccc', fontSize: '0.75rem', cursor: 'pointer' }}>Edit</button>
+                            {confirmDelete === user.id ? (
+                              <>
+                                <button onClick={() => handleDeleteUser(user.id)} style={{ padding: '0.35rem 0.7rem', borderRadius: 6, border: '1px solid #ff5252', background: 'rgba(255,82,82,0.15)', color: '#ff5252', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>Confirm</button>
+                                <button onClick={() => setConfirmDelete(null)} style={{ padding: '0.35rem 0.7rem', borderRadius: 6, border: '1px solid var(--border-color)', background: 'transparent', color: '#888', fontSize: '0.75rem', cursor: 'pointer' }}>No</button>
+                              </>
+                            ) : (
+                              <button onClick={() => setConfirmDelete(user.id)} style={{ padding: '0.35rem 0.7rem', borderRadius: 6, border: '1px solid rgba(255,82,82,0.3)', background: 'rgba(255,82,82,0.08)', color: '#ff5252', fontSize: '0.75rem', cursor: 'pointer' }}>Delete</button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* PROMO CODES TAB */}
+          {tab === 'promos' && <PromoCodeManager auth={auth} />}
+
+          {/* BOOKINGS TAB */}
+          {tab === 'bookings' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.8rem', color: '#888' }}>{allBookings.length} booking{allBookings.length !== 1 ? 's' : ''}</div>
+                <button onClick={fetchBookings} style={{ padding: '0.5rem 1rem', borderRadius: 8, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#aaa', cursor: 'pointer', fontSize: '0.8rem' }}>↻ Refresh</button>
+              </div>
+              {loadingBookings ? <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Loading...</div> : allBookings.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#888', background: 'var(--bg-card)', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>No bookings yet</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {allBookings.map(b => (
+                    <div key={b.id} style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{b.session_date || 'No date'} · {b.duration_hours || '?'}h · ${b.rate || 0}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#888' }}>
+                          Status: <span style={{ color: b.status === 'pending' ? '#ffd700' : b.status === 'accepted' ? '#00e676' : '#ff5252', fontWeight: 700 }}>{b.status}</span>
+                          {' · '}{b.contract_type || 'No contract'} · {new Date(b.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <button onClick={() => handleDeleteBooking(b.id)} style={{ padding: '0.35rem 0.7rem', borderRadius: 6, border: '1px solid rgba(255,82,82,0.3)', background: 'rgba(255,82,82,0.08)', color: '#ff5252', fontSize: '0.75rem', cursor: 'pointer' }}>Delete</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* POSTS TAB */}
+          {tab === 'posts' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.8rem', color: '#888' }}>{allPosts.length} post{allPosts.length !== 1 ? 's' : ''}</div>
+                <button onClick={fetchPosts} style={{ padding: '0.5rem 1rem', borderRadius: 8, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#aaa', cursor: 'pointer', fontSize: '0.8rem' }}>↻ Refresh</button>
+              </div>
+              {loadingPosts ? <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Loading...</div> : allPosts.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#888', background: 'var(--bg-card)', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>No posts yet</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {allPosts.map(p => (
+                    <div key={p.id} style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '0.85rem', color: '#ddd', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.content ? p.content.substring(0, 120) + (p.content.length > 120 ? '...' : '') : 'No content'}</div>
+                        <div style={{ fontSize: '0.72rem', color: '#888' }}>
+                          {p.post_type || 'post'} · {new Date(p.created_at).toLocaleDateString()} · {p.likes || 0} likes · {p.comments_count || 0} comments
+                        </div>
+                      </div>
+                      <button onClick={() => handleDeletePost(p.id)} style={{ padding: '0.35rem 0.7rem', borderRadius: 6, border: '1px solid rgba(255,82,82,0.3)', background: 'rgba(255,82,82,0.08)', color: '#ff5252', fontSize: '0.75rem', cursor: 'pointer', flexShrink: 0 }}>Delete</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     function PromoCodeManager({ auth }) {
       const [codes, setCodes] = useState([]);
       const [loading, setLoading] = useState(true);
@@ -14361,6 +14723,7 @@ RULES
         if (page === 'cherry-picker') return auth.profile?.role === 'client' ? <FeedPage /> : <CherryPickerPage />;
         if (page === 'team') return auth.currentUser ? <TeamFamSaucePage /> : <LoginPage />;
         if (page === 'bidboard') return <BidBoardPage />;
+        if (page === 'admin') return auth.currentUser ? <AdminPanel /> : <LoginPage />;
         if (page === 'dashboard') return auth.currentUser ? <DashboardPage /> : <LoginPage />;
         if (page === 'messages' && params[0]) return auth.currentUser ? <MessagesPage conversationId={params[0]} /> : <LoginPage />;
         if (page === 'messages') return auth.currentUser ? <MessagesPage conversationId={null} /> : <LoginPage />;
@@ -14436,6 +14799,7 @@ RULES
                 <div className="user-section">
                   <a className="nav-link" onClick={() => window.location.hash = 'messages'}>📬 Messages</a>
                   <a className="nav-link" onClick={() => window.location.hash = 'dashboard'}>Dashboard</a>
+                  {auth.currentUser?.id === ADMIN_ID && <a className="nav-link" onClick={() => window.location.hash = 'admin'} style={{ color: '#ff6ec7' }}>Admin</a>}
                   <div className="user-info" onClick={() => window.location.hash = 'profile/' + (auth.currentUser?.id || 'demo')} style={{ cursor: 'pointer' }}>
                     <div className="avatar">{auth.profile?.avatar_emoji || '👤'}</div>
                     <div className="user-name">{auth.profile?.display_name || 'User'}</div>
@@ -14485,6 +14849,11 @@ RULES
               {auth.currentUser && (
                 <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'dashboard'; }}>
                   <span className="mm-icon">📊</span> Dashboard
+                </div>
+              )}
+              {auth.currentUser?.id === ADMIN_ID && (
+                <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'admin'; }}>
+                  <span className="mm-icon">⚙️</span> Admin Panel
                 </div>
               )}
             </div>
