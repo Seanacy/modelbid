@@ -9,7 +9,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet" />
   <style>
-    /* ── RESET & TOKENS ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --bg: #0d0f1a;
@@ -108,8 +107,11 @@
       font-size: 52px;
       font-weight: 700;
       line-height: 1.15;
-      color: #fff;
       margin-bottom: 20px;
+      background: var(--text-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     .hero p {
       font-size: 17px;
@@ -230,10 +232,20 @@
       width: 100%;
       height: 200px;
       position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .model-card-image-bg {
+      position: absolute;
+      top: 0; left: 0;
       width: 100%;
       height: 100%;
+    }
+    .card-emoji {
+      position: relative;
+      z-index: 1;
+      font-size: 72px;
     }
     .card-dot {
       position: absolute;
@@ -244,55 +256,45 @@
       border-radius: 50%;
       background: var(--pink);
       box-shadow: 0 0 8px rgba(247, 164, 192, 0.5);
+      z-index: 1;
     }
     .model-card-info {
       padding: 14px 16px;
+    }
+    .model-name-row {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
+      margin-bottom: 4px;
     }
-    .verified-ring {
-      width: 42px;
-      height: 42px;
+    .verified-badge {
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
-      padding: 2px;
       background: var(--gradient);
-      flex-shrink: 0;
-    }
-    .verified-ring-inner {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      background: var(--card-bg);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
-    }
-    .model-meta {
-      flex: 1;
-      min-width: 0;
+      font-size: 11px;
+      flex-shrink: 0;
     }
     .model-name {
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 16px;
+      font-weight: 700;
       color: #fff;
     }
     .model-details {
       font-size: 12px;
       color: var(--muted);
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      margin-bottom: 6px;
     }
     .model-price {
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 700;
       background: var(--text-gradient);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      white-space: nowrap;
     }
 
     /* ── STATS BAR ── */
@@ -364,9 +366,8 @@
       .nav-links { display: none; }
       .hero h1 { font-size: 36px; }
       .hero { padding: 48px 20px 32px; }
-      .models-grid { grid-template-columns: 1fr; }
-      .stats-grid { grid-template-columns: 1fr; gap: 12px; }
-      .stat-card { padding: 18px; }
+      .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+      .stat-card { padding: 16px 8px; }
       .stat-number { font-size: 22px; }
       .featured-section { padding: 24px 20px 32px; }
       .stats-section { padding: 32px 20px; }
@@ -392,7 +393,7 @@
   <!-- HERO -->
   <section class="hero">
     <div class="hero-badge">The fan-to-income platform</div>
-    <h1>Your fans are ready.<br><span class="gradient-text">Are you?</span></h1>
+    <h1>Your fans are ready.<br>Are you?</h1>
     <p>ModelBid connects models with fans who already want to pay for closer access — on your terms, at your pace.</p>
     <a href="/join" class="cta-btn">Claim your profile</a>
     <div class="hero-sub">Free to join. No contracts.</div>
@@ -406,40 +407,36 @@
         <span class="story-name">Your Story</span>
       </div>
       <div class="story-item">
+        <div class="story-ring"><div class="story-inner">&#128113;&#8205;&#9792;&#65039;</div></div>
+        <span class="story-name">Aria V.</span>
+      </div>
+      <div class="story-item">
+        <div class="story-ring"><div class="story-inner">&#127884;</div></div>
+        <span class="story-name">Jade M.</span>
+      </div>
+      <div class="story-item">
+        <div class="story-ring"><div class="story-inner">&#128248;</div></div>
+        <span class="story-name">Luna N.</span>
+      </div>
+      <div class="story-item">
+        <div class="story-ring"><div class="story-inner">&#10024;</div></div>
+        <span class="story-name">Sasha V.</span>
+      </div>
+      <div class="story-item">
         <div class="story-ring"><div class="story-inner">&#128131;</div></div>
-        <span class="story-name">Valentina</span>
+        <span class="story-name">Mika R.</span>
       </div>
       <div class="story-item">
         <div class="story-ring"><div class="story-inner">&#129332;</div></div>
-        <span class="story-name">Nia</span>
+        <span class="story-name">Nour S.</span>
       </div>
       <div class="story-item">
         <div class="story-ring"><div class="story-inner">&#128133;</div></div>
-        <span class="story-name">Camille</span>
+        <span class="story-name">Priya K.</span>
       </div>
       <div class="story-item">
         <div class="story-ring"><div class="story-inner">&#128135;</div></div>
-        <span class="story-name">Jade</span>
-      </div>
-      <div class="story-item">
-        <div class="story-ring"><div class="story-inner">&#129489;</div></div>
-        <span class="story-name">Priya</span>
-      </div>
-      <div class="story-item">
-        <div class="story-ring"><div class="story-inner">&#128378;</div></div>
-        <span class="story-name">Lena</span>
-      </div>
-      <div class="story-item">
-        <div class="story-ring"><div class="story-inner">&#128587;</div></div>
-        <span class="story-name">Suki</span>
-      </div>
-      <div class="story-item">
-        <div class="story-ring"><div class="story-inner">&#128131;</div></div>
-        <span class="story-name">Mia</span>
-      </div>
-      <div class="story-item">
-        <div class="story-ring"><div class="story-inner">&#129332;</div></div>
-        <span class="story-name">Reina</span>
+        <span class="story-name">Zara B.</span>
       </div>
     </div>
   </section>
@@ -457,15 +454,16 @@
             </linearGradient></defs>
             <rect width="400" height="200" fill="url(#g1)"/>
           </svg>
+          <div class="card-emoji">&#128113;&#8205;&#9792;&#65039;</div>
           <div class="card-dot"></div>
         </div>
         <div class="model-card-info">
-          <div class="verified-ring"><div class="verified-ring-inner">&#128131;</div></div>
-          <div class="model-meta">
-            <div class="model-name">Valentina Rose</div>
-            <div class="model-details">&#11088; 4.9 &middot; Fashion</div>
+          <div class="model-name-row">
+            <div class="verified-badge">&#10003;</div>
+            <div class="model-name">Luna Noir</div>
           </div>
-          <div class="model-price">$35/session</div>
+          <div class="model-details">&#11088; 4.9 &middot; Boudoir</div>
+          <div class="model-price">$280/session</div>
         </div>
       </div>
 
@@ -473,19 +471,20 @@
         <div class="model-card-image">
           <svg class="model-card-image-bg" viewBox="0 0 400 200" preserveAspectRatio="none">
             <defs><linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#1a2030"/><stop offset="100%" stop-color="#1c1a2e"/>
+              <stop offset="0%" stop-color="#1a2030"/><stop offset="100%" stop-color="#2a1a2e"/>
             </linearGradient></defs>
             <rect width="400" height="200" fill="url(#g2)"/>
           </svg>
+          <div class="card-emoji">&#129489;&#8205;&#129456;</div>
           <div class="card-dot"></div>
         </div>
         <div class="model-card-info">
-          <div class="verified-ring"><div class="verified-ring-inner">&#129332;</div></div>
-          <div class="model-meta">
-            <div class="model-name">Nia Monroe</div>
-            <div class="model-details">&#11088; 4.8 &middot; Lifestyle</div>
+          <div class="model-name-row">
+            <div class="verified-badge">&#10003;</div>
+            <div class="model-name">Sasha Velvet</div>
           </div>
-          <div class="model-price">$28/session</div>
+          <div class="model-details">&#11088; 5.0 &middot; Luxury</div>
+          <div class="model-price">$320/session</div>
         </div>
       </div>
 
@@ -497,15 +496,16 @@
             </linearGradient></defs>
             <rect width="400" height="200" fill="url(#g3)"/>
           </svg>
+          <div class="card-emoji">&#128113;&#8205;&#9792;&#65039;</div>
           <div class="card-dot"></div>
         </div>
         <div class="model-card-info">
-          <div class="verified-ring"><div class="verified-ring-inner">&#128133;</div></div>
-          <div class="model-meta">
-            <div class="model-name">Camille Duval</div>
-            <div class="model-details">&#11088; 5.0 &middot; Fitness</div>
+          <div class="model-name-row">
+            <div class="verified-badge">&#10003;</div>
+            <div class="model-name">Mika Rose</div>
           </div>
-          <div class="model-price">$42/session</div>
+          <div class="model-details">&#11088; 4.8 &middot; Fitness</div>
+          <div class="model-price">$200/session</div>
         </div>
       </div>
 
@@ -517,15 +517,16 @@
             </linearGradient></defs>
             <rect width="400" height="200" fill="url(#g4)"/>
           </svg>
+          <div class="card-emoji">&#129489;&#8205;&#127912;</div>
           <div class="card-dot"></div>
         </div>
         <div class="model-card-info">
-          <div class="verified-ring"><div class="verified-ring-inner">&#128135;</div></div>
-          <div class="model-meta">
-            <div class="model-name">Jade Kim</div>
-            <div class="model-details">&#11088; 4.7 &middot; Beauty</div>
+          <div class="model-name-row">
+            <div class="verified-badge">&#10003;</div>
+            <div class="model-name">Nour S.</div>
           </div>
-          <div class="model-price">$30/session</div>
+          <div class="model-details">&#11088; 4.7 &middot; Fashion</div>
+          <div class="model-price">$180/session</div>
         </div>
       </div>
 
