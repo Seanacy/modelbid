@@ -108,10 +108,18 @@
       font-weight: 700;
       line-height: 1.15;
       margin-bottom: 20px;
+    }
+    .hero-line1 {
+      display: block;
+      color: rgba(200, 140, 160, 0.45);
+    }
+    .hero-line2 {
+      display: block;
       background: var(--text-gradient);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+      font-size: 58px;
     }
     .hero p {
       font-size: 17px;
@@ -142,6 +150,23 @@
       color: var(--muted);
       margin-top: 14px;
     }
+    .scroll-arrow {
+      display: block;
+      margin: 40px auto 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: rgba(26, 28, 46, 0.5);
+      color: var(--muted);
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .scroll-arrow:hover { border-color: var(--pink); }
 
     /* ── STORY RINGS ── */
     .stories-section {
@@ -363,8 +388,11 @@
 
     /* ── RESPONSIVE ── */
     @media (max-width: 768px) {
-      .nav-links { display: none; }
+      .nav-links { gap: 16px; }
+      .nav-links a { font-size: 13px; }
+      .nav-signin { font-size: 13px; padding: 6px 16px; }
       .hero h1 { font-size: 36px; }
+      .hero-line2 { font-size: 42px; }
       .hero { padding: 48px 20px 32px; }
       .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
       .stat-card { padding: 16px 8px; }
@@ -393,14 +421,18 @@
   <!-- HERO -->
   <section class="hero">
     <div class="hero-badge">The fan-to-income platform</div>
-    <h1>Your fans are ready.<br>Are you?</h1>
+    <h1>
+      <span class="hero-line1">Your fans are ready.</span>
+      <span class="hero-line2">Are you?</span>
+    </h1>
     <p>ModelBid connects models with fans who already want to pay for closer access — on your terms, at your pace.</p>
     <a href="/join" class="cta-btn">Claim your profile</a>
     <div class="hero-sub">Free to join. No contracts.</div>
+    <a href="#stories" class="scroll-arrow">&#8595;</a>
   </section>
 
   <!-- STORY RINGS -->
-  <section class="stories-section">
+  <section class="stories-section" id="stories">
     <div class="stories-row">
       <div class="story-item story-add">
         <div class="story-ring"><div class="story-inner">+</div></div>
@@ -459,7 +491,7 @@
         </div>
         <div class="model-card-info">
           <div class="model-name-row">
-            <div class="verified-badge">&#10003;</div>
+            <div class="verified-badge">&#9989;</div>
             <div class="model-name">Luna Noir</div>
           </div>
           <div class="model-details">&#11088; 4.9 &middot; Boudoir</div>
@@ -475,12 +507,12 @@
             </linearGradient></defs>
             <rect width="400" height="200" fill="url(#g2)"/>
           </svg>
-          <div class="card-emoji">&#129489;&#8205;&#129456;</div>
+          <div class="card-emoji">&#128105;&#8205;&#129456;</div>
           <div class="card-dot"></div>
         </div>
         <div class="model-card-info">
           <div class="model-name-row">
-            <div class="verified-badge">&#10003;</div>
+            <div class="verified-badge">&#9989;</div>
             <div class="model-name">Sasha Velvet</div>
           </div>
           <div class="model-details">&#11088; 5.0 &middot; Luxury</div>
@@ -501,7 +533,7 @@
         </div>
         <div class="model-card-info">
           <div class="model-name-row">
-            <div class="verified-badge">&#10003;</div>
+            <div class="verified-badge">&#9989;</div>
             <div class="model-name">Mika Rose</div>
           </div>
           <div class="model-details">&#11088; 4.8 &middot; Fitness</div>
@@ -517,12 +549,12 @@
             </linearGradient></defs>
             <rect width="400" height="200" fill="url(#g4)"/>
           </svg>
-          <div class="card-emoji">&#129489;&#8205;&#127912;</div>
+          <div class="card-emoji">&#129495;</div>
           <div class="card-dot"></div>
         </div>
         <div class="model-card-info">
           <div class="model-name-row">
-            <div class="verified-badge">&#10003;</div>
+            <div class="verified-badge">&#9989;</div>
             <div class="model-name">Nour S.</div>
           </div>
           <div class="model-details">&#11088; 4.7 &middot; Fashion</div>
