@@ -72,8 +72,19 @@
       font-size: 30px;
       font-weight: 700;
       line-height: 1.25;
-      color: #fff;
       margin-bottom: 14px;
+    }
+    .join-line1 {
+      display: block;
+      color: rgba(200, 140, 160, 0.45);
+    }
+    .join-line2 {
+      display: block;
+      background: var(--text-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-size: 34px;
     }
     .join-card .subtitle {
       font-size: 15px;
@@ -212,7 +223,10 @@
       <!-- FORM STATE -->
       <div id="form-state">
         <div class="join-badge">For models</div>
-        <h2>You already have fans.<br><span class="gradient-text">Start earning from them.</span></h2>
+        <h2>
+          <span class="join-line1">You already have fans.</span>
+          <span class="join-line2">Start earning from them.</span>
+        </h2>
         <p class="subtitle">No selling. No pressure. Your fans set the price by how much they want access to you.</p>
 
         <div class="form-error" id="form-error"></div>
