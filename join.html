@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Join ModelBid — Start earning from your fans</title>
-  <meta name="description" content="No selling. No pressure. Your fans set the price by how much they want access to you." />
+  <title>Join ModelBid — Your fans are ready. Are you?</title>
+  <meta name="description" content="ModelBid connects models with fans who already want to pay for closer access — on your terms, at your pace." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #0a0b14;
+      --bg: #0d0f1a;
+      --bg-secondary: #0a0b14;
       --card-bg: #1a1c2e;
       --border: #1e2035;
       --input-bg: #ffffff;
@@ -25,14 +26,12 @@
       --font-body: 'DM Sans', sans-serif;
       --font-display: 'Playfair Display', serif;
     }
-    html, body { height: 100%; }
+    html { scroll-behavior: smooth; }
     body {
       font-family: var(--font-body);
       background: var(--bg);
       color: var(--text);
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
+      line-height: 1.6;
       -webkit-font-smoothing: antialiased;
     }
     a { color: inherit; text-decoration: none; }
@@ -43,13 +42,327 @@
       background-clip: text;
     }
 
-    /* ── MAIN CONTENT ── */
-    .join-wrapper {
-      flex: 1;
+    /* ── NAVBAR ── */
+    .navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .nav-logo {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 700;
+      background: var(--text-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-signin {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 22px;
+      border-radius: 999px;
+      transition: border-color 0.2s;
+      background: transparent;
+      cursor: pointer;
+    }
+    .nav-signin:hover { border-color: var(--pink); }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 80px 24px 48px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .hero-badge {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: var(--pink);
+      background: rgba(224, 95, 160, 0.1);
+      border: 1px solid rgba(224, 95, 160, 0.2);
+      padding: 6px 18px;
+      border-radius: 999px;
+      margin-bottom: 28px;
+    }
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: 52px;
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 20px;
+    }
+    .hero-line1 {
+      display: block;
+      color: rgba(200, 140, 160, 0.45);
+    }
+    .hero-line2 {
+      display: block;
+      background: var(--text-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-size: 58px;
+    }
+    .hero p {
+      font-size: 17px;
+      color: var(--muted);
+      max-width: 520px;
+      margin: 0 auto 36px;
+      line-height: 1.7;
+    }
+    .cta-btn {
+      display: inline-block;
+      background: var(--gradient);
+      color: #0d0f1a;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 700;
+      padding: 14px 38px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.2s;
+    }
+    .cta-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 30px rgba(224, 95, 160, 0.25);
+    }
+    .hero-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 14px;
+    }
+    .scroll-arrow {
+      display: block;
+      margin: 40px auto 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: rgba(26, 28, 46, 0.5);
+      color: var(--muted);
+      font-size: 18px;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 48px 24px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .scroll-arrow:hover { border-color: var(--pink); }
+
+    /* ── STORY RINGS ── */
+    .stories-section {
+      padding: 24px 0 48px;
+      max-width: 1200px;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+    .stories-row {
+      display: flex;
+      gap: 20px;
+      padding: 0 32px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .stories-row::-webkit-scrollbar { display: none; }
+    .story-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .story-ring {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      padding: 3px;
+      background: var(--gradient);
+    }
+    .story-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+    .story-add .story-inner {
+      font-size: 24px;
+      color: var(--muted);
+    }
+    .story-name {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+      max-width: 72px;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── FEATURED MODELS ── */
+    .featured-section {
+      padding: 32px 32px 48px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .models-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    .model-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      transition: transform 0.2s, border-color 0.2s;
+      cursor: pointer;
+    }
+    .model-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(247, 164, 192, 0.3);
+    }
+    .model-card-image {
+      width: 100%;
+      height: 200px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .model-card-image-bg {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .card-emoji {
+      position: relative;
+      z-index: 1;
+      font-size: 72px;
+    }
+    .card-dot {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--pink);
+      box-shadow: 0 0 8px rgba(247, 164, 192, 0.5);
+      z-index: 1;
+    }
+    .model-card-info {
+      padding: 14px 16px;
+    }
+    .model-name-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .verified-badge {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+    .model-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .model-details {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .model-price {
+      font-size: 15px;
+      font-weight: 700;
+      background: var(--text-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── STATS BAR ── */
+    .stats-section {
+      padding: 48px 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .stat-card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      text-align: center;
+      background: var(--bg-secondary);
+    }
+    .stat-number {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 700;
+      background: var(--text-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ── JOIN FORM SECTION ── */
+    .join-wrapper {
+      padding: 64px 24px 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .join-card {
       width: 100%;
@@ -182,8 +495,7 @@
     .footer {
       border-top: 1px solid var(--border);
       padding: 24px 32px;
-      max-width: 500px;
-      width: 100%;
+      max-width: 1200px;
       margin: 0 auto;
       display: flex;
       align-items: center;
@@ -210,15 +522,206 @@
     }
     .footer-links a:hover { color: var(--text); }
 
-    @media (max-width: 480px) {
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .nav-links { gap: 16px; }
+      .nav-links a { font-size: 13px; }
+      .nav-signin { font-size: 13px; padding: 6px 16px; }
+      .hero h1 { font-size: 36px; }
+      .hero-line2 { font-size: 42px; }
+      .hero { padding: 48px 20px 32px; }
+      .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+      .stat-card { padding: 16px 8px; }
+      .stat-number { font-size: 22px; }
+      .featured-section { padding: 24px 20px 32px; }
+      .stats-section { padding: 32px 20px; }
+      .stories-row { padding: 0 20px; }
+      .navbar { padding: 16px 20px; }
       .join-card h2 { font-size: 26px; }
-      .footer { padding: 20px; flex-direction: column; gap: 14px; }
+      .footer { padding: 20px; flex-direction: column; gap: 16px; }
     }
   </style>
 </head>
 <body>
 
-  <div class="join-wrapper">
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="/" class="nav-logo">ModelBid</a>
+    <ul class="nav-links">
+      <li><a href="#">Browse</a></li>
+      <li><a href="#">How it works</a></li>
+      <li><a href="#join-section">For models</a></li>
+    </ul>
+    <a href="/" class="nav-signin">Sign in</a>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge">The fan-to-income platform</div>
+    <h1>
+      <span class="hero-line1">Your fans are ready.</span>
+      <span class="hero-line2">Are you?</span>
+    </h1>
+    <p>ModelBid connects models with fans who already want to pay for closer access — on your terms, at your pace.</p>
+    <a href="#join-section" class="cta-btn">Claim your profile</a>
+    <div class="hero-sub">Free to join. No contracts.</div>
+    <a href="#stories" class="scroll-arrow">&#8595;</a>
+  </section>
+
+  <!-- STORY RINGS -->
+  <section class="stories-section" id="stories">
+    <div class="stories-row">
+      <div class="story-item story-add">
+        <div class="story-ring"><div class="story-inner">+</div></div>
+        <span class="story-name">Your Story</span>
+      </div>
+      <div class="story-item">
+        <div class="story-ring"><div class="story-inner">&#128113;&#8205;&#9792;&#65039;</div></div>
+        <span class="story-name">Aria V.</span>
+      </div>
+      <div class="story-item">
+        <div class="story-ring"><div class="story-inner">&#127884;</div></div>
+        <span class="story-name">Jade M.</span>
+      </div>
+      <div class="story-item">
+        <div class="story-ring"><div class="story-inner">&#128248;</div></div>
+        <span class="story-name">Luna N.</span>
+      </div>
+      <div class="story-item">
+        <div class="story-ring"><div class="story-inner">&#10024;</div></div>
+        <span class="story-name">Sasha V.</span>
+      </div>
+      <div class="story-item">
+        <div class="story-ring"><div class="story-inner">&#128131;</div></div>
+        <span class="story-name">Mika R.</span>
+      </div>
+      <div class="story-item">
+        <div class="story-ring"><div class="story-inner">&#129332;</div></div>
+        <span class="story-name">Nour S.</span>
+      </div>
+      <div class="story-item">
+        <div class="story-ring"><div class="story-inner">&#128133;</div></div>
+        <span class="story-name">Priya K.</span>
+      </div>
+      <div class="story-item">
+        <div class="story-ring"><div class="story-inner">&#128135;</div></div>
+        <span class="story-name">Zara B.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURED MODELS -->
+  <section class="featured-section">
+    <div class="section-label">Suggested for you</div>
+    <div class="models-grid">
+
+      <div class="model-card">
+        <div class="model-card-image">
+          <svg class="model-card-image-bg" viewBox="0 0 400 200" preserveAspectRatio="none">
+            <defs><linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#2a1a30"/><stop offset="100%" stop-color="#1a1c2e"/>
+            </linearGradient></defs>
+            <rect width="400" height="200" fill="url(#g1)"/>
+          </svg>
+          <div class="card-emoji">&#128113;&#8205;&#9792;&#65039;</div>
+          <div class="card-dot"></div>
+        </div>
+        <div class="model-card-info">
+          <div class="model-name-row">
+            <div class="verified-badge">&#9989;</div>
+            <div class="model-name">Luna Noir</div>
+          </div>
+          <div class="model-details">&#11088; 4.9 &middot; Boudoir</div>
+          <div class="model-price">$280/session</div>
+        </div>
+      </div>
+
+      <div class="model-card">
+        <div class="model-card-image">
+          <svg class="model-card-image-bg" viewBox="0 0 400 200" preserveAspectRatio="none">
+            <defs><linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1a2030"/><stop offset="100%" stop-color="#2a1a2e"/>
+            </linearGradient></defs>
+            <rect width="400" height="200" fill="url(#g2)"/>
+          </svg>
+          <div class="card-emoji">&#128105;&#8205;&#129456;</div>
+          <div class="card-dot"></div>
+        </div>
+        <div class="model-card-info">
+          <div class="model-name-row">
+            <div class="verified-badge">&#9989;</div>
+            <div class="model-name">Sasha Velvet</div>
+          </div>
+          <div class="model-details">&#11088; 5.0 &middot; Luxury</div>
+          <div class="model-price">$320/session</div>
+        </div>
+      </div>
+
+      <div class="model-card">
+        <div class="model-card-image">
+          <svg class="model-card-image-bg" viewBox="0 0 400 200" preserveAspectRatio="none">
+            <defs><linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#201a2e"/><stop offset="100%" stop-color="#1a2428"/>
+            </linearGradient></defs>
+            <rect width="400" height="200" fill="url(#g3)"/>
+          </svg>
+          <div class="card-emoji">&#128113;&#8205;&#9792;&#65039;</div>
+          <div class="card-dot"></div>
+        </div>
+        <div class="model-card-info">
+          <div class="model-name-row">
+            <div class="verified-badge">&#9989;</div>
+            <div class="model-name">Mika Rose</div>
+          </div>
+          <div class="model-details">&#11088; 4.8 &middot; Fitness</div>
+          <div class="model-price">$200/session</div>
+        </div>
+      </div>
+
+      <div class="model-card">
+        <div class="model-card-image">
+          <svg class="model-card-image-bg" viewBox="0 0 400 200" preserveAspectRatio="none">
+            <defs><linearGradient id="g4" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1e1a28"/><stop offset="100%" stop-color="#1a1e2e"/>
+            </linearGradient></defs>
+            <rect width="400" height="200" fill="url(#g4)"/>
+          </svg>
+          <div class="card-emoji">&#129495;</div>
+          <div class="card-dot"></div>
+        </div>
+        <div class="model-card-info">
+          <div class="model-name-row">
+            <div class="verified-badge">&#9989;</div>
+            <div class="model-name">Nour S.</div>
+          </div>
+          <div class="model-details">&#11088; 4.7 &middot; Fashion</div>
+          <div class="model-price">$180/session</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- STATS BAR -->
+  <section class="stats-section">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number">3,400+</div>
+        <div class="stat-label">Active models</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">$420</div>
+        <div class="stat-label">Avg. first month</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">48hr</div>
+        <div class="stat-label">First payout</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- JOIN FORM -->
+  <div class="join-wrapper" id="join-section">
     <div class="join-card" id="join-card">
       <!-- FORM STATE -->
       <div id="form-state">
@@ -249,6 +752,7 @@
     </div>
   </div>
 
+  <!-- FOOTER -->
   <footer class="footer">
     <a href="/" class="footer-logo">ModelBid</a>
     <ul class="footer-links">
@@ -303,7 +807,7 @@
         formError.textContent = 'Something went wrong. Please try again.';
         formError.style.display = 'block';
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Claim my profile →';
+        submitBtn.textContent = 'Claim my profile \u2192';
       }
     });
   </script>
