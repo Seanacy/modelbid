@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Join ModelBid — Start earning from your fans</title>
+  <meta name="description" content="No selling. No pressure. Your fans set the price by how much they want access to you." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0b14;
+      --card-bg: #1a1c2e;
+      --border: #1e2035;
+      --input-bg: #13151f;
+      --input-border: #222;
+      --pink: #f7a4c0;
+      --gold: #f5c842;
+      --gradient: linear-gradient(90deg, #e05fa0, #f5c842);
+      --text-gradient: linear-gradient(90deg, #f7a4c0, #f5c842);
+      --muted: #6b6b80;
+      --text: #e0e0e8;
+      --font-body: 'DM Sans', sans-serif;
+      --font-display: 'Playfair Display', serif;
+    }
+    html, body { height: 100%; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    .gradient-text {
+      background: var(--text-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── MAIN CONTENT ── */
+    .join-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+    }
+    .join-card {
+      width: 100%;
+      max-width: 400px;
+    }
+    .join-badge {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: var(--gold);
+      background: rgba(245, 200, 66, 0.08);
+      border: 1px solid rgba(245, 200, 66, 0.15);
+      padding: 5px 14px;
+      border-radius: 999px;
+      margin-bottom: 24px;
+    }
+    .join-card h2 {
+      font-family: var(--font-display);
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 1.25;
+      color: #fff;
+      margin-bottom: 14px;
+    }
+    .join-card .subtitle {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.65;
+      margin-bottom: 32px;
+    }
+
+    /* ── FORM ── */
+    .join-form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .join-input {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 14px;
+      font-family: var(--font-body);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .join-input::placeholder {
+      color: #444;
+    }
+    .join-input:focus {
+      border-color: var(--pink);
+    }
+    .submit-btn {
+      width: 100%;
+      background: var(--gradient);
+      color: #0a0b14;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 700;
+      padding: 14px 0;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: transform 0.15s, box-shadow 0.2s;
+    }
+    .submit-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 30px rgba(224, 95, 160, 0.25);
+    }
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .form-note {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    /* ── SUCCESS STATE ── */
+    .success-message {
+      text-align: center;
+    }
+    .success-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+    .success-message h2 {
+      font-family: var(--font-display);
+      font-size: 26px;
+      margin-bottom: 16px;
+    }
+    .success-message p {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    /* ── ERROR STATE ── */
+    .form-error {
+      background: rgba(255, 60, 60, 0.1);
+      border: 1px solid rgba(255, 60, 60, 0.2);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #ff6b6b;
+      display: none;
+    }
+
+    /* ── FOOTER ── */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 32px;
+      max-width: 500px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .footer-logo {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+      background: var(--text-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .footer-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+    .footer-links a {
+      font-size: 13px;
+      color: var(--muted);
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--text); }
+
+    @media (max-width: 480px) {
+      .join-card h2 { font-size: 26px; }
+      .footer { padding: 20px; flex-direction: column; gap: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="join-wrapper">
+    <div class="join-card" id="join-card">
+      <!-- FORM STATE -->
+      <div id="form-state">
+        <div class="join-badge">For models</div>
+        <h2>You already have fans.<br><span class="gradient-text">Start earning from them.</span></h2>
+        <p class="subtitle">No selling. No pressure. Your fans set the price by how much they want access to you.</p>
+
+        <div class="form-error" id="form-error"></div>
+
+        <form class="join-form" id="join-form">
+          <input class="join-input" type="text" name="name" placeholder="Your name" required />
+          <input class="join-input" type="text" name="handle" placeholder="Instagram or TikTok handle" required />
+          <input class="join-input" type="email" name="email" placeholder="Email address" required />
+          <button type="submit" class="submit-btn" id="submit-btn">Claim my profile &rarr;</button>
+        </form>
+        <div class="form-note">Free to join &middot; No contracts &middot; Verified badge within 24 hours</div>
+      </div>
+
+      <!-- SUCCESS STATE (hidden by default) -->
+      <div id="success-state" class="success-message" style="display:none;">
+        <div class="success-icon">&#10024;</div>
+        <h2>You're in the <span class="gradient-text">first wave.</span></h2>
+        <p>Check your email for next steps. We'll have your profile ready within 24 hours.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <a href="/" class="footer-logo">ModelBid</a>
+    <ul class="footer-links">
+      <li><a href="#">Privacy</a></li>
+      <li><a href="#">Terms</a></li>
+      <li><a href="#">Support</a></li>
+    </ul>
+  </footer>
+
+  <script>
+    const form = document.getElementById('join-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const formError = document.getElementById('form-error');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      formError.style.display = 'none';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+
+      const data = {
+        name: form.name.value.trim(),
+        handle: form.handle.value.trim(),
+        email: form.email.value.trim(),
+        status: 'Pending',
+        submitted_at: new Date().toISOString()
+      };
+
+      try {
+        // Save to Supabase
+        const SUPABASE_URL = 'https://qjtanxqywpvqdpcxejlr.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqdGFueHF5d3B2cWRwY3hlamxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxNjMxNjQsImV4cCI6MjA2NDczOTE2NH0.oc6slxjGJTbEEEls9MO7dn_4sJLbYG6JrpGqrBj2j_g';
+
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/model_signups`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify(data)
+        });
+
+        if (!res.ok) throw new Error('Submission failed');
+
+        // Show success
+        document.getElementById('form-state').style.display = 'none';
+        document.getElementById('success-state').style.display = 'block';
+
+      } catch (err) {
+        formError.textContent = 'Something went wrong. Please try again.';
+        formError.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Claim my profile →';
+      }
+    });
+  </script>
+
+</body>
+</html>
