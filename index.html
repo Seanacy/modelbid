@@ -4062,6 +4062,12 @@
 
       // Initialize auth state on mount
       useEffect(() => {
+        // Capture signup confirmation from hash BEFORE Supabase clears it
+        const rawHash = window.location.hash;
+        if (rawHash.includes('type=signup') || rawHash.includes('type=email_change')) {
+          sessionStorage.setItem('pendingSignupRedirect', 'true');
+        }
+
         const authTimeout = setTimeout(() => {
           console.warn('Auth init timeout — forcing app to render');
           setLoading(false);
@@ -4108,9 +4114,9 @@
             setCurrentUser(session.user);
             await fetchProfile(session.user.id);
 
-            // After email confirmation (type=signup in hash), redirect to edit-profile
-            const h = window.location.hash;
-            if (h.includes('type=signup') || h.includes('type=email_change')) {
+            // After email confirmation, redirect to edit-profile with scroll to waive section
+            if (sessionStorage.getItem('pendingSignupRedirect') === 'true') {
+              sessionStorage.removeItem('pendingSignupRedirect');
               sessionStorage.setItem('scrollToWaive', 'true');
               window.location.hash = 'edit-profile';
             }
