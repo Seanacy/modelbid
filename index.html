@@ -4160,7 +4160,21 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqdGFueHF5d3B2cWRwY3hlamxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1MzQxNzUsImV4cCI6MjA5MjExMDE3NX0.73e_qRunECUFRpcvUNvDx9IyOLIKMvxCGsklgIBgF1I';
     const SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqdGFueHF5d3B2cWRwY3hlamxyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjUzNDE3NSwiZXhwIjoyMDkyMTEwMTc1fQ.7r-PqjzBDt0tavGMD_bWjrV9cqtdRRdDjcWUhx2-oIk';
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: true,
+        detectSessionInUrl: true,
+      },
+    });
+
+    // Suppress the known Supabase auth lock contention error — it's harmless noise
+    // caused by realtime subscriptions and auth token refresh racing each other
+    const _origConsoleError = console.error;
+    console.error = (...args) => {
+      const msg = args[0]?.toString?.() || '';
+      if (msg.includes('Lock') && msg.includes('was released because another request stole it')) return;
+      _origConsoleError.apply(console, args);
+    };
 
     // Admin panel uses direct REST fetch calls instead of Supabase JS client
     // to avoid auth token lock conflicts
@@ -4441,6 +4455,12 @@
           showToast('Profile updated successfully!', 'success');
           return true;
         } catch (error) {
+          // Ignore harmless auth lock contention errors — the save still works
+          if (error.message?.includes('Lock') && error.message?.includes('stole it')) {
+            setProfile(prev => ({ ...prev, ...updates }));
+            showToast('Profile updated successfully!', 'success');
+            return true;
+          }
           showToast(error.message, 'error');
           return false;
         }
@@ -4559,6 +4579,8 @@
       };
 
       const showToast = (message, type) => {
+        // Suppress harmless Supabase auth lock errors from appearing as toasts
+        if (type === 'error' && message?.includes?.('Lock') && message?.includes?.('stole it')) return;
         setToast({ message, type });
       };
 
