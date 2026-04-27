@@ -4238,6 +4238,10 @@
         if (rawHash.includes('type=signup') || rawHash.includes('type=email_change')) {
           sessionStorage.setItem('pendingSignupRedirect', 'true');
         }
+        // Detect Google OAuth return — hash will contain access_token
+        if (rawHash.includes('access_token=') && rawHash.includes('provider_token=')) {
+          sessionStorage.setItem('oauthReturn', 'true');
+        }
 
         const authTimeout = setTimeout(() => {
           console.warn('Auth init timeout — forcing app to render');
@@ -4316,11 +4320,10 @@
               window.location.hash = 'edit-profile';
             }
 
-            // After Google OAuth — detect new/incomplete profile and redirect to edit-profile
-            // Google OAuth redirects to base URL, then we detect new users here
-            if (event === 'SIGNED_IN' && session.user.app_metadata?.provider === 'google') {
+            // After Google OAuth return — redirect new users to edit-profile with waive scroll
+            if (sessionStorage.getItem('oauthReturn') === 'true') {
+              sessionStorage.removeItem('oauthReturn');
               const { data: existingProfile } = await supabase.from('profiles').select('display_name, bio, role').eq('id', session.user.id).single();
-              // If no profile or profile has no bio/display_name filled out — they're new
               if (!existingProfile || !existingProfile.bio) {
                 sessionStorage.setItem('scrollToWaive', 'true');
                 window.location.hash = 'edit-profile';
