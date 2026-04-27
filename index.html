@@ -4091,6 +4091,30 @@
 
         initAuth();
 
+        // Auto-cleanup: delete unconfirmed auth users older than 1 minute (prevents ghost accounts)
+        const ghostCleanupInterval = setInterval(async () => {
+          try {
+            const authRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=100`, {
+              headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` }
+            });
+            if (!authRes.ok) return;
+            const authData = await authRes.json();
+            const now = Date.now();
+            const staleUsers = (authData.users || []).filter(u => {
+              if (u.email_confirmed_at) return false; // confirmed, keep
+              const age = now - new Date(u.created_at).getTime();
+              return age > 60000; // older than 1 minute and still unconfirmed
+            });
+            for (const ghost of staleUsers) {
+              await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${ghost.id}`, {
+                method: 'DELETE',
+                headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' }
+              });
+              console.log('Auto-purged ghost account:', ghost.email);
+            }
+          } catch(e) { /* silent */ }
+        }, 60000); // runs every 60 seconds
+
         // Handle return from Stripe checkout
         const hash = window.location.hash;
         if (hash.includes('checkout=success')) {
@@ -4127,7 +4151,7 @@
           }
         });
 
-        return () => { subscription?.unsubscribe(); clearTimeout(authTimeout); };
+        return () => { subscription?.unsubscribe(); clearTimeout(authTimeout); clearInterval(ghostCleanupInterval); };
       }, []);
 
       const fetchProfile = async (userId) => {
@@ -9963,6 +9987,7 @@ REMEMBER:
       const [tab, setTab] = useState('stats');
       const [stats, setStats] = useState(null);
       const [users, setUsers] = useState([]);
+      const [ghostUsers, setGhostUsers] = useState([]);
       const [userSearch, setUserSearch] = useState('');
       const [userFilter, setUserFilter] = useState('all');
       const [allBookings, setAllBookings] = useState([]);
@@ -10091,8 +10116,35 @@ REMEMBER:
         try {
           const data = await adminFetchAll('profiles', { order: 'created_at.desc' });
           setUsers(data);
+          // Also fetch auth users to find ghosts (in auth but not in profiles)
+          try {
+            const authRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=100`, {
+              headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` }
+            });
+            if (authRes.ok) {
+              const authData = await authRes.json();
+              const profileIds = new Set(data.map(u => u.id));
+              const ghosts = (authData.users || []).filter(au => !profileIds.has(au.id));
+              setGhostUsers(ghosts);
+            }
+          } catch(e2) { console.warn('Ghost user check failed:', e2); }
         } catch(e) { console.error('Users fetch error:', e); }
         setLoadingUsers(false);
+      };
+
+      const purgeGhostUsers = async () => {
+        let deleted = 0;
+        for (const ghost of ghostUsers) {
+          try {
+            const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${ghost.id}`, {
+              method: 'DELETE',
+              headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' }
+            });
+            if (res.ok) deleted++;
+          } catch(e) { console.warn('Failed to delete ghost:', ghost.email, e); }
+        }
+        setGhostUsers([]);
+        showAdminToast(`Purged ${deleted} ghost account${deleted !== 1 ? 's' : ''}`);
       };
 
       // Fetch bookings
@@ -10375,6 +10427,21 @@ REMEMBER:
           {/* USERS TAB */}
           {tab === 'users' && (
             <div>
+              {ghostUsers.length > 0 && (
+                <div style={{ background: 'rgba(255,82,82,0.08)', border: '1px solid rgba(255,82,82,0.3)', borderRadius: 12, padding: '1rem', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <div style={{ fontWeight: 700, color: '#ff5252', fontSize: '0.9rem' }}>👻 Ghost Accounts ({ghostUsers.length})</div>
+                    <button onClick={purgeGhostUsers} style={{ padding: '0.4rem 1rem', borderRadius: 8, border: '1px solid #ff5252', background: 'rgba(255,82,82,0.15)', color: '#ff5252', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>Purge All</button>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#ff8a80', marginBottom: '0.5rem' }}>These exist in Supabase Auth but have no profile. They block email re-signup.</div>
+                  {ghostUsers.map(g => (
+                    <div key={g.id} style={{ fontSize: '0.78rem', color: '#ccc', padding: '3px 0', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>{g.email} <span style={{ color: g.email_confirmed_at ? '#00e676' : '#ff9800', fontSize: '0.65rem' }}>{g.email_confirmed_at ? 'CONFIRMED' : 'UNCONFIRMED'}</span></span>
+                      <span style={{ color: '#888' }}>{new Date(g.created_at).toLocaleDateString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
                 <input
                   type="text" placeholder="Search by name or email..."
