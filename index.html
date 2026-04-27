@@ -4301,6 +4301,18 @@
               sessionStorage.setItem('scrollToWaive', 'true');
               window.location.hash = 'edit-profile';
             }
+
+            // After Google OAuth — detect new/incomplete profile and redirect to edit-profile
+            // Google OAuth users arrive with #edit-profile in URL from redirectTo
+            // Also check if profile is empty (new user) to trigger waive scroll
+            if (event === 'SIGNED_IN' && session.user.app_metadata?.provider === 'google') {
+              const { data: existingProfile } = await supabase.from('profiles').select('display_name, bio, role').eq('id', session.user.id).single();
+              // If no profile or profile has no bio/display_name filled out — they're new
+              if (!existingProfile || !existingProfile.bio) {
+                sessionStorage.setItem('scrollToWaive', 'true');
+                window.location.hash = 'edit-profile';
+              }
+            }
           } else {
             setCurrentUser(null);
             setProfile(null);
@@ -4393,7 +4405,7 @@
           const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-              redirectTo: window.location.origin + window.location.pathname + '#dashboard',
+              redirectTo: window.location.origin + window.location.pathname + '#edit-profile',
             },
           });
           if (error) throw error;
