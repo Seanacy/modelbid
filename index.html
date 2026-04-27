@@ -4432,15 +4432,7 @@
             </div>
           </div>
 
-          {/* Suggested Models — immediate social proof */}
-          <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 1rem' }}>
-            <SuggestedModels />
-          </div>
-
-          {/* This or That — quick engagement game */}
-          <div style={{ maxWidth: '600px', margin: '2rem auto 0', padding: '0 1rem' }}>
-            <ThisOrThat />
-          </div>
+          {/* Real models will appear here as they sign up */}
 
           {/* How It Works — guides the user journey */}
           <div style={{ maxWidth: '900px', margin: '2.5rem auto 0', padding: '0 1rem 3rem' }}>
@@ -4904,31 +4896,10 @@
             ))}
           </div>
 
-          <SuggestedModels />
-
           {/* Revenue nudges for models on Browse — 1 max, subtle */}
           <ModelNudges context="browse" limit={1} />
 
           <div className="grid grid-3">
-            {/* Demo model card - always visible for preview */}
-            <div className="card model-card" onClick={() => window.location.hash = 'profile/demo'}>
-              <div className="model-photo">👩</div>
-              <div className="model-name">
-                Aria Valentina
-                <div className="verified-badge">✓</div>
-              </div>
-              <div className="model-rate">$250/session</div>
-              <div className="model-rating">
-                <span className="stars">★★★★★</span>
-                <span>4.9</span>
-                <span style={{ color: 'var(--text-secondary)' }}>(47)</span>
-              </div>
-              <div className="model-tags">
-                <span className="tag">Lingerie</span>
-                <span className="tag">Glamour</span>
-                <span className="tag">Boudoir</span>
-              </div>
-            </div>
             {filtered.map(model => (
               <ModelCard key={model.id} model={model} />
             ))}
@@ -4937,37 +4908,10 @@
           {filtered.length === 0 && models.length === 0 && (
             <div className="empty-state">
               <div className="empty-state-icon">🔍</div>
-              <div className="empty-state-title">No models found</div>
-              <div className="empty-state-text">Try adjusting your search or filters</div>
+              <div className="empty-state-title">No models yet</div>
+              <div className="empty-state-text">Be one of the first to join ModelBid</div>
             </div>
           )}
-
-          {/* Featured Clients Section */}
-          <div style={{ marginTop: '3rem', borderTop: '1px solid var(--border-color)', paddingTop: '2rem' }}>
-            <h2 style={{ marginBottom: '0.5rem' }}>Featured Clients</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-              Models — check out verified clients before accepting bookings
-            </p>
-            <div className="grid grid-3">
-              <div className="card model-card" onClick={() => window.location.hash = 'client/demo-client'}>
-                <div className="model-photo" style={{ background: 'linear-gradient(135deg, var(--accent-teal), #0066ff)' }}>📷</div>
-                <div className="model-name">
-                  Marcus Thompson
-                  <div className="verified-badge">✓</div>
-                </div>
-                <div className="model-rate" style={{ color: 'var(--accent-teal)' }}>28 sessions • 4.8★</div>
-                <div className="model-rating">
-                  <span className="stars">★★★★★</span>
-                  <span>4.8</span>
-                  <span style={{ color: 'var(--text-secondary)' }}>(22)</span>
-                </div>
-                <div className="model-tags">
-                  <span className="tag" style={{ background: 'rgba(0,217,255,0.12)', color: 'var(--accent-teal)', borderColor: 'rgba(0,217,255,0.3)' }}>Respectful</span>
-                  <span className="tag" style={{ background: 'rgba(0,217,255,0.12)', color: 'var(--accent-teal)', borderColor: 'rgba(0,217,255,0.3)' }}>Professional</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       );
     }
@@ -6033,10 +5977,10 @@
       const [crew, setCrew] = useState({
         id: crewId || 'crew-demo',
         name: 'Inner Circle',
-        admin: { id: 'demo', name: profile.name || 'Aria Valentina', avatar: '👩' },
+        admin: { id: 'demo', name: profile.name || 'Your Name', avatar: '👩' },
         price: 14.99,
         members: [
-          { id: 'demo', name: profile.name || 'Aria Valentina', avatar: '👩', posts: 12, earnings: 0 },
+          { id: 'demo', name: profile.name || 'Your Name', avatar: '👩', posts: 12, earnings: 0 },
           { id: 'm2', name: 'Luna Marquez', avatar: '👧', posts: 8, earnings: 0 },
           { id: 'm3', name: 'Zara Knight', avatar: '👩‍🦱', posts: 5, earnings: 0 },
         ],
@@ -6055,7 +5999,7 @@
       ]);
 
       const [crewPosts, setCrewPosts] = useState([
-        { id: 'cp1', authorId: 'demo', author: profile.name || 'Aria Valentina', avatar: '👩', text: 'Just wrapped an incredible group shoot! The synergy was unreal today.', time: '2h ago', likes: 23, media: [] },
+        { id: 'cp1', authorId: 'demo', author: profile.name || 'Your Name', avatar: '👩', text: 'Just wrapped an incredible group shoot! The synergy was unreal today.', time: '2h ago', likes: 23, media: [] },
         { id: 'cp2', authorId: 'm2', author: 'Luna Marquez', avatar: '👧', text: 'New location scouted for next week — an abandoned greenhouse. The light is perfect.', time: '5h ago', likes: 41, media: [] },
         { id: 'cp3', authorId: 'm3', author: 'Zara Knight', avatar: '👩‍🦱', text: 'Behind the scenes from the rooftop session. Can\'t wait for you all to see the finals!', time: '1d ago', likes: 18, media: [] },
       ]);
@@ -6093,7 +6037,7 @@
       const handleCreateCrew = () => {
         if (!crewName.trim()) { auth?.showToast?.('Enter a crew name', 'error'); return; }
         if (parseFloat(crewPrice) < 4.99) { auth?.showToast?.('Minimum price is $4.99', 'error'); return; }
-        setCrew(prev => ({ ...prev, name: crewName.trim(), price: parseFloat(crewPrice), members: [{ id: 'demo', name: profile.name || 'Aria Valentina', avatar: '👩', posts: 0, earnings: 0 }], subscribers: 0 }));
+        setCrew(prev => ({ ...prev, name: crewName.trim(), price: parseFloat(crewPrice), members: [{ id: 'demo', name: profile.name || 'Your Name', avatar: '👩', posts: 0, earnings: 0 }], subscribers: 0 }));
         setShowCreateFlow(false);
         auth?.showToast?.(`"${crewName.trim()}" created! Invite models to join.`, 'success');
       };
@@ -6133,7 +6077,7 @@
         const post = {
           id: 'cp-' + Date.now(),
           authorId: 'demo',
-          author: profile.name || 'Aria Valentina',
+          author: profile.name || 'Your Name',
           avatar: '👩',
           text: newPostText.trim(),
           time: 'Just now',
@@ -8098,94 +8042,9 @@ function InnerCircleManage() {
 
       const stories = [
         { id: 's1', name: 'Your Story', emoji: auth?.profile?.avatar_emoji || '➕', isOwn: true, items: [] },
-        { id: 's2', name: 'Aria V.', emoji: '👩', seen: false, items: [
-          { emoji: '🔥', caption: 'New boudoir set dropping this week! Book now before slots fill up.', cta: 'Book Session', ctaHash: 'profile/demo' },
-          { emoji: '✨', caption: 'Behind the scenes from yesterday\'s glamour shoot in Miami', cta: null },
-        ]},
-        { id: 's3', name: 'Jade M.', emoji: '💃', seen: false, items: [
-          { emoji: '🎭', caption: 'Masquerade theme available for April bookings! Limited spots.', cta: 'View Profile', ctaHash: 'profile/demo' },
-        ]},
-        { id: 's4', name: 'Marcus T.', emoji: '📷', seen: true, isClient: true, items: [
-          { emoji: '📸', caption: 'Just wrapped an incredible session. Check out my showcase!', cta: 'View Portfolio', ctaHash: 'client/demo-client' },
-        ]},
-        { id: 's5', name: 'Sophie L.', emoji: '🌸', seen: false, items: [
-          { emoji: '🌅', caption: 'Golden hour availability open for next weekend. DM me!', cta: 'Message', ctaHash: 'messages' },
-          { emoji: '💐', caption: 'New spring collection outfits just arrived', cta: null },
-        ]},
-        { id: 's6', name: 'Raven K.', emoji: '🦋', seen: true, items: [
-          { emoji: '💎', caption: 'Luxury editorial — my favorite session this month', cta: null },
-        ]},
       ];
 
-      const demoPosts = [
-        {
-          id: 'p1', userEmoji: '👩', userName: 'Aria Valentina', verified: true,
-          userType: 'model', time: '2h ago', type: 'session-preview', typeLabel: 'Session Preview',
-          text: 'Sneak peek from today\'s boudoir session in my Miami studio. The lighting was absolutely perfect. Slots still open for this week — link in bio to book! 📸✨',
-          imageEmoji: '🔥', likes: 234, commentCount: 18, tips: 12, locked: false,
-          poll: { question: 'Which vibe for my next shoot?', options: ['Red lace boudoir', 'Black silk glamour', 'White angel aesthetic'], votes: [147, 89, 63], totalVotes: 299 },
-          vote: { question: 'Would you book a couples boudoir session?', yes: 187, no: 34, totalVotes: 221 },
-          reactions: { '🔥': 89, '🤩': 45, '👑': 23, '💎': 12, '💖': 67 },
-          pinnedComment: { author: 'Marcus T.', emoji: '📷', text: 'Incredible lighting work here!' },
-          previewComments: [
-            { author: 'Marcus T.', emoji: '📷', text: 'Incredible lighting work here!' },
-            { author: 'David R.', emoji: '🎬', text: 'Do you have weekend availability?' },
-          ]
-        },
-        {
-          id: 'p2', userEmoji: '📷', userName: 'Marcus Thompson', verified: true,
-          userType: 'client', time: '5h ago', type: 'client-showcase', typeLabel: 'Client Showcase',
-          text: 'Just published my latest editorial series from the masquerade shoot with @JadeM. This was such a creative collaboration — 10/10 would book again.',
-          imageEmoji: '🎭', likes: 156, commentCount: 8, tips: 0, locked: false,
-          poll: { question: 'What theme should I shoot next?', options: ['Noir detective', 'Greek mythology', 'Cyberpunk neon'], votes: [52, 78, 44], totalVotes: 174 },
-          vote: { question: 'Should I post more behind-the-scenes content?', yes: 132, no: 8, totalVotes: 140 },
-          reactions: { '🔥': 34, '🤩': 28, '👑': 11, '💎': 8, '💖': 19 },
-          pinnedComment: null,
-          previewComments: [
-            { author: 'Jade M.', emoji: '💃', text: 'Had so much fun with this one! The photos are stunning' },
-          ]
-        },
-        {
-          id: 'p3', userEmoji: '💃', userName: 'Jade Monroe', verified: true,
-          userType: 'model', time: '8h ago', type: 'availability', typeLabel: 'Now Booking',
-          text: 'April calendar is open! I\'ve added new costume options including masquerade, retro pin-up, and fantasy themes. DM me or use the booking link on my profile. First-time clients get 15% off 🎉',
-          imageEmoji: '📅', likes: 89, commentCount: 24, tips: 5, locked: false,
-          poll: { question: 'Pick my next costume addition!', options: ['Vampire queen', 'Fairy princess', 'Cowgirl', 'Catwoman'], votes: [67, 45, 88, 112], totalVotes: 312 },
-          vote: { question: 'Would you rebook a model you loved?', yes: 245, no: 3, totalVotes: 248 },
-          reactions: { '🔥': 22, '🤩': 38, '👑': 15, '💎': 5, '💖': 41 },
-          pinnedComment: { author: 'New Client', emoji: '👤', text: 'Just booked for next Saturday! Can\'t wait' },
-          previewComments: [
-            { author: 'New Client', emoji: '👤', text: 'Just booked for next Saturday! Can\'t wait' },
-          ]
-        },
-        {
-          id: 'p4', userEmoji: '🌸', userName: 'Sophie Laurent', verified: true,
-          userType: 'model', time: '1d ago', type: 'behind-scenes', typeLabel: 'Behind the Scenes',
-          text: 'A little behind-the-scenes from the golden hour shoot. These moments between shots are my favorite part of the job. Full set coming to premium subscribers soon 👀',
-          imageEmoji: '🌅', likes: 312, commentCount: 42, tips: 28, locked: false,
-          poll: { question: 'Golden hour or blue hour?', options: ['Golden hour 🌅', 'Blue hour 🌙'], votes: [198, 156], totalVotes: 354 },
-          vote: { question: 'Should I do a live Q&A this weekend?', yes: 289, no: 17, totalVotes: 306 },
-          reactions: { '🔥': 112, '🤩': 78, '👑': 45, '💎': 34, '💖': 98 },
-          pinnedComment: { author: 'James K.', emoji: '🖤', text: 'The BTS content is always so good' },
-          previewComments: [
-            { author: 'James K.', emoji: '🖤', text: 'The BTS content is always so good' },
-            { author: 'Aria V.', emoji: '👩', text: 'You are glowing queen!' },
-          ]
-        },
-        {
-          id: 'p5', userEmoji: '🦋', userName: 'Raven Knight', verified: true,
-          userType: 'model', time: '2d ago', type: 'portfolio', typeLabel: 'Portfolio',
-          text: 'Premium exclusive: Full luxury lingerie editorial set from the penthouse shoot. 24 high-res photos. Subscribe to unlock.',
-          imageEmoji: '💎', likes: 198, commentCount: 15, tips: 45, locked: true,
-          poll: { question: 'What\'s your favorite shoot style?', options: ['Luxury editorial', 'Casual intimate', 'Fantasy themed', 'Outdoor natural'], votes: [134, 67, 89, 45], totalVotes: 335 },
-          vote: { question: 'Would you pay for a premium photo pack?', yes: 267, no: 41, totalVotes: 308 },
-          reactions: { '🔥': 67, '🤩': 54, '👑': 89, '💎': 112, '💖': 45 },
-          pinnedComment: { author: 'Premium Fan', emoji: '👑', text: 'Subscribed just for this. Worth it!' },
-          previewComments: [
-            { author: 'Premium Fan', emoji: '👑', text: 'Subscribed just for this. Worth it!' },
-          ]
-        },
-      ];
+      const demoPosts = [];
 
       const toggleLike = async (postId) => {
         const wasLiked = liked[postId];
@@ -8295,13 +8154,6 @@ function InnerCircleManage() {
                 <div className="story-name">{story.name}</div>
               </div>
             ))}
-          </div>
-
-          <SuggestedModels />
-
-          {/* This or That — quick engagement game */}
-          <div style={{ maxWidth: '600px', margin: '1rem auto', padding: '0 1rem' }}>
-            <ThisOrThat />
           </div>
 
           {/* Revenue nudges for models — 2 max so Feed isn't cluttered */}
