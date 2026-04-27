@@ -4107,6 +4107,13 @@
           if (session?.user) {
             setCurrentUser(session.user);
             await fetchProfile(session.user.id);
+
+            // After email confirmation (type=signup in hash), redirect to edit-profile
+            const h = window.location.hash;
+            if (h.includes('type=signup') || h.includes('type=email_change')) {
+              sessionStorage.setItem('scrollToWaive', 'true');
+              window.location.hash = 'edit-profile';
+            }
           } else {
             setCurrentUser(null);
             setProfile(null);
@@ -12448,6 +12455,19 @@ REMEMBER:
       const [promoSocialUrl, setPromoSocialUrl] = useState(profile?.promo_social_url || '');
       const [verifying, setVerifying] = useState(false);
       const [verifyStatus, setVerifyStatus] = useState(profile?.promo_verified ? 'verified' : (profile?.promo_social_url ? 'pending' : null));
+      const waiveSectionRef = React.useRef(null);
+
+      // Auto-scroll to Waive section when arriving from email confirmation
+      useEffect(() => {
+        if (sessionStorage.getItem('scrollToWaive') === 'true') {
+          sessionStorage.removeItem('scrollToWaive');
+          setTimeout(() => {
+            if (waiveSectionRef.current) {
+              waiveSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 500);
+        }
+      }, []);
 
       if (!profile) {
         return <div>Loading...</div>;
@@ -12463,7 +12483,12 @@ REMEMBER:
         const success = await updateProfile(data);
         setLoading(false);
         if (success) {
-          window.location.hash = `profile/${currentUser.id}`;
+          // If subscription is active, go to profile. Otherwise, go to subscription gate (dashboard triggers it).
+          if (isSubscriptionActive(profile)) {
+            window.location.hash = `profile/${currentUser.id}`;
+          } else {
+            window.location.hash = 'dashboard';
+          }
         }
       };
 
@@ -12815,7 +12840,7 @@ REMEMBER:
 
             {/* GROWTH ENGINE — WAIVE SUBSCRIPTION */}
             {isModel && (
-              <div style={{
+              <div ref={waiveSectionRef} id="waive-subscription" style={{
                 marginTop: '1.5rem', marginBottom: '1.5rem', padding: '1.2rem',
                 background: 'linear-gradient(135deg, rgba(255,215,0,0.06), rgba(255,110,199,0.04))',
                 border: '1px solid rgba(255,215,0,0.2)', borderRadius: '14px'
@@ -14827,6 +14852,80 @@ RULES
       );
     }
 
+    // ===== SUBSCRIPTION GATE =====
+    function isSubscriptionActive(profile) {
+      if (!profile) return false;
+      if (profile.subscription_waived === true) return true;
+      if (profile.subscription_tier === 'premium') return true;
+      if (profile.promo_verified === true) return true;
+      return false;
+    }
+
+    function SubscriptionGatePage() {
+      const { profile, currentUser } = useContext(AuthContext);
+      const isModel = profile?.role !== 'client';
+
+      return (
+        <div style={{
+          maxWidth: '520px', margin: '3rem auto', padding: '2rem',
+          textAlign: 'center',
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(255,110,199,0.08), rgba(255,215,0,0.06))',
+            border: '1px solid rgba(255,110,199,0.25)', borderRadius: '16px',
+            padding: '2.5rem 2rem',
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔒</div>
+            <h2 style={{ color: '#ffd700', fontSize: '1.4rem', marginBottom: '0.5rem', fontWeight: 800 }}>
+              Activate Your Account
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+              {isModel
+                ? 'To access Feed, Messages, and Dashboard — either place your ModelBid link in your social bio (it\'s free!) or subscribe.'
+                : 'To access Feed, Messages, and Dashboard — subscribe to get full access.'}
+            </p>
+
+            {isModel && (
+              <button onClick={() => {
+                sessionStorage.setItem('scrollToWaive', 'true');
+                window.location.hash = 'edit-profile';
+              }} style={{
+                display: 'block', width: '100%', padding: '0.8rem',
+                borderRadius: '10px', border: 'none', marginBottom: '0.8rem',
+                background: 'linear-gradient(135deg, #ff6ec7, #ffd700)',
+                color: '#000', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer',
+              }}>
+                Waive Subscription (Free) 🚀
+              </button>
+            )}
+
+            <button onClick={async () => {
+              try {
+                const product = isModel ? 'model_premium' : 'client_access';
+                await redirectToCheckout(product);
+              } catch (err) {
+                alert(err.message);
+              }
+            }} style={{
+              display: 'block', width: '100%', padding: '0.8rem',
+              borderRadius: '10px', border: '1px solid rgba(255,215,0,0.3)',
+              background: 'rgba(255,215,0,0.08)',
+              color: '#ffd700', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
+            }}>
+              Subscribe 💳
+            </button>
+
+            <div style={{ marginTop: '1.2rem' }}>
+              <a onClick={() => window.location.hash = 'browse'} style={{
+                color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer',
+                textDecoration: 'underline',
+              }}>← Back to Browse</a>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     function App() {
       const auth = useContext(AuthContext);
       const [currentPage, setCurrentPage] = useState('home');
@@ -14855,30 +14954,38 @@ RULES
 
       const renderPage = () => {
         const [page, ...params] = currentPage.split('/');
+        const subActive = isSubscriptionActive(auth.profile);
 
-        if (page === 'home') return !auth.currentUser ? <HomePage /> : <FeedPage />;
-        if (page === 'feed') return <FeedPage />;
+        // Pages that require subscription (Feed, Messages, Dashboard, Contracts, etc.)
+        const requiresSub = (component) => {
+          if (!auth.currentUser) return <LoginPage />;
+          if (!subActive) return <SubscriptionGatePage />;
+          return component;
+        };
+
+        if (page === 'home') return !auth.currentUser ? <HomePage /> : (subActive ? <FeedPage /> : <BrowseModelsPage />);
+        if (page === 'feed') return requiresSub(<FeedPage />);
         if (page === 'wall') return <TopClientsPage />;
         if (page === 'reputation') return <ReputationPage />;
-        if (page === 'circle' && params[0]) return <InnerCirclePage modelId={params[0]} />;
-        if (page === 'crew' && params[0]) return <CircleCrewPage crewId={params[0]} />;
-        if (page === 'crew') return <CircleCrewPage crewId={null} />;
+        if (page === 'circle' && params[0]) return requiresSub(<InnerCirclePage modelId={params[0]} />);
+        if (page === 'crew' && params[0]) return requiresSub(<CircleCrewPage crewId={params[0]} />);
+        if (page === 'crew') return requiresSub(<CircleCrewPage crewId={null} />);
         if (page === 'browse') return <BrowseModelsPage />;
         if (page === 'profile' && params[0]) return <ProfilePage modelId={params[0]} />;
         if (page === 'client' && params[0]) return <ClientProfilePage clientId={params[0]} />;
         if (page === 'formodels') return auth.profile?.role === 'client' ? <FeedPage /> : <ForModelsPage />;
         if (page === 'westackr') return <WeStackrPage />;
-        if (page === 'contracts') return <ContractsPage />;
+        if (page === 'contracts') return requiresSub(<ContractsPage />);
         if (page === 'login') return <LoginPage />;
         if (page === 'signup') return <SignupPage />;
         if (page === 'model-demo') return <ModelDemoPage />;
-        if (page === 'cherry-picker') return auth.profile?.role === 'client' ? <FeedPage /> : <CherryPickerPage />;
+        if (page === 'cherry-picker') return auth.profile?.role === 'client' ? <FeedPage /> : requiresSub(<CherryPickerPage />);
         if (page === 'team') return auth.currentUser ? <TeamFamSaucePage /> : <LoginPage />;
         if (page === 'bidboard') return <BidBoardPage />;
         // admin page handled above with early return (standalone, no nav)
-        if (page === 'dashboard') return auth.currentUser ? <DashboardPage /> : <LoginPage />;
-        if (page === 'messages' && params[0]) return auth.currentUser ? <MessagesPage conversationId={params[0]} /> : <LoginPage />;
-        if (page === 'messages') return auth.currentUser ? <MessagesPage conversationId={null} /> : <LoginPage />;
+        if (page === 'dashboard') return requiresSub(<DashboardPage />);
+        if (page === 'messages' && params[0]) return requiresSub(<MessagesPage conversationId={params[0]} />);
+        if (page === 'messages') return requiresSub(<MessagesPage conversationId={null} />);
         if (page === 'edit-profile') return auth.currentUser ? <EditProfilePage /> : <LoginPage />;
         return !auth.currentUser ? <HomePage /> : <BrowseModelsPage />;
       };
