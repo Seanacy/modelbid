@@ -11253,223 +11253,261 @@ REMEMBER:
 
     // PromoCodeManager removed — promo management is now inline in AdminPanel
 
-    // ===== CLIENT ANALYTICS COMPONENT =====
+    // ===== CLIENT ANALYTICS COMPONENT (DRILL-DOWN) =====
     function ClientAnalytics() {
       const auth = useContext(AuthContext);
-      const [analyticsTab, setAnalyticsTab] = useState('overview');
+      const [activeTab, setActiveTab] = useState('spotlight');
       const [loading, setLoading] = useState(true);
-      const [stats, setStats] = useState({
-        totalViews: 0,
-        uniqueViewers: 0,
-        totalConversations: 0,
-        totalBookings: 0,
-        acceptedBookings: 0,
-        totalLikes: 0,
-        totalComments: 0,
-        totalReactions: 0,
-        totalBookmarks: 0,
-        totalPollVotes: 0,
-        totalDmPollResponses: 0,
-        totalFollowers: 0,
-        totalReviews: 0,
-        totalBids: 0,
-        totalShareClicks: 0,
-        viewsTrend: [],
-        topClients: [],
-        recentActivity: []
-      });
+      const [expandedClient, setExpandedClient] = useState(null);
+      const [expandedMetric, setExpandedMetric] = useState(null);
+
+      // Raw event stores for drill-down
+      const [clients, setClients] = useState([]);
+      const [metricEvents, setMetricEvents] = useState({});
+      const [activityFeed, setActivityFeed] = useState([]);
 
       useEffect(() => {
         if (!auth.currentUser) return;
         const myId = auth.currentUser.id;
 
-        const addInteraction = (map, userId, type, time) => {
-          if (!userId || userId === myId) return;
-          if (!map[userId]) map[userId] = { views: 0, messages: 0, bookings: 0, likes: 0, comments: 0, reactions: 0, bookmarks: 0, pollVotes: 0, dmPolls: 0, follows: 0, reviews: 0, bids: 0, lastActive: null };
-          map[userId][type]++;
-          const t = new Date(time);
-          if (!map[userId].lastActive || t > map[userId].lastActive) map[userId].lastActive = t;
-        };
-
-        const fetchAnalytics = async () => {
+        const fetchAll = async () => {
           try {
             const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-            const clientInteractions = {};
-            const recentActivity = [];
 
-            // 1. Profile views
-            const { data: views } = await supabase.from('profile_views').select('*')
+            // clientMap: userId -> { actions: [...], counts: {...}, lastActive }
+            const clientMap = {};
+            const postMap = {}; // postId -> text snippet
+            const allEvents = { views: [], likes: [], comments: [], reactions: [], saves: [], pollVotes: [], messages: [], bookings: [], follows: [], reviews: [], bids: [] };
+            const feedItems = [];
+
+            const ensureClient = (userId) => {
+              if (!userId || userId === myId) return null;
+              if (!clientMap[userId]) clientMap[userId] = {
+                id: userId, actions: [],
+                counts: { views: 0, likes: 0, comments: 0, reactions: 0, saves: 0, pollVotes: 0, messages: 0, bookings: 0, follows: 0, reviews: 0, bids: 0 },
+                lastActive: null
+              };
+              return clientMap[userId];
+            };
+
+            const trackAction = (userId, action) => {
+              const c = ensureClient(userId);
+              if (!c) return;
+              c.actions.push(action);
+              c.counts[action.type] = (c.counts[action.type] || 0) + 1;
+              const t = new Date(action.time);
+              if (!c.lastActive || t > new Date(c.lastActive)) c.lastActive = action.time;
+            };
+
+            // 1. Profile views (last 30 days)
+            const { data: views } = await supabase.from('profile_views').select('viewer_id, viewed_at')
               .eq('profile_id', myId).gte('viewed_at', thirtyDaysAgo).order('viewed_at', { ascending: false });
-            const totalViews = views?.length || 0;
-            const uniqueViewers = [...new Set((views || []).filter(v => v.viewer_id).map(v => v.viewer_id))].length;
-
-            // Views sparkline (last 7 days)
-            const viewsTrend = [];
-            for (let i = 6; i >= 0; i--) {
-              const dayStart = new Date(); dayStart.setDate(dayStart.getDate() - i); dayStart.setHours(0,0,0,0);
-              const dayEnd = new Date(dayStart); dayEnd.setHours(23,59,59,999);
-              const count = (views || []).filter(v => { const t = new Date(v.viewed_at); return t >= dayStart && t <= dayEnd; }).length;
-              viewsTrend.push({ day: dayStart.toLocaleDateString('en-US', { weekday: 'short' }), count });
-            }
-            (views || []).forEach(v => addInteraction(clientInteractions, v.viewer_id, 'views', v.viewed_at));
-            (views || []).slice(0, 5).forEach(v => recentActivity.push({ type: 'view', userId: v.viewer_id, emoji: '👁️', label: 'viewed your profile', time: v.viewed_at }));
+            (views || []).forEach(v => {
+              const evt = { type: 'views', userId: v.viewer_id, emoji: '👁️', desc: 'viewed your profile', time: v.viewed_at };
+              trackAction(v.viewer_id, evt);
+              allEvents.views.push(evt);
+              feedItems.push(evt);
+            });
 
             // 2. Conversations & Messages
-            const { data: convos } = await supabase.from('conversations').select('*')
-              .or(`participant_1.eq.${myId},participant_2.eq.${myId}`).order('last_message_at', { ascending: false });
-            const totalConversations = convos?.length || 0;
+            const { data: convos } = await supabase.from('conversations').select('id, participant_1, participant_2')
+              .or(`participant_1.eq.${myId},participant_2.eq.${myId}`);
             const convoIds = (convos || []).map(c => c.id);
 
             if (convoIds.length > 0) {
-              const { data: msgs } = await supabase.from('messages').select('sender_id, created_at')
+              const { data: msgs } = await supabase.from('messages').select('sender_id, created_at, conversation_id')
                 .in('conversation_id', convoIds).neq('sender_id', myId).order('created_at', { ascending: false }).limit(500);
-              (msgs || []).forEach(m => addInteraction(clientInteractions, m.sender_id, 'messages', m.created_at));
-              (msgs || []).slice(0, 3).forEach(m => recentActivity.push({ type: 'message', userId: m.sender_id, emoji: '💬', label: 'sent you a message', time: m.created_at }));
-            }
+              (msgs || []).forEach(m => {
+                const evt = { type: 'messages', userId: m.sender_id, emoji: '💬', desc: 'sent you a message', time: m.created_at };
+                trackAction(m.sender_id, evt);
+                allEvents.messages.push(evt);
+                feedItems.push(evt);
+              });
 
-            // 3. Booking proposals
-            let allProposals = [];
-            if (convoIds.length > 0) {
-              const { data: proposals } = await supabase.from('booking_proposals').select('*')
+              // 3. Booking proposals
+              const { data: proposals } = await supabase.from('booking_proposals').select('proposer_id, status, created_at, conversation_id')
                 .in('conversation_id', convoIds).order('created_at', { ascending: false });
-              allProposals = proposals || [];
+              (proposals || []).filter(p => p.proposer_id !== myId).forEach(p => {
+                const statusLabel = p.status === 'accepted' ? 'booking confirmed' : p.status === 'declined' ? 'booking declined' : 'sent booking proposal';
+                const statusEmoji = p.status === 'accepted' ? '✅' : p.status === 'declined' ? '❌' : '📅';
+                const evt = { type: 'bookings', userId: p.proposer_id, emoji: statusEmoji, desc: statusLabel, detail: 'Status: ' + (p.status || 'pending'), time: p.created_at };
+                trackAction(p.proposer_id, evt);
+                allEvents.bookings.push(evt);
+                feedItems.push(evt);
+              });
             }
-            const totalBookings = allProposals.length;
-            const acceptedBookings = allProposals.filter(p => p.status === 'accepted').length;
-            allProposals.filter(p => p.proposer_id !== myId).forEach(p => addInteraction(clientInteractions, p.proposer_id, 'bookings', p.created_at));
-            allProposals.slice(0, 3).forEach(p => recentActivity.push({
-              type: 'booking', userId: p.proposer_id, emoji: p.status === 'accepted' ? '✅' : p.status === 'declined' ? '❌' : '📅',
-              label: p.status === 'accepted' ? 'booking confirmed' : p.status === 'declined' ? 'booking declined' : 'sent booking proposal', time: p.created_at
-            }));
 
-            // 4. Get my posts (needed for likes, comments, reactions, bookmarks, polls)
-            const { data: myPosts } = await supabase.from('posts').select('id').eq('user_id', myId);
+            // 4. My posts (get text snippets for drill-down)
+            const { data: myPosts } = await supabase.from('posts').select('id, text').eq('user_id', myId);
             const myPostIds = (myPosts || []).map(p => p.id);
-
-            let totalLikes = 0, totalComments = 0, totalReactions = 0, totalBookmarks = 0, totalPollVotes = 0;
+            (myPosts || []).forEach(p => { postMap[p.id] = p.text ? p.text.substring(0, 50) : ''; });
 
             if (myPostIds.length > 0) {
-              // 5. Post Likes
-              const { data: likes } = await supabase.from('post_likes').select('user_id, created_at')
+              // 5. Likes
+              const { data: likes } = await supabase.from('post_likes').select('user_id, post_id, created_at')
                 .in('post_id', myPostIds).order('created_at', { ascending: false });
-              totalLikes = likes?.length || 0;
-              (likes || []).forEach(l => addInteraction(clientInteractions, l.user_id, 'likes', l.created_at));
-              (likes || []).slice(0, 3).forEach(l => recentActivity.push({ type: 'like', userId: l.user_id, emoji: '❤️', label: 'liked your post', time: l.created_at }));
+              (likes || []).forEach(l => {
+                const snippet = postMap[l.post_id] || '';
+                const evt = { type: 'likes', userId: l.user_id, emoji: '❤️', desc: 'Liked your post', postSnippet: snippet, postId: l.post_id, time: l.created_at };
+                trackAction(l.user_id, evt);
+                allEvents.likes.push(evt);
+                feedItems.push(evt);
+              });
 
-              // 6. Post Comments
-              const { data: comments } = await supabase.from('post_comments').select('user_id, text, created_at')
+              // 6. Comments
+              const { data: comments } = await supabase.from('post_comments').select('user_id, post_id, text, created_at')
                 .in('post_id', myPostIds).order('created_at', { ascending: false });
-              totalComments = comments?.length || 0;
-              (comments || []).forEach(c => addInteraction(clientInteractions, c.user_id, 'comments', c.created_at));
-              (comments || []).slice(0, 3).forEach(c => recentActivity.push({ type: 'comment', userId: c.user_id, emoji: '💭', label: 'commented on your post', time: c.created_at }));
+              (comments || []).forEach(c => {
+                const snippet = postMap[c.post_id] || '';
+                const commentText = c.text ? c.text.substring(0, 60) : '';
+                const evt = { type: 'comments', userId: c.user_id, emoji: '💭', desc: 'Commented on your post', postSnippet: snippet, postId: c.post_id, detail: commentText, time: c.created_at };
+                trackAction(c.user_id, evt);
+                allEvents.comments.push(evt);
+                feedItems.push(evt);
+              });
 
-              // 7. Post Reactions
-              const { data: reactions } = await supabase.from('post_reactions').select('user_id, emoji, created_at')
+              // 7. Reactions
+              const { data: reactions } = await supabase.from('post_reactions').select('user_id, post_id, emoji, created_at')
                 .in('post_id', myPostIds).order('created_at', { ascending: false });
-              totalReactions = reactions?.length || 0;
-              (reactions || []).forEach(r => addInteraction(clientInteractions, r.user_id, 'reactions', r.created_at));
-              (reactions || []).slice(0, 2).forEach(r => recentActivity.push({ type: 'reaction', userId: r.user_id, emoji: r.emoji || '😍', label: 'reacted to your post', time: r.created_at }));
+              (reactions || []).forEach(r => {
+                const snippet = postMap[r.post_id] || '';
+                const evt = { type: 'reactions', userId: r.user_id, emoji: r.emoji || '😍', desc: 'Reacted to your post', postSnippet: snippet, postId: r.post_id, detail: r.emoji || '😍', time: r.created_at };
+                trackAction(r.user_id, evt);
+                allEvents.reactions.push(evt);
+                feedItems.push(evt);
+              });
 
-              // 8. Post Bookmarks
-              const { data: bookmarks } = await supabase.from('post_bookmarks').select('user_id, created_at')
+              // 8. Bookmarks (saves)
+              const { data: bookmarks } = await supabase.from('post_bookmarks').select('user_id, post_id, created_at')
                 .in('post_id', myPostIds).order('created_at', { ascending: false });
-              totalBookmarks = bookmarks?.length || 0;
-              (bookmarks || []).forEach(b => addInteraction(clientInteractions, b.user_id, 'bookmarks', b.created_at));
-              (bookmarks || []).slice(0, 2).forEach(b => recentActivity.push({ type: 'bookmark', userId: b.user_id, emoji: '🔖', label: 'saved your post', time: b.created_at }));
+              (bookmarks || []).forEach(b => {
+                const snippet = postMap[b.post_id] || '';
+                const evt = { type: 'saves', userId: b.user_id, emoji: '🔖', desc: 'Saved your post', postSnippet: snippet, postId: b.post_id, time: b.created_at };
+                trackAction(b.user_id, evt);
+                allEvents.saves.push(evt);
+                feedItems.push(evt);
+              });
 
-              // 9. Post Poll Votes + Yes/No Votes
-              const { data: pollVotes } = await supabase.from('post_poll_votes').select('user_id, created_at')
-                .in('post_id', myPostIds);
-              const { data: ynVotes } = await supabase.from('post_yes_no_votes').select('user_id, created_at')
-                .in('post_id', myPostIds);
-              totalPollVotes = (pollVotes?.length || 0) + (ynVotes?.length || 0);
-              (pollVotes || []).forEach(v => addInteraction(clientInteractions, v.user_id, 'pollVotes', v.created_at));
-              (ynVotes || []).forEach(v => addInteraction(clientInteractions, v.user_id, 'pollVotes', v.created_at));
+              // 9. Poll Votes + Yes/No Votes
+              const { data: pollVotes } = await supabase.from('post_poll_votes').select('user_id, post_id, created_at')
+                .in('post_id', myPostIds).order('created_at', { ascending: false });
+              (pollVotes || []).forEach(v => {
+                const snippet = postMap[v.post_id] || '';
+                const evt = { type: 'pollVotes', userId: v.user_id, emoji: '📊', desc: 'Voted on your poll', postSnippet: snippet, postId: v.post_id, time: v.created_at };
+                trackAction(v.user_id, evt);
+                allEvents.pollVotes.push(evt);
+                feedItems.push(evt);
+              });
+              const { data: ynVotes } = await supabase.from('post_yes_no_votes').select('user_id, post_id, created_at')
+                .in('post_id', myPostIds).order('created_at', { ascending: false });
+              (ynVotes || []).forEach(v => {
+                const snippet = postMap[v.post_id] || '';
+                const evt = { type: 'pollVotes', userId: v.user_id, emoji: '📊', desc: 'Voted on your poll', postSnippet: snippet, postId: v.post_id, time: v.created_at };
+                trackAction(v.user_id, evt);
+                allEvents.pollVotes.push(evt);
+                feedItems.push(evt);
+              });
             }
 
             // 10. DM Poll Responses
-            const { data: dmPolls } = await supabase.from('dm_polls').select('id').eq('model_id', myId);
-            let totalDmPollResponses = 0;
+            const { data: dmPolls } = await supabase.from('dm_polls').select('id, question').eq('model_id', myId);
             if (dmPolls && dmPolls.length > 0) {
               const pollMsgIds = dmPolls.map(p => p.id);
-              const { data: dmResponses } = await supabase.from('dm_poll_responses').select('voter_id, created_at')
-                .in('message_id', pollMsgIds);
-              totalDmPollResponses = dmResponses?.length || 0;
-              (dmResponses || []).forEach(r => addInteraction(clientInteractions, r.voter_id, 'dmPolls', r.created_at));
+              const dmPollMap = {};
+              dmPolls.forEach(p => { dmPollMap[p.id] = p.question ? p.question.substring(0, 50) : 'DM poll'; });
+              const { data: dmResponses } = await supabase.from('dm_poll_responses').select('voter_id, message_id, created_at')
+                .in('message_id', pollMsgIds).order('created_at', { ascending: false });
+              (dmResponses || []).forEach(r => {
+                const pollQ = dmPollMap[r.message_id] || 'DM poll';
+                const evt = { type: 'pollVotes', userId: r.voter_id, emoji: '📊', desc: 'Responded to your DM poll', detail: pollQ, time: r.created_at };
+                trackAction(r.voter_id, evt);
+                allEvents.pollVotes.push(evt);
+                feedItems.push(evt);
+              });
             }
 
             // 11. Followers
             const { data: followers } = await supabase.from('follows').select('follower_id, created_at')
               .eq('following_id', myId).order('created_at', { ascending: false });
-            const totalFollowers = followers?.length || 0;
-            (followers || []).forEach(f => addInteraction(clientInteractions, f.follower_id, 'follows', f.created_at));
-            (followers || []).slice(0, 3).forEach(f => recentActivity.push({ type: 'follow', userId: f.follower_id, emoji: '➕', label: 'followed you', time: f.created_at }));
+            (followers || []).forEach(f => {
+              const evt = { type: 'follows', userId: f.follower_id, emoji: '➕', desc: 'Followed you', time: f.created_at };
+              trackAction(f.follower_id, evt);
+              allEvents.follows.push(evt);
+              feedItems.push(evt);
+            });
 
             // 12. Reviews
-            const { data: reviews } = await supabase.from('reviews').select('reviewer_id, rating, created_at')
+            const { data: reviews } = await supabase.from('reviews').select('reviewer_id, rating, text, created_at')
               .eq('model_id', myId).order('created_at', { ascending: false });
-            const totalReviews = reviews?.length || 0;
-            (reviews || []).forEach(r => addInteraction(clientInteractions, r.reviewer_id, 'reviews', r.created_at));
-            (reviews || []).slice(0, 2).forEach(r => recentActivity.push({ type: 'review', userId: r.reviewer_id, emoji: '⭐', label: 'left you a ' + r.rating + '-star review', time: r.created_at }));
+            (reviews || []).forEach(r => {
+              const evt = { type: 'reviews', userId: r.reviewer_id, emoji: '⭐', desc: 'Left a ' + r.rating + '-star review', detail: r.text ? r.text.substring(0, 80) : '', time: r.created_at };
+              trackAction(r.reviewer_id, evt);
+              allEvents.reviews.push(evt);
+              feedItems.push(evt);
+            });
 
-            // 13. Bid Board Bids on my posts
-            const { data: myBidPosts } = await supabase.from('bid_board_posts').select('id').eq('user_id', myId);
-            let totalBids = 0;
+            // 13. Bid Board Bids
+            const { data: myBidPosts } = await supabase.from('bid_board_posts').select('id, title').eq('user_id', myId);
             if (myBidPosts && myBidPosts.length > 0) {
               const bidPostIds = myBidPosts.map(p => p.id);
-              const { data: bids } = await supabase.from('bid_board_bids').select('user_id, amount, created_at')
+              const bidPostMap = {};
+              myBidPosts.forEach(p => { bidPostMap[p.id] = p.title ? p.title.substring(0, 50) : 'Bid post'; });
+              const { data: bids } = await supabase.from('bid_board_bids').select('user_id, post_id, amount, created_at')
                 .in('post_id', bidPostIds).order('created_at', { ascending: false });
-              totalBids = bids?.length || 0;
-              (bids || []).forEach(b => addInteraction(clientInteractions, b.user_id, 'bids', b.created_at));
-              (bids || []).slice(0, 2).forEach(b => recentActivity.push({ type: 'bid', userId: b.user_id, emoji: '💰', label: 'placed a $' + b.amount + ' bid', time: b.created_at }));
+              (bids || []).forEach(b => {
+                const postTitle = bidPostMap[b.post_id] || 'Bid post';
+                const evt = { type: 'bids', userId: b.user_id, emoji: '💰', desc: 'Placed a $' + b.amount + ' bid', detail: postTitle, time: b.created_at };
+                trackAction(b.user_id, evt);
+                allEvents.bids.push(evt);
+                feedItems.push(evt);
+              });
             }
 
-            // 14. Share Link Clicks
-            let totalShareClicks = 0;
-            // share_link_clicks uses visitor_id (text, not uuid), skip for client mapping but count total
-            const { data: myLinks } = await supabase.from('share_links').select('id').eq('user_id', myId);
-            if (myLinks && myLinks.length > 0) {
-              const linkIds = myLinks.map(l => l.id);
-              const { data: clicks } = await supabase.from('share_link_clicks').select('id').in('link_id', linkIds);
-              totalShareClicks = clicks?.length || 0;
-            }
-
-            // Build top clients — resolve names
-            const clientIds = Object.keys(clientInteractions);
-            let topClients = [];
+            // Resolve display names for all clients
+            const clientIds = Object.keys(clientMap);
             if (clientIds.length > 0) {
-              const { data: clientProfiles } = await supabase.from('profiles')
+              const { data: profiles } = await supabase.from('profiles')
                 .select('id, display_name, avatar_url, avatar_emoji, role').in('id', clientIds);
-
-              topClients = clientIds.map(id => {
-                const profile = (clientProfiles || []).find(p => p.id === id);
-                const ci = clientInteractions[id];
-                return {
-                  id, name: profile?.display_name || 'Unknown',
-                  avatar_emoji: profile?.avatar_emoji || '👤', avatar_url: profile?.avatar_url,
-                  role: profile?.role || 'client',
-                  ...ci,
-                  totalScore: ci.views + (ci.messages * 2) + (ci.likes * 1) + (ci.comments * 3) + (ci.reactions * 1) + (ci.bookmarks * 2) + (ci.pollVotes * 1) + (ci.dmPolls * 1) + (ci.follows * 3) + (ci.reviews * 5) + (ci.bookings * 10) + (ci.bids * 4)
-                };
-              }).sort((a, b) => b.totalScore - a.totalScore).slice(0, 15);
+              (profiles || []).forEach(p => {
+                if (clientMap[p.id]) {
+                  clientMap[p.id].name = p.display_name || 'Unknown';
+                  clientMap[p.id].avatar_url = p.avatar_url;
+                  clientMap[p.id].avatar_emoji = p.avatar_emoji || '👤';
+                  clientMap[p.id].role = p.role || 'client';
+                }
+              });
             }
 
-            // Resolve names for recent activity
-            const activityUserIds = [...new Set(recentActivity.filter(a => a.userId).map(a => a.userId))];
-            let activityNames = {};
-            if (activityUserIds.length > 0) {
-              const { data: actProfiles } = await supabase.from('profiles').select('id, display_name').in('id', activityUserIds);
-              (actProfiles || []).forEach(p => activityNames[p.id] = p.display_name);
-            }
-            recentActivity.forEach(a => { a.who = activityNames[a.userId] || 'Someone'; });
-            recentActivity.sort((a, b) => new Date(b.time) - new Date(a.time));
+            // Compute engagement scores and sort
+            const scoreWeights = { views: 1, messages: 2, likes: 1, comments: 3, reactions: 1, saves: 2, pollVotes: 1, follows: 3, reviews: 5, bookings: 10, bids: 4 };
+            const clientList = Object.values(clientMap).map(c => {
+              c.name = c.name || 'Unknown';
+              c.avatar_emoji = c.avatar_emoji || '👤';
+              c.role = c.role || 'client';
+              c.score = 0;
+              Object.keys(c.counts).forEach(k => { c.score += (c.counts[k] || 0) * (scoreWeights[k] || 1); });
+              // Sort actions by time descending
+              c.actions.sort((a, b) => new Date(b.time) - new Date(a.time));
+              return c;
+            }).sort((a, b) => b.score - a.score);
 
-            setStats({
-              totalViews, uniqueViewers, totalConversations, totalBookings, acceptedBookings,
-              totalLikes, totalComments, totalReactions, totalBookmarks, totalPollVotes,
-              totalDmPollResponses, totalFollowers, totalReviews, totalBids, totalShareClicks,
-              viewsTrend, topClients, recentActivity: recentActivity.slice(0, 15)
-            });
+            // Build name lookup for events
+            const nameMap = {};
+            Object.values(clientMap).forEach(c => { nameMap[c.id] = c.name; });
+
+            // Attach names to all events
+            const attachNames = (events) => events.map(e => ({ ...e, who: nameMap[e.userId] || 'Someone' }));
+            Object.keys(allEvents).forEach(k => { allEvents[k] = attachNames(allEvents[k]); });
+
+            // Activity feed — sorted, max 30
+            const feed = feedItems
+              .map(e => ({ ...e, who: nameMap[e.userId] || 'Someone' }))
+              .sort((a, b) => new Date(b.time) - new Date(a.time))
+              .slice(0, 30);
+
+            setClients(clientList.slice(0, 10));
+            setMetricEvents(allEvents);
+            setActivityFeed(feed);
           } catch (e) {
             console.error('Client analytics error:', e);
           } finally {
@@ -11477,13 +11515,14 @@ REMEMBER:
           }
         };
 
-        fetchAnalytics();
+        fetchAll();
       }, [auth.currentUser]);
 
       const timeAgo = (dateStr) => {
         if (!dateStr) return '';
         const diff = Date.now() - new Date(dateStr).getTime();
         const mins = Math.floor(diff / 60000);
+        if (mins < 1) return 'just now';
         if (mins < 60) return mins + 'm ago';
         const hrs = Math.floor(mins / 60);
         if (hrs < 24) return hrs + 'h ago';
@@ -11491,218 +11530,254 @@ REMEMBER:
         return days + 'd ago';
       };
 
+      const medalColors = ['#ffd700', '#c0c0c0', '#cd7f32'];
+      const medals = ['🥇', '🥈', '🥉'];
+
+      const scoreColor = (score) => {
+        if (score >= 30) return '#ffd700';
+        if (score >= 15) return '#ff6ec7';
+        if (score >= 5) return '#00d9ff';
+        return '#00e676';
+      };
+
+      // Render a single event row
+      const renderEvent = (evt, idx, showBorder) => {
+        let text = evt.desc;
+        if (evt.postSnippet) text += " '" + evt.postSnippet + (evt.postSnippet.length >= 50 ? '...' : '') + "'";
+        if (evt.detail && evt.type === 'comments') text = "Commented '" + evt.detail + "' on '" + (evt.postSnippet || 'post') + (evt.postSnippet && evt.postSnippet.length >= 50 ? '...' : '') + "'";
+        if (evt.detail && evt.type === 'reactions') text = "Reacted " + evt.detail + " to '" + (evt.postSnippet || 'post') + (evt.postSnippet && evt.postSnippet.length >= 50 ? '...' : '') + "'";
+
+        return React.createElement('div', { key: idx, style: {
+          display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '6px 0',
+          borderBottom: showBorder ? '1px solid rgba(255,255,255,0.04)' : 'none', fontSize: '0.8rem'
+        }},
+          React.createElement('span', { style: { fontSize: '0.9rem', width: '22px', flexShrink: 0, textAlign: 'center' } }, evt.emoji),
+          React.createElement('div', { style: { flex: 1, color: 'var(--text-secondary)', lineHeight: 1.4 } },
+            evt.who ? React.createElement('span', { style: { color: 'var(--text-primary)', fontWeight: 600 } }, evt.who + ' ') : null,
+            text
+          ),
+          React.createElement('span', { style: { fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', flexShrink: 0, whiteSpace: 'nowrap' } }, timeAgo(evt.time))
+        );
+      };
+
       if (loading) {
-        return (
-          <div style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1.5rem', border: '1px solid var(--border-color)', marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-              <span style={{ fontSize: '1.2rem' }}>📊</span>
-              <h3 style={{ margin: 0 }}>Client Analytics</h3>
-            </div>
-            <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '1rem' }}>Loading analytics...</div>
-          </div>
+        return React.createElement('div', { style: { background: 'var(--bg-card)', borderRadius: '12px', padding: '1.5rem', border: '1px solid var(--border-color)', marginBottom: '1.5rem' } },
+          React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' } },
+            React.createElement('span', { style: { fontSize: '1.2rem' } }, '📊'),
+            React.createElement('h3', { style: { margin: 0 } }, 'Client Analytics')
+          ),
+          React.createElement('div', { style: { padding: '2rem 0' } },
+            [0,1,2].map(i => React.createElement('div', { key: i, style: {
+              height: '48px', borderRadius: '8px', marginBottom: '8px',
+              background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 75%)',
+              animation: 'none'
+            }}))
+          )
         );
       }
 
-      const maxTrend = Math.max(...stats.viewsTrend.map(v => v.count), 1);
+      // Metric cards config for "By Activity" tab
+      const metricCards = [
+        { key: 'views', emoji: '👁️', label: 'Profile Views', color: '#ff6ec7' },
+        { key: 'likes', emoji: '❤️', label: 'Likes', color: '#ff5252' },
+        { key: 'comments', emoji: '💭', label: 'Comments', color: '#ff9800' },
+        { key: 'reactions', emoji: '😍', label: 'Reactions', color: '#e040fb' },
+        { key: 'saves', emoji: '🔖', label: 'Saves', color: '#00bcd4' },
+        { key: 'pollVotes', emoji: '📊', label: 'Poll Votes', color: '#7c4dff' },
+        { key: 'messages', emoji: '💬', label: 'Messages', color: '#ffd700' },
+        { key: 'bookings', emoji: '📅', label: 'Bookings', color: '#00e676' },
+        { key: 'follows', emoji: '➕', label: 'Follows', color: '#00d9ff' },
+        { key: 'reviews', emoji: '⭐', label: 'Reviews', color: '#ffc107' },
+        { key: 'bids', emoji: '💰', label: 'Bids', color: '#4caf50' }
+      ];
 
-      return (
-        <div style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', border: '1px solid var(--border-color)', marginBottom: '1.5rem', overflow: 'hidden' }}>
-          {/* Header */}
-          <div style={{ padding: '1.25rem 1.25rem 0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontSize: '1.2rem' }}>📊</span>
-              <h3 style={{ margin: 0, fontSize: '1rem' }}>Client Analytics</h3>
-            </div>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '3px 8px', borderRadius: '4px' }}>Last 30 days</span>
-          </div>
+      const tabs = [
+        { key: 'spotlight', label: 'Spotlight' },
+        { key: 'activity_type', label: 'By Activity' },
+        { key: 'feed', label: 'Activity Feed' }
+      ];
 
-          {/* Tabs */}
-          <div style={{ display: 'flex', gap: '0', borderBottom: '1px solid var(--border-color)', padding: '0 1.25rem' }}>
-            {[
-              { key: 'overview', label: 'Overview' },
-              { key: 'clients', label: 'Top Clients' },
-              { key: 'activity', label: 'Activity' }
-            ].map(tab => (
-              <button key={tab.key} onClick={() => setAnalyticsTab(tab.key)} style={{
-                background: 'none', border: 'none', borderBottom: analyticsTab === tab.key ? '2px solid #ff6ec7' : '2px solid transparent',
-                color: analyticsTab === tab.key ? '#ff6ec7' : 'var(--text-secondary)', padding: '0.6rem 1rem',
-                fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
-              }}>{tab.label}</button>
-            ))}
-          </div>
+      return React.createElement('div', { style: { background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '1.5rem', overflow: 'hidden' } },
 
-          <div style={{ padding: '1.25rem' }}>
-            {/* OVERVIEW TAB */}
-            {analyticsTab === 'overview' && (
-              <div>
-                {/* Primary stat cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem', marginBottom: '1rem' }}>
-                  <div style={{ background: 'rgba(255,110,199,0.08)', borderRadius: '10px', padding: '0.85rem', textAlign: 'center' }}>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ff6ec7' }}>{stats.totalViews}</div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Profile Views</div>
-                  </div>
-                  <div style={{ background: 'rgba(0,217,255,0.08)', borderRadius: '10px', padding: '0.85rem', textAlign: 'center' }}>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#00d9ff' }}>{stats.uniqueViewers}</div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Unique Viewers</div>
-                  </div>
-                  <div style={{ background: 'rgba(0,230,118,0.08)', borderRadius: '10px', padding: '0.85rem', textAlign: 'center' }}>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#00e676' }}>{stats.acceptedBookings}<span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>/{stats.totalBookings}</span></div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Bookings</div>
-                  </div>
-                  <div style={{ background: 'rgba(255,215,0,0.08)', borderRadius: '10px', padding: '0.85rem', textAlign: 'center' }}>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ffd700' }}>{stats.totalFollowers}</div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Followers</div>
-                  </div>
-                </div>
+        // Header
+        React.createElement('div', { style: { padding: '1.25rem 1.25rem 0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
+          React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '0.5rem' } },
+            React.createElement('span', { style: { fontSize: '1.2rem' } }, '📊'),
+            React.createElement('h3', { style: { margin: 0, fontSize: '1rem' } }, 'Client Analytics')
+          ),
+          React.createElement('span', { style: { fontSize: '0.7rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '3px 8px', borderRadius: '4px' } }, 'Last 30 days')
+        ),
 
-                {/* Engagement breakdown */}
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--border-color)', padding: '0.85rem', marginBottom: '1rem' }}>
-                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>Engagement Breakdown</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-                    {[
-                      { emoji: '💬', label: 'Convos', val: stats.totalConversations, color: '#ffd700' },
-                      { emoji: '❤️', label: 'Likes', val: stats.totalLikes, color: '#ff5252' },
-                      { emoji: '💭', label: 'Comments', val: stats.totalComments, color: '#ff9800' },
-                      { emoji: '😍', label: 'Reactions', val: stats.totalReactions, color: '#e040fb' },
-                      { emoji: '🔖', label: 'Saves', val: stats.totalBookmarks, color: '#00bcd4' },
-                      { emoji: '📊', label: 'Poll Votes', val: stats.totalPollVotes + stats.totalDmPollResponses, color: '#7c4dff' },
-                      { emoji: '⭐', label: 'Reviews', val: stats.totalReviews, color: '#ffc107' },
-                      { emoji: '💰', label: 'Bids', val: stats.totalBids, color: '#00e676' },
-                      { emoji: '🔗', label: 'Link Clicks', val: stats.totalShareClicks, color: '#448aff' },
-                    ].map((item, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 8px', borderRadius: '6px',
-                        background: item.val > 0 ? 'rgba(255,255,255,0.03)' : 'transparent' }}>
-                        <span style={{ fontSize: '0.9rem' }}>{item.emoji}</span>
-                        <div>
-                          <div style={{ fontSize: '0.95rem', fontWeight: 800, color: item.val > 0 ? item.color : '#444' }}>{item.val}</div>
-                          <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>{item.label}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+        // Tabs
+        React.createElement('div', { style: { display: 'flex', gap: 0, borderBottom: '1px solid var(--border-color)', padding: '0 1.25rem' } },
+          tabs.map(tab => React.createElement('button', {
+            key: tab.key,
+            onClick: () => { setActiveTab(tab.key); setExpandedMetric(null); },
+            style: {
+              background: 'none', border: 'none',
+              borderBottom: activeTab === tab.key ? '2px solid #ff6ec7' : '2px solid transparent',
+              color: activeTab === tab.key ? '#ff6ec7' : 'var(--text-secondary)',
+              padding: '0.6rem 1rem', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer'
+            }
+          }, tab.label))
+        ),
 
-                {/* Views sparkline (last 7 days) */}
-                <div style={{ marginBottom: '0.5rem' }}>
-                  <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Profile Views — Last 7 Days</div>
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '60px' }}>
-                    {stats.viewsTrend.map((d, i) => (
-                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                        <div style={{ fontSize: '0.65rem', color: '#ff6ec7', fontWeight: 700, opacity: d.count > 0 ? 1 : 0 }}>{d.count}</div>
-                        <div style={{
-                          width: '100%', borderRadius: '4px 4px 0 0',
-                          height: Math.max(4, (d.count / maxTrend) * 44) + 'px',
-                          background: d.count > 0 ? 'linear-gradient(to top, #ff6ec7, #ff9de0)' : 'rgba(255,255,255,0.06)',
-                          transition: 'height 0.3s'
-                        }}></div>
-                        <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>{d.day}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+        // Content
+        React.createElement('div', { style: { padding: '1.25rem' } },
 
-                {/* Conversion funnel */}
-                {stats.totalViews > 0 && (
-                  <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Conversion Funnel</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', flexWrap: 'wrap' }}>
-                      <span style={{ color: '#ff6ec7', fontWeight: 700 }}>{stats.totalViews} views</span>
-                      <span style={{ color: 'var(--text-secondary)' }}>→</span>
-                      <span style={{ color: '#ffd700', fontWeight: 700 }}>{stats.totalConversations} convos</span>
-                      <span style={{ color: '#ffd700', fontSize: '0.65rem' }}>({stats.totalViews > 0 ? Math.round((stats.totalConversations / stats.totalViews) * 100) : 0}%)</span>
-                      <span style={{ color: 'var(--text-secondary)' }}>→</span>
-                      <span style={{ color: '#00e676', fontWeight: 700 }}>{stats.acceptedBookings} booked</span>
-                      <span style={{ color: '#00e676', fontSize: '0.65rem' }}>({stats.totalConversations > 0 ? Math.round((stats.acceptedBookings / stats.totalConversations) * 100) : 0}%)</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+          // ===== SPOTLIGHT TAB =====
+          activeTab === 'spotlight' && (clients.length === 0
+            ? React.createElement('div', { style: { textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem 0', fontSize: '0.9rem' } },
+                'No client interactions yet. Once clients engage with your content, your top fans will appear here.'
+              )
+            : React.createElement('div', null,
+                React.createElement('div', { style: { fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' } }, 'Top 10 most active clients — click to see every action'),
+                clients.map((client, idx) => {
+                  const isExpanded = expandedClient === client.id;
+                  const borderColor = idx === 0 ? 'rgba(255,215,0,0.2)' : idx === 1 ? 'rgba(192,192,192,0.15)' : idx === 2 ? 'rgba(205,127,50,0.15)' : 'var(--border-color)';
+                  const bgColor = idx === 0 ? 'rgba(255,215,0,0.05)' : idx === 1 ? 'rgba(192,192,192,0.03)' : idx === 2 ? 'rgba(205,127,50,0.03)' : 'transparent';
 
-            {/* TOP CLIENTS TAB */}
-            {analyticsTab === 'clients' && (
-              <div>
-                {stats.topClients.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem 0', fontSize: '0.9rem' }}>
-                    No client interactions yet. Once clients view your profile or message you, they'll show up here.
-                  </div>
-                ) : (
-                  stats.topClients.map((client, idx) => (
-                    <div key={client.id} style={{
-                      display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem',
-                      background: idx === 0 ? 'rgba(255,215,0,0.06)' : 'transparent',
-                      borderRadius: '8px', marginBottom: '4px',
-                      border: idx === 0 ? '1px solid rgba(255,215,0,0.15)' : '1px solid transparent'
-                    }}>
-                      {/* Rank */}
-                      <div style={{ width: '22px', textAlign: 'center', fontSize: '0.8rem', fontWeight: 800,
-                        color: idx === 0 ? '#ffd700' : idx === 1 ? '#c0c0c0' : idx === 2 ? '#cd7f32' : 'var(--text-secondary)' }}>
-                        {idx < 3 ? ['🥇', '🥈', '🥉'][idx] : '#' + (idx + 1)}
-                      </div>
-                      {/* Avatar */}
-                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0,
-                        overflow: 'hidden' }}>
-                        {client.avatar_url ? <img src={client.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : client.avatar_emoji}
-                      </div>
-                      {/* Info */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, fontSize: '0.88rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {client.name}
-                          <span style={{ fontSize: '0.65rem', marginLeft: '6px', padding: '1px 5px', borderRadius: '4px',
+                  // Build mini breakdown string
+                  const parts = [];
+                  if (client.counts.likes > 0) parts.push(client.counts.likes + ' like' + (client.counts.likes > 1 ? 's' : ''));
+                  if (client.counts.comments > 0) parts.push(client.counts.comments + ' comment' + (client.counts.comments > 1 ? 's' : ''));
+                  if (client.counts.views > 0) parts.push(client.counts.views + ' view' + (client.counts.views > 1 ? 's' : ''));
+                  if (client.counts.messages > 0) parts.push(client.counts.messages + ' msg' + (client.counts.messages > 1 ? 's' : ''));
+                  if (client.counts.reactions > 0) parts.push(client.counts.reactions + ' reaction' + (client.counts.reactions > 1 ? 's' : ''));
+                  if (client.counts.saves > 0) parts.push(client.counts.saves + ' save' + (client.counts.saves > 1 ? 's' : ''));
+                  if (client.counts.pollVotes > 0) parts.push(client.counts.pollVotes + ' poll vote' + (client.counts.pollVotes > 1 ? 's' : ''));
+                  if (client.counts.bookings > 0) parts.push(client.counts.bookings + ' booking' + (client.counts.bookings > 1 ? 's' : ''));
+                  if (client.counts.follows > 0) parts.push('followed');
+                  if (client.counts.reviews > 0) parts.push(client.counts.reviews + ' review' + (client.counts.reviews > 1 ? 's' : ''));
+                  if (client.counts.bids > 0) parts.push(client.counts.bids + ' bid' + (client.counts.bids > 1 ? 's' : ''));
+                  const breakdown = parts.join(' \u00b7 ');
+
+                  return React.createElement('div', { key: client.id, style: { marginBottom: '6px' } },
+                    // Client card (clickable)
+                    React.createElement('div', {
+                      onClick: () => setExpandedClient(isExpanded ? null : client.id),
+                      style: {
+                        display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem',
+                        background: bgColor, borderRadius: '10px', border: '1px solid ' + borderColor,
+                        cursor: 'pointer', userSelect: 'none'
+                      }
+                    },
+                      // Rank
+                      React.createElement('div', { style: { width: '24px', textAlign: 'center', fontSize: '0.85rem', fontWeight: 800,
+                        color: idx < 3 ? medalColors[idx] : 'var(--text-secondary)' } },
+                        idx < 3 ? medals[idx] : '#' + (idx + 1)
+                      ),
+                      // Avatar
+                      React.createElement('div', { style: { width: '38px', height: '38px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0, overflow: 'hidden' } },
+                        client.avatar_url
+                          ? React.createElement('img', { src: client.avatar_url, alt: '', style: { width: '100%', height: '100%', objectFit: 'cover' } })
+                          : client.avatar_emoji
+                      ),
+                      // Info
+                      React.createElement('div', { style: { flex: 1, minWidth: 0 } },
+                        React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' } },
+                          React.createElement('span', { style: { fontWeight: 700, fontSize: '0.88rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, client.name),
+                          React.createElement('span', { style: { fontSize: '0.6rem', padding: '1px 5px', borderRadius: '4px',
                             background: client.role === 'model' ? 'rgba(255,110,199,0.15)' : 'rgba(0,217,255,0.15)',
-                            color: client.role === 'model' ? '#ff6ec7' : '#00d9ff' }}>{client.role}</span>
-                        </div>
-                        <div style={{ display: 'flex', gap: '6px', fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: '2px', flexWrap: 'wrap' }}>
-                          {client.views > 0 && <span>👁️{client.views}</span>}
-                          {client.messages > 0 && <span>💬{client.messages}</span>}
-                          {client.likes > 0 && <span>❤️{client.likes}</span>}
-                          {client.comments > 0 && <span>💭{client.comments}</span>}
-                          {client.reactions > 0 && <span>😍{client.reactions}</span>}
-                          {client.bookmarks > 0 && <span>🔖{client.bookmarks}</span>}
-                          {client.pollVotes > 0 && <span>📊{client.pollVotes}</span>}
-                          {client.follows > 0 && <span>➕followed</span>}
-                          {client.bookings > 0 && <span>📅{client.bookings}</span>}
-                          {client.reviews > 0 && <span>⭐{client.reviews}</span>}
-                          {client.bids > 0 && <span>💰{client.bids}</span>}
-                        </div>
-                      </div>
-                      {/* Last active */}
-                      <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', textAlign: 'right', flexShrink: 0 }}>
-                        {client.lastActive ? timeAgo(client.lastActive) : ''}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
+                            color: client.role === 'model' ? '#ff6ec7' : '#00d9ff' } }, client.role)
+                        ),
+                        React.createElement('div', { style: { fontSize: '0.68rem', color: 'var(--text-secondary)', lineHeight: 1.3 } }, breakdown)
+                      ),
+                      // Score + last active
+                      React.createElement('div', { style: { textAlign: 'right', flexShrink: 0 } },
+                        React.createElement('div', { style: { fontSize: '1.1rem', fontWeight: 800, color: scoreColor(client.score) } }, client.score),
+                        React.createElement('div', { style: { fontSize: '0.6rem', color: 'var(--text-secondary)', marginTop: '2px' } },
+                          client.lastActive ? timeAgo(client.lastActive) : ''
+                        )
+                      ),
+                      // Expand indicator
+                      React.createElement('span', { style: { fontSize: '0.7rem', color: 'var(--text-secondary)', marginLeft: '4px' } }, isExpanded ? '▲' : '▼')
+                    ),
 
-            {/* ACTIVITY TAB */}
-            {analyticsTab === 'activity' && (
-              <div>
-                {stats.recentActivity.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem 0', fontSize: '0.9rem' }}>
-                    No recent activity yet.
-                  </div>
-                ) : (
-                  stats.recentActivity.map((item, idx) => (
-                    <div key={idx} style={{
-                      display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0',
-                      borderBottom: idx < stats.recentActivity.length - 1 ? '1px solid var(--border-color)' : 'none'
-                    }}>
-                      <span style={{ fontSize: '1.1rem', width: '28px', textAlign: 'center' }}>{item.emoji}</span>
-                      <div style={{ flex: 1, fontSize: '0.85rem' }}>
-                        <span style={{ fontWeight: 600 }}>{item.who}</span>{' '}
-                        {item.label}
-                      </div>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', flexShrink: 0 }}>{timeAgo(item.time)}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+                    // Expanded action list
+                    isExpanded && React.createElement('div', { style: {
+                      padding: '0.5rem 0.75rem 0.75rem 3.5rem',
+                      background: 'rgba(255,255,255,0.015)', borderRadius: '0 0 10px 10px',
+                      borderLeft: '2px solid ' + (idx < 3 ? medalColors[idx] : 'var(--border-color)'),
+                      marginLeft: '12px', marginTop: '-2px'
+                    } },
+                      React.createElement('div', { style: { fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' } },
+                        'All ' + client.actions.length + ' actions by ' + client.name
+                      ),
+                      client.actions.length === 0
+                        ? React.createElement('div', { style: { fontSize: '0.78rem', color: 'var(--text-secondary)' } }, 'No actions recorded.')
+                        : client.actions.slice(0, 25).map((action, ai) => renderEvent(action, ai, ai < Math.min(client.actions.length, 25) - 1)),
+                      client.actions.length > 25 && React.createElement('div', { style: { fontSize: '0.72rem', color: 'var(--text-secondary)', paddingTop: '6px' } },
+                        '...and ' + (client.actions.length - 25) + ' more actions'
+                      )
+                    )
+                  );
+                })
+              )
+          ),
+
+          // ===== BY ACTIVITY TAB =====
+          activeTab === 'activity_type' && React.createElement('div', null,
+            // Metric grid
+            React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '1rem' } },
+              metricCards.map(mc => {
+                const count = (metricEvents[mc.key] || []).length;
+                const isOpen = expandedMetric === mc.key;
+                return React.createElement('div', {
+                  key: mc.key,
+                  onClick: () => setExpandedMetric(isOpen ? null : mc.key),
+                  style: {
+                    background: isOpen ? 'rgba(255,255,255,0.06)' : count > 0 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.01)',
+                    borderRadius: '10px', padding: '0.7rem 0.5rem', textAlign: 'center', cursor: count > 0 ? 'pointer' : 'default',
+                    border: isOpen ? '1px solid ' + mc.color : '1px solid transparent',
+                    opacity: count > 0 ? 1 : 0.5
+                  }
+                },
+                  React.createElement('div', { style: { fontSize: '1rem', marginBottom: '2px' } }, mc.emoji),
+                  React.createElement('div', { style: { fontSize: '1.2rem', fontWeight: 800, color: count > 0 ? mc.color : '#444' } }, count),
+                  React.createElement('div', { style: { fontSize: '0.62rem', color: 'var(--text-secondary)' } }, mc.label)
+                );
+              })
+            ),
+
+            // Expanded event list for selected metric
+            expandedMetric && metricEvents[expandedMetric] && React.createElement('div', { style: {
+              background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--border-color)', padding: '0.75rem', marginTop: '4px'
+            } },
+              React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' } },
+                React.createElement('div', { style: { fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' } },
+                  (metricCards.find(m => m.key === expandedMetric) || {}).emoji + ' ' +
+                  (metricCards.find(m => m.key === expandedMetric) || {}).label +
+                  ' (' + metricEvents[expandedMetric].length + ')'
+                ),
+                React.createElement('button', {
+                  onClick: (e) => { e.stopPropagation(); setExpandedMetric(null); },
+                  style: { background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', padding: '2px 6px' }
+                }, '✕ Close')
+              ),
+              metricEvents[expandedMetric].length === 0
+                ? React.createElement('div', { style: { fontSize: '0.8rem', color: 'var(--text-secondary)', padding: '1rem 0', textAlign: 'center' } }, 'No events yet.')
+                : metricEvents[expandedMetric].slice(0, 30).map((evt, i) =>
+                    renderEvent(evt, i, i < Math.min(metricEvents[expandedMetric].length, 30) - 1)
+                  ),
+              metricEvents[expandedMetric].length > 30 && React.createElement('div', { style: { fontSize: '0.72rem', color: 'var(--text-secondary)', paddingTop: '6px', textAlign: 'center' } },
+                'Showing 30 of ' + metricEvents[expandedMetric].length
+              )
+            )
+          ),
+
+          // ===== ACTIVITY FEED TAB =====
+          activeTab === 'feed' && (activityFeed.length === 0
+            ? React.createElement('div', { style: { textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem 0', fontSize: '0.9rem' } },
+                'No recent activity yet.'
+              )
+            : React.createElement('div', null,
+                React.createElement('div', { style: { fontSize: '0.72rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' } }, 'Most recent interactions'),
+                activityFeed.map((evt, i) => renderEvent(evt, i, i < activityFeed.length - 1))
+              )
+          )
+        )
       );
     }
 
