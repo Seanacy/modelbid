@@ -14891,7 +14891,8 @@ RULES
           <nav className="nav">
             <div className="nav-brand" onClick={() => window.location.hash = 'home'}>🎀 ModelBid</div>
 
-            {/* Desktop nav links */}
+            {/* Desktop nav links — only show when signed in */}
+            {auth.currentUser && (
             <div className="nav-links desktop-nav">
               <a className="nav-link" onClick={() => window.location.hash = 'browse'}>Browse</a>
               <a className="nav-link" onClick={() => window.location.hash = 'feed'}>Feed</a>
@@ -14924,11 +14925,9 @@ RULES
                   <a className="nav-dropdown-item" onClick={() => window.location.hash = 'crew/crew-demo'}>
                     <span className="dd-icon">👯‍♀️</span> Inner Circles
                   </a>
-                  {auth.currentUser && (
-                    <a className="nav-dropdown-item" onClick={() => window.location.hash = 'team'}>
-                      <span className="dd-icon">💛</span> The Team
-                    </a>
-                  )}
+                  <a className="nav-dropdown-item" onClick={() => window.location.hash = 'team'}>
+                    <span className="dd-icon">💛</span> The Team
+                  </a>
                   {auth.profile?.role === 'client' && (
                     <a className="nav-dropdown-item" onClick={() => window.location.hash = 'reputation'}>
                       <span className="dd-icon">🛡️</span> Reputation
@@ -14942,6 +14941,7 @@ RULES
                 </div>
               </div>
             </div>
+            )}
 
             {/* Desktop auth/user section */}
             <div className="nav-links desktop-auth">
@@ -14967,8 +14967,10 @@ RULES
               )}
             </div>
 
-            {/* Hamburger button — mobile only */}
-            <button className="hamburger-btn" onClick={() => setMobileMenuOpen(true)}>☰</button>
+            {/* Hamburger button — mobile only, hidden when not signed in */}
+            {auth.currentUser && (
+              <button className="hamburger-btn" onClick={() => setMobileMenuOpen(true)}>☰</button>
+            )}
           </nav>
 
           {/* Mobile slide-out menu */}
@@ -14989,6 +14991,7 @@ RULES
               </div>
             )}
 
+            {auth.currentUser && (
             <div className="mobile-menu-section">
               <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'browse'; }}>
                 <span className="mm-icon">🔍</span> Browse
@@ -14996,19 +14999,16 @@ RULES
               <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'feed'; }}>
                 <span className="mm-icon">📰</span> Feed
               </div>
-              {auth.currentUser && (
-                <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'messages'; }}>
-                  <span className="mm-icon">📬</span> Messages
-                </div>
-              )}
-              {auth.currentUser && (
-                <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'dashboard'; }}>
-                  <span className="mm-icon">📊</span> Dashboard
-                </div>
-              )}
-              {/* Admin link removed — admin panel is standalone at #admin */}
+              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'messages'; }}>
+                <span className="mm-icon">📬</span> Messages
+              </div>
+              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'dashboard'; }}>
+                <span className="mm-icon">📊</span> Dashboard
+              </div>
             </div>
+            )}
 
+            {auth.currentUser && (
             <div className="mobile-menu-section">
               <div className="mobile-menu-section-title">Tools</div>
               {auth.profile?.role !== 'client' && (
@@ -15033,11 +15033,9 @@ RULES
               <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'crew/crew-demo'; }}>
                 <span className="mm-icon">👯‍♀️</span> Inner Circles
               </div>
-              {auth.currentUser && (
-                <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'team'; }}>
-                  <span className="mm-icon">💛</span> The Team
-                </div>
-              )}
+              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'team'; }}>
+                <span className="mm-icon">💛</span> The Team
+              </div>
               <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'wall'; }}>
                 <span className="mm-icon">🏆</span> The Wall
               </div>
@@ -15052,6 +15050,7 @@ RULES
                 </div>
               )}
             </div>
+            )}
 
             {!auth.currentUser ? (
               <div className="mobile-menu-section" style={{ padding: '1rem 1.25rem', display: 'flex', gap: '0.75rem' }}>
