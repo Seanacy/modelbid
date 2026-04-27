@@ -394,6 +394,65 @@
       flex-shrink: 0;
     }
 
+    /* ── WAIVER BOX ── */
+    .waiver-box {
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(255, 110, 199, 0.05));
+      border: 1px solid rgba(255, 215, 0, 0.2);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .waiver-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .waiver-header span:first-child {
+      font-size: 1.2rem;
+    }
+    .waiver-title {
+      font-weight: 800;
+      font-size: 0.95rem;
+      color: #ffd700;
+    }
+    .waiver-text {
+      font-size: 0.82rem;
+      color: #ccc;
+      line-height: 1.7;
+    }
+    .waiver-text strong {
+      color: #ff6ec7;
+    }
+    .waiver-steps {
+      margin-top: 14px;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .waiver-steps li {
+      font-size: 0.8rem;
+      color: #aaa;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .step-num {
+      background: rgba(255, 215, 0, 0.15);
+      color: #ffd700;
+      font-weight: 700;
+      font-size: 0.7rem;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
     /* ── FOOTER ── */
     .footer {
       border-top: 1px solid var(--border);
@@ -474,6 +533,23 @@
   <!-- SIGN UP WITH GOOGLE -->
   <div class="join-wrapper" id="join-section">
     <div class="join-card">
+
+      <!-- Subscription Waiver Info -->
+      <div class="waiver-box">
+        <div class="waiver-header">
+          <span>🚀</span>
+          <span class="waiver-title">Want it free?</span>
+        </div>
+        <div class="waiver-text">
+          Place your unique ModelBid link in your social bio and your subscription is waived — <strong>no charge, ever.</strong>
+        </div>
+        <ul class="waiver-steps">
+          <li><span class="step-num">1</span> Sign up and get your unique ModelBid link</li>
+          <li><span class="step-num">2</span> Place it in your Instagram, TikTok, or Linktree bio</li>
+          <li><span class="step-num">3</span> Verify it in your <strong>Profile Settings</strong> — takes 30 seconds</li>
+        </ul>
+      </div>
+
       <button class="google-btn" id="google-btn">
         <svg class="google-icon" viewBox="0 0 24 24" width="20" height="20">
           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
