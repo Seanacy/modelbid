@@ -10762,6 +10762,193 @@ REMEMBER:
 
     // PromoCodeManager removed — promo management is now inline in AdminPanel
 
+    // ===== GROWTH RING COMPONENT =====
+    function GrowthRing() {
+      const auth = useContext(AuthContext);
+      const [stages, setStages] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [newUnlock, setNewUnlock] = useState(null);
+
+      const stageConfig = [
+        { key: 'arrive', label: 'Arrive', icon: '📍', color: '#9d4edd', badge: '📍 Landed', desc: 'Someone viewed your profile', tip: 'Share your profile link to get discovered' },
+        { key: 'participate', label: 'Participate', icon: '💬', color: '#ff6ec7', badge: '💬 Engaging', desc: 'Your content got engagement', tip: 'Post polls and updates to spark interaction' },
+        { key: 'commit', label: 'Commit', icon: '🔒', color: '#ff8a00', badge: '🔒 Converting', desc: 'Someone subscribed to you', tip: 'Set up your Private Feed or Inner Circle' },
+        { key: 'book', label: 'Book', icon: '📅', color: '#00e676', badge: '📅 Booked', desc: 'You got your first booking', tip: 'Set your rate and availability on your profile' },
+        { key: 'return', label: 'Return', icon: '🔁', color: '#ffd700', badge: '🔁 Repeat', desc: 'A client booked you again', tip: 'Deliver great sessions to earn repeat clients' },
+        { key: 'recruit', label: 'Recruit', icon: '🍒', color: '#ff5252', badge: '🍒 Recruiter', desc: 'You used Cherry Picker', tip: 'Use Cherry Picker to bring in your best followers' },
+      ];
+
+      useEffect(() => {
+        if (!auth.currentUser) return;
+        const checkStages = async () => {
+          const uid = auth.currentUser.id;
+          const results = {};
+
+          try {
+            // Arrive: profile has been viewed (check if profile_photo or cover_photo set as proxy, or follower count > 0)
+            const { data: followers } = await supabase.from('follows').select('id', { count: 'exact', head: true }).eq('following_id', uid);
+            results.arrive = (followers?.length > 0) || (auth.profile?.profile_photo_url) || false;
+
+            // Participate: any post likes, reactions, or poll votes on their content
+            const { data: posts } = await supabase.from('posts').select('id').eq('user_id', uid).limit(1);
+            if (posts && posts.length > 0) {
+              const { data: likes } = await supabase.from('post_likes').select('id').eq('post_id', posts[0].id).limit(1);
+              results.participate = likes && likes.length > 0;
+            }
+            if (!results.participate) {
+              // Also check if they have any followers as engagement proxy
+              const { count } = await supabase.from('follows').select('id', { count: 'exact', head: true }).eq('following_id', uid);
+              results.participate = (count || 0) > 0;
+            }
+
+            // Commit: someone subscribed to them
+            const { data: subs } = await supabase.from('subscriptions').select('id').eq('model_id', uid).limit(1);
+            results.commit = subs && subs.length > 0;
+
+            // Book: has any confirmed booking
+            const { data: bookings } = await supabase.from('bookings').select('id').eq('model_id', uid).limit(1);
+            results.book = bookings && bookings.length > 0;
+
+            // Return: has a repeat client (same client booked twice)
+            if (results.book) {
+              const { data: allBookings } = await supabase.from('bookings').select('client_id').eq('model_id', uid);
+              if (allBookings) {
+                const clientCounts = {};
+                allBookings.forEach(b => { clientCounts[b.client_id] = (clientCounts[b.client_id] || 0) + 1; });
+                results.return = Object.values(clientCounts).some(c => c >= 2);
+              }
+            }
+
+            // Recruit: cherry_picker_active is on
+            results.recruit = auth.profile?.cherry_picker_active || false;
+          } catch (e) { console.error('Growth ring check:', e); }
+
+          // Build stage array
+          const stageData = stageConfig.map(s => ({ ...s, active: !!results[s.key] }));
+
+          // Check for newly unlocked (compare with stored)
+          const storedKey = `growth_${uid}`;
+          const stored = JSON.parse(localStorage?.getItem?.(storedKey) || '{}');
+          stageData.forEach(s => {
+            if (s.active && !stored[s.key]) {
+              setNewUnlock(s);
+              stored[s.key] = true;
+            }
+          });
+          try { localStorage?.setItem?.(storedKey, JSON.stringify(stored)); } catch(e) {}
+
+          setStages(stageData);
+          setLoading(false);
+        };
+        checkStages();
+      }, [auth.currentUser, auth.profile]);
+
+      if (loading || !auth.profile || auth.profile.role !== 'model') return null;
+
+      const activeCount = stages.filter(s => s.active).length;
+      const totalStages = stages.length;
+
+      return (
+        <div style={{ marginBottom: '2rem' }}>
+          {/* New unlock toast */}
+          {newUnlock && (
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,110,199,0.12))',
+              border: '1px solid rgba(255,215,0,0.3)', borderRadius: '12px', padding: '1rem 1.25rem',
+              marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem',
+              animation: 'fadeIn 0.5s ease'
+            }}>
+              <div style={{ fontSize: '1.5rem' }}>🎉</div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#ffd700' }}>Stage Unlocked: {newUnlock.label}!</div>
+                <div style={{ fontSize: '0.82rem', color: '#aaa' }}>{newUnlock.desc}. You earned the {newUnlock.badge} badge!</div>
+              </div>
+              <button onClick={() => setNewUnlock(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '1.1rem' }}>×</button>
+            </div>
+          )}
+
+          {/* Growth Ring */}
+          <div style={{
+            background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '16px',
+            padding: '1.25rem', position: 'relative', overflow: 'hidden'
+          }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '1rem' }}>Your Growth Ring</div>
+                <div style={{ fontSize: '0.78rem', color: '#888' }}>{activeCount}/{totalStages} stages active — {activeCount === totalStages ? 'Full cycle complete! 🎉' : 'keep building'}</div>
+              </div>
+              <div style={{
+                fontSize: '0.75rem', fontWeight: 700, padding: '4px 10px', borderRadius: 20,
+                background: activeCount === totalStages ? 'rgba(255,215,0,0.15)' : 'rgba(255,110,199,0.1)',
+                color: activeCount === totalStages ? '#ffd700' : '#ff6ec7'
+              }}>{Math.round((activeCount / totalStages) * 100)}%</div>
+            </div>
+
+            {/* Stage circles in a row */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
+              {stages.map((s, i) => (
+                <React.Fragment key={s.key}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                    {/* Circle */}
+                    <div style={{
+                      width: '48px', height: '48px', borderRadius: '50%',
+                      background: s.active ? s.color : 'rgba(255,255,255,0.04)',
+                      border: `2px solid ${s.active ? s.color : 'rgba(255,255,255,0.1)'}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '1.2rem', transition: 'all 0.3s',
+                      opacity: s.active ? 1 : 0.4,
+                      boxShadow: s.active ? `0 0 15px ${s.color}40` : 'none'
+                    }}>
+                      {s.active ? s.icon : '🔒'}
+                    </div>
+                    {/* Label */}
+                    <div style={{
+                      fontSize: '0.68rem', fontWeight: 700, marginTop: '6px',
+                      color: s.active ? s.color : '#555', textAlign: 'center'
+                    }}>{s.label}</div>
+                    {/* Tip for inactive */}
+                    {!s.active && (
+                      <div style={{ fontSize: '0.58rem', color: '#444', textAlign: 'center', marginTop: '2px', maxWidth: '80px', lineHeight: 1.3 }}>{s.tip}</div>
+                    )}
+                  </div>
+                  {/* Connector line */}
+                  {i < stages.length - 1 && (
+                    <div style={{
+                      flex: '0 0 auto', height: '2px', width: '20px', marginTop: '-18px',
+                      background: (s.active && stages[i + 1].active) ? `linear-gradient(90deg, ${s.color}, ${stages[i + 1].color})` : 'rgba(255,255,255,0.08)'
+                    }} />
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+
+            {/* Loop arrow indicator */}
+            <div style={{ textAlign: 'center', marginTop: '0.75rem' }}>
+              <div style={{ fontSize: '0.7rem', color: '#555' }}>
+                {activeCount === totalStages ? '🔄 Full cycle — keep the wheel spinning!' : `Next: ${(stages.find(s => !s.active) || {}).label || ''}`}
+              </div>
+            </div>
+
+            {/* Earned badges */}
+            {activeCount > 0 && (
+              <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ fontSize: '0.7rem', color: '#666', marginBottom: '6px', fontWeight: 600 }}>EARNED BADGES</div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {stages.filter(s => s.active).map(s => (
+                    <span key={s.key} style={{
+                      fontSize: '0.68rem', padding: '3px 8px', borderRadius: 12,
+                      background: `${s.color}20`, color: s.color, fontWeight: 700
+                    }}>{s.badge}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     function DashboardPage() {
       const auth = useContext(AuthContext);
       const [bookings, setBookings] = useState([]);
@@ -10979,7 +11166,9 @@ REMEMBER:
 
         return (
           <div>
-            <h2 style={{ marginBottom: '2rem' }}>Model Dashboard</h2>
+            <h2 style={{ marginBottom: '1rem' }}>Model Dashboard</h2>
+
+            <GrowthRing />
 
             <div className="dashboard-grid">
               <div className="stat-card gradient">
