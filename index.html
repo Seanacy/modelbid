@@ -4996,7 +4996,7 @@
       const allTags = ['Lingerie', 'Costume', 'Glamour', 'Boudoir', 'Pin-Up', 'Cosplay', 'Fantasy', 'Retro', 'Luxury', 'Fun', 'Casual', 'Elegant', 'Swimwear', 'Streetwear', 'Artistic', 'Fitness', 'Bridal', 'Editorial'];
 
       useEffect(() => {
-        const fetchModels = async () => {
+        const fetchModels = async (attempt = 1) => {
           try {
             const { data, error } = await supabase
               .from('profiles')
@@ -5007,14 +5007,19 @@
             if (error) throw error;
             setModels(data || []);
           } catch (error) {
-            console.error('Fetch models error:', error);
-            auth.showToast('Failed to load models', 'error');
+            console.error('Fetch models error (attempt ' + attempt + '):', error?.message || error);
+            if (attempt < 3) {
+              await new Promise(r => setTimeout(r, 1000 * attempt));
+              return fetchModels(attempt + 1);
+            }
+            // Only show toast after all retries fail
+            auth.showToast('Failed to load models. Pull down to refresh.', 'error');
           } finally {
             setLoading(false);
           }
         };
 
-        const timeout = setTimeout(() => setLoading(false), 2000);
+        const timeout = setTimeout(() => setLoading(false), 5000);
         fetchModels().then(() => clearTimeout(timeout));
       }, []);
 
