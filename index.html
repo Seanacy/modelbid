@@ -10454,9 +10454,9 @@ REMEMBER:
                               <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: 20, fontWeight: 700, background: user.role === 'model' ? 'rgba(255,110,199,0.15)' : 'rgba(100,200,255,0.15)', color: user.role === 'model' ? '#ff6ec7' : '#64c8ff' }}>
                                 {user.role?.toUpperCase()}
                               </span>
-                              {user.cherry_picker_active && <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: 20, background: 'rgba(255,82,82,0.15)', color: '#ff5252', fontWeight: 700 }}>🍒 CHERRY PICKED</span>}
-                              {user.subscription_waived && <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: 20, background: 'rgba(255,215,0,0.15)', color: '#ffd700', fontWeight: 700 }}>SUB WAIVED</span>}
-                              {user.verified && <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: 20, background: 'rgba(0,230,118,0.15)', color: '#00e676', fontWeight: 700 }}>VERIFIED</span>}
+                              <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: 20, fontWeight: 700, background: user.cherry_picker_active ? 'rgba(255,82,82,0.15)' : 'rgba(255,255,255,0.04)', color: user.cherry_picker_active ? '#ff5252' : '#444' }}>🍒 CHERRY PICKED</span>
+                              <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: 20, fontWeight: 700, background: user.subscription_waived ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.04)', color: user.subscription_waived ? '#ffd700' : '#444' }}>SUB WAIVED</span>
+                              <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: 20, fontWeight: 700, background: user.verified ? 'rgba(0,230,118,0.15)' : 'rgba(255,255,255,0.04)', color: user.verified ? '#00e676' : '#444' }}>VERIFIED</span>
                               {user.promo_code_used && <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: 20, background: 'rgba(157,78,221,0.15)', color: '#9d4edd', fontWeight: 700 }}>PROMO: {user.promo_code_used}</span>}
                             </div>
                             <div style={{ fontSize: '0.78rem', color: '#888', marginTop: '2px' }}>
