@@ -9988,6 +9988,8 @@ REMEMBER:
       const [stats, setStats] = useState(null);
       const [users, setUsers] = useState([]);
       const [ghostUsers, setGhostUsers] = useState([]);
+      const [authUsers, setAuthUsers] = useState([]);
+      const [loadingAuthUsers, setLoadingAuthUsers] = useState(false);
       const [userSearch, setUserSearch] = useState('');
       const [userFilter, setUserFilter] = useState('all');
       const [allBookings, setAllBookings] = useState([]);
@@ -10147,6 +10149,40 @@ REMEMBER:
         showAdminToast(`Purged ${deleted} ghost account${deleted !== 1 ? 's' : ''}`);
       };
 
+      // Fetch all auth users (for Auth Users tab)
+      const fetchAuthUsers = async () => {
+        setLoadingAuthUsers(true);
+        try {
+          const authRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=100`, {
+            headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` }
+          });
+          if (authRes.ok) {
+            const authData = await authRes.json();
+            setAuthUsers((authData.users || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
+          }
+        } catch(e) { console.error('Auth users fetch error:', e); }
+        setLoadingAuthUsers(false);
+      };
+
+      const deleteAuthUser = async (userId, email) => {
+        try {
+          // Delete from auth.users
+          const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
+            method: 'DELETE',
+            headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' }
+          });
+          if (res.ok) {
+            // Also try to delete profile if exists
+            try { await adminMutate('profiles', { method: 'DELETE', filters: `id=eq.${userId}` }); } catch(e) {}
+            setAuthUsers(prev => prev.filter(u => u.id !== userId));
+            setUsers(prev => prev.filter(u => u.id !== userId));
+            showAdminToast(`Deleted ${email} from auth + profile`);
+          } else {
+            showAdminToast('Delete failed: ' + res.status);
+          }
+        } catch(e) { showAdminToast('Delete failed: ' + e.message); }
+      };
+
       // Fetch bookings
       const fetchBookings = async () => {
         setLoadingBookings(true);
@@ -10170,6 +10206,7 @@ REMEMBER:
       useEffect(() => {
         if (!adminAuthed) return;
         if (tab === 'users' && users.length === 0) fetchUsers();
+        if (tab === 'auth') fetchAuthUsers();
         if (tab === 'bookings' && allBookings.length === 0) fetchBookings();
         if (tab === 'posts' && allPosts.length === 0) fetchPosts();
       }, [tab, adminAuthed]);
@@ -10356,6 +10393,7 @@ REMEMBER:
               <button onClick={() => setTab('stats')} style={tabStyle('stats')}>Overview</button>
               <button onClick={() => setTab('users')} style={tabStyle('users')}>Users</button>
               <button onClick={() => setTab('promos')} style={tabStyle('promos')}>Promo Codes</button>
+              <button onClick={() => setTab('auth')} style={tabStyle('auth')}>Auth Users</button>
               <button onClick={() => setTab('bookings')} style={tabStyle('bookings')}>Bookings</button>
               <button onClick={() => setTab('posts')} style={tabStyle('posts')}>Posts</button>
             </div>
@@ -10621,6 +10659,39 @@ REMEMBER:
                           </div>
                         </div>
                       )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* AUTH USERS TAB */}
+          {tab === 'auth' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.85rem', color: '#888' }}>All Supabase auth accounts — delete any to free up the email</div>
+                <button onClick={fetchAuthUsers} style={{ padding: '0.5rem 1rem', borderRadius: 8, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#aaa', cursor: 'pointer', fontSize: '0.8rem' }}>↻ Refresh</button>
+              </div>
+              {loadingAuthUsers ? <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Loading...</div> : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>{authUsers.length} auth account{authUsers.length !== 1 ? 's' : ''}</div>
+                  {authUsers.map(au => (
+                    <div key={au.id} style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '0.8rem 1rem', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <div style={{ flex: 1, minWidth: '200px' }}>
+                        <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          {au.email}
+                          <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: 20, fontWeight: 700, background: au.email_confirmed_at ? 'rgba(0,230,118,0.15)' : 'rgba(255,152,0,0.15)', color: au.email_confirmed_at ? '#00e676' : '#ff9800' }}>
+                            {au.email_confirmed_at ? 'CONFIRMED' : 'UNCONFIRMED'}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '2px' }}>
+                          Created {new Date(au.created_at).toLocaleString()}
+                          {au.last_sign_in_at && <span> · Last sign-in {new Date(au.last_sign_in_at).toLocaleString()}</span>}
+                        </div>
+                      </div>
+                      <button onClick={() => { if (confirm(`Delete ${au.email} from auth?`)) deleteAuthUser(au.id, au.email); }}
+                        style={{ padding: '0.35rem 0.8rem', borderRadius: 6, border: '1px solid rgba(255,82,82,0.3)', background: 'rgba(255,82,82,0.08)', color: '#ff5252', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>Delete</button>
                     </div>
                   ))}
                 </div>
