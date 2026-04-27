@@ -817,6 +817,162 @@
       box-shadow: 0 0 20px rgba(255, 110, 199, 0.3);
     }
 
+    /* ===== BOOKING PROPOSAL CARDS ===== */
+    .proposal-card {
+      max-width: 340px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 215, 0, 0.25);
+      background: rgba(255, 215, 0, 0.04);
+    }
+    .proposal-card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.7rem 0.9rem;
+      font-weight: 700;
+      font-size: 0.88rem;
+      color: #ffd700;
+      border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+    }
+    .proposal-card-body {
+      padding: 0.7rem 0.9rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      font-size: 0.82rem;
+      color: #ccc;
+    }
+    .proposal-card-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .proposal-card-row .label {
+      color: #888;
+    }
+    .proposal-card-row .value {
+      font-weight: 600;
+      color: #eee;
+    }
+    .proposal-card-note {
+      margin-top: 0.3rem;
+      padding: 0.4rem 0.6rem;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 6px;
+      font-size: 0.8rem;
+      color: #aaa;
+      font-style: italic;
+    }
+    .proposal-card-actions {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.7rem 0.9rem;
+      border-top: 1px solid rgba(255, 215, 0, 0.12);
+    }
+    .proposal-btn-accept {
+      flex: 1;
+      padding: 0.45rem;
+      border-radius: 8px;
+      border: none;
+      background: linear-gradient(135deg, #00d9a3, #00b386);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: box-shadow 0.2s;
+    }
+    .proposal-btn-accept:hover {
+      box-shadow: 0 0 14px rgba(0, 217, 163, 0.4);
+    }
+    .proposal-btn-decline {
+      flex: 1;
+      padding: 0.45rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 71, 87, 0.4);
+      background: rgba(255, 71, 87, 0.1);
+      color: #ff4757;
+      font-weight: 700;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .proposal-btn-decline:hover {
+      background: rgba(255, 71, 87, 0.2);
+    }
+    .proposal-status-accepted {
+      padding: 0.5rem 0.9rem;
+      border-top: 1px solid rgba(0, 217, 163, 0.2);
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #00d9a3;
+    }
+    .proposal-status-declined {
+      padding: 0.5rem 0.9rem;
+      border-top: 1px solid rgba(255, 71, 87, 0.2);
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #ff4757;
+    }
+    .proposal-status-pending {
+      padding: 0.5rem 0.9rem;
+      border-top: 1px solid rgba(255, 215, 0, 0.12);
+      text-align: center;
+      font-size: 0.8rem;
+      color: #888;
+      font-style: italic;
+    }
+    .proposal-form-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-card);
+      border-top: 1px solid rgba(255, 215, 0, 0.25);
+      padding: 1rem;
+      z-index: 15;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .proposal-form-overlay h4 {
+      margin: 0;
+      color: #ffd700;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .proposal-form-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .proposal-form-row input,
+    .proposal-form-row select,
+    .proposal-form-row textarea {
+      flex: 1;
+      padding: 0.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card-light);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem;
+    }
+    .proposal-form-row input:focus,
+    .proposal-form-row select:focus,
+    .proposal-form-row textarea:focus {
+      outline: none;
+      border-color: var(--accent-gold);
+    }
+    .proposal-form-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.2rem;
+    }
+
     /* ===== DASHBOARD ===== */
     .dashboard-grid {
       display: grid;
@@ -8910,6 +9066,15 @@ function InnerCircleManage() {
       const [cherryPickerDirect, setCherryPickerDirect] = useState(false);
       const messageEndRef = useRef(null);
 
+      // Booking Proposals state
+      const [showProposalForm, setShowProposalForm] = useState(false);
+      const [proposalDate, setProposalDate] = useState('');
+      const [proposalTime, setProposalTime] = useState('');
+      const [proposalDuration, setProposalDuration] = useState(1);
+      const [proposalNote, setProposalNote] = useState('');
+      const [proposalRate, setProposalRate] = useState('');
+      const [proposals, setProposals] = useState([]);
+
       // DM Polls state
       const [showPollLibrary, setShowPollLibrary] = useState(false);
       const [pollLibrary, setPollLibrary] = useState([]);
@@ -9263,6 +9428,160 @@ REMEMBER:
       };
       // --- End DM Poll functions ---
 
+      // --- Booking Proposal functions ---
+      useEffect(() => {
+        const fetchProposals = async () => {
+          if (!selectedConvId) return;
+          try {
+            const { data, error } = await supabase
+              .from('booking_proposals')
+              .select('*')
+              .eq('conversation_id', selectedConvId)
+              .order('created_at', { ascending: true });
+            if (!error && data) setProposals(data);
+          } catch (err) {
+            console.error('Fetch proposals error:', err);
+          }
+        };
+        fetchProposals();
+
+        // Subscribe to realtime proposal changes
+        const channel = supabase
+          .channel(`proposals:${selectedConvId}`)
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'booking_proposals', filter: `conversation_id=eq.${selectedConvId}` },
+            (payload) => {
+              if (payload.eventType === 'INSERT') {
+                setProposals(prev => [...prev, payload.new]);
+              } else if (payload.eventType === 'UPDATE') {
+                setProposals(prev => prev.map(p => p.id === payload.new.id ? payload.new : p));
+              }
+            }
+          )
+          .subscribe();
+
+        return () => { channel.unsubscribe(); };
+      }, [selectedConvId]);
+
+      const handleSendProposal = async () => {
+        if (!proposalDate || !proposalTime) {
+          auth.showToast('Please select date and time', 'error');
+          return;
+        }
+        if (!selectedConvId) {
+          auth.showToast('Select a conversation first', 'error');
+          return;
+        }
+        try {
+          const { error } = await supabase
+            .from('booking_proposals')
+            .insert({
+              conversation_id: selectedConvId,
+              proposer_id: auth.currentUser.id,
+              proposed_date: proposalDate,
+              proposed_time: proposalTime,
+              duration_hours: proposalDuration,
+              note: proposalNote.trim() || null,
+              rate: proposalRate ? parseFloat(proposalRate) : null,
+              status: 'pending',
+            });
+          if (error) throw error;
+
+          // Also send a message so it shows in chat flow
+          const content = JSON.stringify({
+            type: 'booking_proposal',
+            proposed_date: proposalDate,
+            proposed_time: proposalTime,
+            duration_hours: proposalDuration,
+            note: proposalNote.trim() || null,
+            rate: proposalRate ? parseFloat(proposalRate) : null,
+          });
+          await auth.sendMessage(selectedConvId, content);
+          await supabase
+            .from('conversations')
+            .update({
+              last_message_at: new Date().toISOString(),
+              last_message_preview: '\u{1F4C5} Booking Proposal',
+            })
+            .eq('id', selectedConvId);
+
+          // Reset form
+          setShowProposalForm(false);
+          setProposalDate('');
+          setProposalTime('');
+          setProposalDuration(1);
+          setProposalNote('');
+          setProposalRate('');
+          auth.showToast('Booking proposal sent!', 'success');
+        } catch (err) {
+          auth.showToast(err.message || 'Failed to send proposal', 'error');
+        }
+      };
+
+      const handleAcceptProposal = async (proposal) => {
+        try {
+          const { error } = await supabase
+            .from('booking_proposals')
+            .update({ status: 'accepted' })
+            .eq('id', proposal.id);
+          if (error) throw error;
+
+          // Determine model_id and client_id from the conversation
+          const conv = conversations.find(c => c.id === selectedConvId);
+          if (conv) {
+            // The proposer could be either participant; figure out roles
+            const modelId = conv.participant_1;
+            const clientId = conv.participant_2;
+            // Create an actual booking
+            await supabase
+              .from('bookings')
+              .insert({
+                client_id: clientId,
+                model_id: modelId,
+                session_date: proposal.proposed_date,
+                duration_hours: proposal.duration_hours,
+                rate: proposal.rate,
+                status: 'accepted',
+                outfit_description: proposal.note || '',
+                contract_type: 'standard',
+              });
+          }
+
+          // Send confirmation message
+          await auth.sendMessage(selectedConvId, JSON.stringify({ type: 'booking_proposal_accepted', proposal_date: proposal.proposed_date, proposal_time: proposal.proposed_time }));
+          await supabase
+            .from('conversations')
+            .update({ last_message_at: new Date().toISOString(), last_message_preview: '\u2705 Booking Confirmed' })
+            .eq('id', selectedConvId);
+
+          auth.showToast('Booking confirmed!', 'success');
+        } catch (err) {
+          auth.showToast(err.message || 'Failed to accept proposal', 'error');
+        }
+      };
+
+      const handleDeclineProposal = async (proposal) => {
+        try {
+          const { error } = await supabase
+            .from('booking_proposals')
+            .update({ status: 'declined' })
+            .eq('id', proposal.id);
+          if (error) throw error;
+
+          await auth.sendMessage(selectedConvId, JSON.stringify({ type: 'booking_proposal_declined', proposal_date: proposal.proposed_date, proposal_time: proposal.proposed_time }));
+          await supabase
+            .from('conversations')
+            .update({ last_message_at: new Date().toISOString(), last_message_preview: '\u274C Proposal Declined' })
+            .eq('id', selectedConvId);
+
+          auth.showToast('Proposal declined', 'success');
+        } catch (err) {
+          auth.showToast(err.message || 'Failed to decline proposal', 'error');
+        }
+      };
+      // --- End Booking Proposal functions ---
+
       if (loading && !hasCherryPicker) {
         return <div className="text-center" style={{ padding: '2rem' }}>Loading messages...</div>;
       }
@@ -9337,9 +9656,12 @@ REMEMBER:
               ) : (
                 <>
                   {messages.map(msg => {
-                    let pollData = null;
-                    try { const p = JSON.parse(msg.content); if (p.type === 'poll') pollData = p; } catch {}
-                    if (pollData) {
+                    let parsed = null;
+                    try { parsed = JSON.parse(msg.content); } catch {}
+
+                    // --- Poll message ---
+                    if (parsed && parsed.type === 'poll') {
+                      const pollData = parsed;
                       const responses = pollResponses[msg.id] || [];
                       const totalVotes = responses.length;
                       const myVote = responses.find(r => r.voter_id === auth.currentUser.id);
@@ -9375,6 +9697,93 @@ REMEMBER:
                         </div>
                       );
                     }
+
+                    // --- Booking Proposal card ---
+                    if (parsed && parsed.type === 'booking_proposal') {
+                      const isSender = msg.sender_id === auth.currentUser.id;
+                      // Find matching proposal from DB to get current status
+                      const matchingProposal = proposals.find(p =>
+                        p.proposed_date === parsed.proposed_date &&
+                        p.proposed_time === parsed.proposed_time &&
+                        p.conversation_id === selectedConvId
+                      );
+                      const status = matchingProposal ? matchingProposal.status : 'pending';
+                      const displayDate = new Date(parsed.proposed_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+                      const displayTime = parsed.proposed_time ? parsed.proposed_time.substring(0, 5) : '';
+                      return (
+                        <div key={msg.id} className={`message-bubble ${isSender ? 'sent' : 'received'}`}>
+                          <div className="proposal-card">
+                            <div className="proposal-card-header">
+                              <span>📅</span> Booking Proposal
+                            </div>
+                            <div className="proposal-card-body">
+                              <div className="proposal-card-row">
+                                <span className="label">Date</span>
+                                <span className="value">{displayDate}</span>
+                              </div>
+                              <div className="proposal-card-row">
+                                <span className="label">Time</span>
+                                <span className="value">{displayTime}</span>
+                              </div>
+                              <div className="proposal-card-row">
+                                <span className="label">Duration</span>
+                                <span className="value">{parsed.duration_hours}hr{parsed.duration_hours > 1 ? 's' : ''}</span>
+                              </div>
+                              {parsed.rate && (
+                                <div className="proposal-card-row">
+                                  <span className="label">Rate</span>
+                                  <span className="value">${parseFloat(parsed.rate).toFixed(2)}</span>
+                                </div>
+                              )}
+                              {parsed.note && (
+                                <div className="proposal-card-note">{parsed.note}</div>
+                              )}
+                            </div>
+                            {status === 'pending' && !isSender && matchingProposal && (
+                              <div className="proposal-card-actions">
+                                <button className="proposal-btn-accept" onClick={() => handleAcceptProposal(matchingProposal)}>Accept</button>
+                                <button className="proposal-btn-decline" onClick={() => handleDeclineProposal(matchingProposal)}>Decline</button>
+                              </div>
+                            )}
+                            {status === 'pending' && isSender && (
+                              <div className="proposal-status-pending">Waiting for response...</div>
+                            )}
+                            {status === 'accepted' && (
+                              <div className="proposal-status-accepted">✅ Booking Confirmed</div>
+                            )}
+                            {status === 'declined' && (
+                              <div className="proposal-status-declined">
+                                Declined
+                                {!isSender && (
+                                  <button onClick={() => setShowProposalForm(true)} style={{ marginLeft: '0.5rem', padding: '0.2rem 0.6rem', borderRadius: 6, border: '1px solid rgba(255,215,0,0.3)', background: 'rgba(255,215,0,0.08)', color: '#ffd700', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600 }}>Counter-propose</button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <div className="message-time">
+                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // --- Booking accepted/declined system messages ---
+                    if (parsed && parsed.type === 'booking_proposal_accepted') {
+                      return (
+                        <div key={msg.id} style={{ textAlign: 'center', padding: '0.5rem', fontSize: '0.82rem', color: '#00d9a3' }}>
+                          ✅ Booking confirmed for {new Date(parsed.proposal_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {parsed.proposal_time?.substring(0, 5)}
+                        </div>
+                      );
+                    }
+                    if (parsed && parsed.type === 'booking_proposal_declined') {
+                      return (
+                        <div key={msg.id} style={{ textAlign: 'center', padding: '0.5rem', fontSize: '0.82rem', color: '#ff4757' }}>
+                          ❌ Proposal for {new Date(parsed.proposal_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {parsed.proposal_time?.substring(0, 5)} was declined
+                        </div>
+                      );
+                    }
+
+                    // --- Regular message ---
                     return (
                       <div key={msg.id} className={`message-bubble ${msg.sender_id === auth.currentUser.id ? 'sent' : 'received'}`}>
                         <div className="message-content">{msg.content}</div>
@@ -9442,10 +9851,41 @@ REMEMBER:
               </div>
             )}
 
+            {/* Booking Proposal Form Overlay */}
+            {showProposalForm && (
+              <div className="proposal-form-overlay">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <h4>📅 Propose Booking</h4>
+                  <button onClick={() => setShowProposalForm(false)} style={{ background: 'none', border: 'none', color: '#999', fontSize: '1.1rem', cursor: 'pointer' }}>✕</button>
+                </div>
+                <div className="proposal-form-row">
+                  <input type="date" value={proposalDate} onChange={e => setProposalDate(e.target.value)} style={{ colorScheme: 'dark' }} />
+                  <input type="time" value={proposalTime} onChange={e => setProposalTime(e.target.value)} style={{ colorScheme: 'dark' }} />
+                </div>
+                <div className="proposal-form-row">
+                  <select value={proposalDuration} onChange={e => setProposalDuration(parseInt(e.target.value))}>
+                    <option value={1}>1 hour</option>
+                    <option value={2}>2 hours</option>
+                    <option value={3}>3 hours</option>
+                    <option value={4}>4 hours</option>
+                  </select>
+                  <input type="number" placeholder="Rate ($)" value={proposalRate} onChange={e => setProposalRate(e.target.value)} min="0" step="0.01" />
+                </div>
+                <div className="proposal-form-row">
+                  <textarea placeholder="Optional note..." value={proposalNote} onChange={e => setProposalNote(e.target.value)} rows={2} style={{ resize: 'none' }} />
+                </div>
+                <div className="proposal-form-actions">
+                  <button onClick={handleSendProposal} style={{ flex: 1, padding: '0.55rem', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #ffd700, #ff8c00)', color: '#000', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer' }}>Send Proposal</button>
+                  <button onClick={() => setShowProposalForm(false)} style={{ padding: '0.55rem 1rem', borderRadius: 8, border: '1px solid var(--border-color)', background: 'transparent', color: '#999', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}>Cancel</button>
+                </div>
+              </div>
+            )}
+
             <div className="message-input-section">
               {auth.profile?.role !== 'client' && (
                 <button onClick={() => setShowPollLibrary(true)} title="Poll Library" style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '0.4rem 0.55rem', fontSize: '1rem', cursor: 'pointer', flexShrink: 0, lineHeight: 1 }}>📊</button>
               )}
+              <button onClick={() => setShowProposalForm(!showProposalForm)} title="Propose Booking" style={{ background: 'none', border: '1px solid rgba(255,215,0,0.3)', borderRadius: 8, padding: '0.4rem 0.55rem', fontSize: '1rem', cursor: 'pointer', flexShrink: 0, lineHeight: 1, color: showProposalForm ? '#ffd700' : 'inherit' }}>📅</button>
               <input
                 type="text"
                 placeholder="Type your message..."
