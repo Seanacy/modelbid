@@ -16012,8 +16012,8 @@ RULES
             <div className="nav-links desktop-auth">
               {!auth.currentUser ? (
                 <>
-                  <button className="btn btn-secondary" onClick={() => window.location.hash = 'login'}>Login</button>
-                  <button className="btn glow-btn" onClick={() => window.location.hash = 'signup'}>Sign Up</button>
+                  {currentPage !== 'login' && currentPage !== 'signup' && <button className="btn btn-secondary" onClick={() => window.location.hash = 'login'}>Login</button>}
+                  {currentPage !== 'signup' && <button className="btn glow-btn" onClick={() => window.location.hash = 'signup'}>Sign Up</button>}
                 </>
               ) : (
                 <div className="user-section">
@@ -16119,8 +16119,8 @@ RULES
 
             {!auth.currentUser ? (
               <div className="mobile-menu-section" style={{ padding: '1rem 1.25rem', display: 'flex', gap: '0.75rem' }}>
-                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => { setMobileMenuOpen(false); window.location.hash = 'login'; }}>Login</button>
-                <button className="btn glow-btn" style={{ flex: 1 }} onClick={() => { setMobileMenuOpen(false); window.location.hash = 'signup'; }}>Sign Up</button>
+                {currentPage !== 'login' && currentPage !== 'signup' && <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => { setMobileMenuOpen(false); window.location.hash = 'login'; }}>Login</button>}
+                {currentPage !== 'signup' && <button className="btn glow-btn" style={{ flex: 1 }} onClick={() => { setMobileMenuOpen(false); window.location.hash = 'signup'; }}>Sign Up</button>}
               </div>
             ) : (
               <button className="mobile-menu-logout" onClick={async () => { setMobileMenuOpen(false); await auth.logout(); window.location.hash = 'home'; }}>Logout</button>
