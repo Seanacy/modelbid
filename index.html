@@ -4404,13 +4404,16 @@
 
       const logout = async () => {
         try {
-          const { error } = await supabase.auth.signOut();
-          if (error) throw error;
+          // Use scope: 'local' to avoid lock contention with realtime subscriptions
+          await supabase.auth.signOut({ scope: 'local' });
           setCurrentUser(null);
           setProfile(null);
           showToast('Logged out successfully!', 'success');
         } catch (error) {
-          showToast(error.message, 'error');
+          // Force logout even if signOut throws a lock error
+          setCurrentUser(null);
+          setProfile(null);
+          showToast('Logged out successfully!', 'success');
         }
       };
 
