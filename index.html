@@ -4320,13 +4320,12 @@
               window.location.hash = 'edit-profile';
             }
 
-            // After Google OAuth return — redirect new users to edit-profile with waive scroll
+            // After Google OAuth return — send new users to role picker, then edit-profile
             if (sessionStorage.getItem('oauthReturn') === 'true') {
               sessionStorage.removeItem('oauthReturn');
               const { data: existingProfile } = await supabase.from('profiles').select('display_name, bio, role').eq('id', session.user.id).single();
               if (!existingProfile || !existingProfile.bio) {
-                sessionStorage.setItem('scrollToWaive', 'true');
-                window.location.hash = 'edit-profile';
+                window.location.hash = 'choose-role';
               }
             }
           } else {
@@ -13502,6 +13501,78 @@ REMEMBER:
       );
     }
 
+    function ChooseRolePage() {
+      const auth = useContext(AuthContext);
+      const [saving, setSaving] = useState(false);
+
+      const selectRole = async (role) => {
+        setSaving(true);
+        try {
+          // Update profile role
+          await supabase.from('profiles').update({ role }).eq('id', auth.currentUser.id);
+          // Update local profile state
+          auth.profile && (auth.profile.role = role);
+          // Also update display_name from Google metadata if it's still default
+          const googleName = auth.currentUser.user_metadata?.full_name || auth.currentUser.user_metadata?.name;
+          if (googleName && (!auth.profile?.display_name || auth.profile.display_name === 'New User')) {
+            await supabase.from('profiles').update({ display_name: googleName }).eq('id', auth.currentUser.id);
+            if (auth.profile) auth.profile.display_name = googleName;
+          }
+          sessionStorage.setItem('scrollToWaive', 'true');
+          window.location.hash = 'edit-profile';
+        } catch (e) {
+          auth.showToast('Something went wrong. Try again.', 'error');
+          setSaving(false);
+        }
+      };
+
+      return (
+        <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+          <div style={{ maxWidth: '440px', width: '100%', textAlign: 'center' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>👋</div>
+            <h2 style={{ marginBottom: '0.5rem' }}>Welcome to ModelBid!</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', fontSize: '0.95rem' }}>
+              One quick thing — are you joining as a <strong>model</strong> or a <strong>client</strong>?
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <button onClick={() => selectRole('model')} disabled={saving}
+                style={{
+                  padding: '1.5rem', borderRadius: '12px', border: '2px solid rgba(255,110,199,0.3)',
+                  background: 'rgba(255,110,199,0.08)', cursor: saving ? 'wait' : 'pointer',
+                  textAlign: 'left', transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => { e.target.style.borderColor = '#ff6ec7'; e.target.style.background = 'rgba(255,110,199,0.15)'; }}
+                onMouseLeave={(e) => { e.target.style.borderColor = 'rgba(255,110,199,0.3)'; e.target.style.background = 'rgba(255,110,199,0.08)'; }}
+              >
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>📸 I'm a Model</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  I want to get booked for photo sessions, build my audience, and earn money.
+                </div>
+              </button>
+
+              <button onClick={() => selectRole('client')} disabled={saving}
+                style={{
+                  padding: '1.5rem', borderRadius: '12px', border: '2px solid rgba(0,217,255,0.3)',
+                  background: 'rgba(0,217,255,0.08)', cursor: saving ? 'wait' : 'pointer',
+                  textAlign: 'left', transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => { e.target.style.borderColor = '#00d9ff'; e.target.style.background = 'rgba(0,217,255,0.15)'; }}
+                onMouseLeave={(e) => { e.target.style.borderColor = 'rgba(0,217,255,0.3)'; e.target.style.background = 'rgba(0,217,255,0.08)'; }}
+              >
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>🎯 I'm a Client</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  I want to browse models, book photo sessions, and discover talent.
+                </div>
+              </button>
+            </div>
+
+            {saving && <div style={{ marginTop: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Setting up your account...</div>}
+          </div>
+        </div>
+      );
+    }
+
     function SignupPage() {
       const { signup, signInWithGoogle } = useContext(AuthContext);
       const [displayName, setDisplayName] = useState('');
@@ -16440,6 +16511,7 @@ RULES
         if (page === 'contracts') return requiresSub(<ContractsPage />);
         if (page === 'login') return <LoginPage />;
         if (page === 'signup') return <SignupPage />;
+        if (page === 'choose-role') return auth.currentUser ? <ChooseRolePage /> : <LoginPage />;
         if (page === 'model-demo') return <ModelDemoPage />;
         if (page === 'cherry-picker') return auth.profile?.role === 'client' ? <FeedPage /> : requiresSub(<CherryPickerPage />);
         if (page === 'team') return auth.currentUser ? <TeamFamSaucePage /> : <LoginPage />;
