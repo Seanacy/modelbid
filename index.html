@@ -13823,6 +13823,9 @@ REMEMBER:
       const [promoSocialUrl, setPromoSocialUrl] = useState(profile?.promo_social_url || '');
       const [verifying, setVerifying] = useState(false);
       const [verifyStatus, setVerifyStatus] = useState(profile?.promo_verified ? 'verified' : (profile?.promo_social_url ? 'pending' : null));
+      const [promoCodeInput, setPromoCodeInput] = useState('');
+      const [redeemingPromo, setRedeemingPromo] = useState(false);
+      const [promoRedeemStatus, setPromoRedeemStatus] = useState(profile?.promo_code_used ? 'already' : null);
       const [idVerification, setIdVerification] = useState(null);
       const [uploadingId, setUploadingId] = useState(false);
       const [uploadingSelfie, setUploadingSelfie] = useState(false);
@@ -13945,6 +13948,70 @@ REMEMBER:
       };
 
       const myPromoLink = `modelbid.tech/#profile/${currentUser.id}`;
+
+      const handleRedeemPromo = async () => {
+        if (!promoCodeInput.trim()) return;
+        setRedeemingPromo(true);
+        setPromoRedeemStatus(null);
+        try {
+          // Check if user already has a promo
+          if (profile?.promo_code_used) {
+            setPromoRedeemStatus('already');
+            setRedeemingPromo(false);
+            return;
+          }
+
+          // Look up the promo code
+          const { data: promo, error: fetchErr } = await supabase
+            .from('promo_codes')
+            .select('*')
+            .eq('code', promoCodeInput.trim().toUpperCase())
+            .eq('active', true)
+            .single();
+
+          if (fetchErr || !promo) {
+            setPromoRedeemStatus('invalid');
+            setRedeemingPromo(false);
+            return;
+          }
+          if (promo.times_used >= promo.max_uses) {
+            setPromoRedeemStatus('invalid');
+            setRedeemingPromo(false);
+            return;
+          }
+          if (promo.expires_at && new Date(promo.expires_at) < new Date()) {
+            setPromoRedeemStatus('invalid');
+            setRedeemingPromo(false);
+            return;
+          }
+
+          // Apply the promo
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + promo.duration_days);
+
+          await supabase.from('profiles').update({
+            promo_code_used: promo.code,
+            promo_expires_at: expiresAt.toISOString(),
+            cherry_picker_active: true,
+            subscription_waived: true,
+          }).eq('id', currentUser.id);
+
+          await supabase.from('promo_codes').update({
+            times_used: promo.times_used + 1,
+          }).eq('id', promo.id);
+
+          // Update local state
+          setData(prev => ({ ...prev, promo_code_used: promo.code, cherry_picker_active: true, subscription_waived: true }));
+          setPromoRedeemStatus('success');
+          setPromoCodeInput('');
+          auth.showToast('Promo code applied! Subscription waived.', 'success');
+        } catch (e) {
+          console.error('Promo redeem error:', e);
+          setPromoRedeemStatus('invalid');
+        } finally {
+          setRedeemingPromo(false);
+        }
+      };
 
       const handlePromoSubmit = async () => {
         if (!promoSocialUrl.trim()) {
@@ -14397,6 +14464,51 @@ REMEMBER:
                     Scanning page for your link...
                   </div>
                 )}
+
+                {/* Promo Code */}
+                <div style={{ marginTop: '14px', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                    Have a promo code?
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      type="text"
+                      placeholder="Enter promo code"
+                      value={promoCodeInput}
+                      onChange={(e) => setPromoCodeInput(e.target.value.toUpperCase())}
+                      style={{
+                        flex: 1, padding: '10px 12px', borderRadius: '10px',
+                        border: '1px solid var(--border-color)', background: 'var(--bg-card)',
+                        color: 'var(--text-primary)', fontSize: '0.85rem', textTransform: 'uppercase',
+                        letterSpacing: '1px', fontWeight: 700
+                      }}
+                    />
+                    <button onClick={handleRedeemPromo} disabled={redeemingPromo || !promoCodeInput.trim()}
+                      style={{
+                        padding: '10px 20px', borderRadius: '10px', border: 'none',
+                        background: redeemingPromo || !promoCodeInput.trim() ? '#555' : 'linear-gradient(135deg, #ffd700, #ff6ec7)',
+                        color: '#fff', fontWeight: 700, fontSize: '0.82rem',
+                        cursor: redeemingPromo || !promoCodeInput.trim() ? 'not-allowed' : 'pointer', flexShrink: 0
+                      }}>
+                      {redeemingPromo ? 'Applying...' : 'Apply'}
+                    </button>
+                  </div>
+                  {promoRedeemStatus === 'success' && (
+                    <div style={{ marginTop: '8px', padding: '8px 12px', borderRadius: '8px', background: 'rgba(0,200,83,0.1)', border: '1px solid rgba(0,200,83,0.3)', fontSize: '0.82rem', color: '#00c853' }}>
+                      <strong>✓ Promo applied!</strong> Your subscription fee has been waived.
+                    </div>
+                  )}
+                  {promoRedeemStatus === 'invalid' && (
+                    <div style={{ marginTop: '8px', padding: '8px 12px', borderRadius: '8px', background: 'rgba(255,60,60,0.08)', border: '1px solid rgba(255,60,60,0.25)', fontSize: '0.82rem', color: '#ff4444' }}>
+                      <strong>✕ Invalid code.</strong> That promo code doesn't exist, has expired, or has been fully used.
+                    </div>
+                  )}
+                  {promoRedeemStatus === 'already' && (
+                    <div style={{ marginTop: '8px', padding: '8px 12px', borderRadius: '8px', background: 'rgba(0,217,255,0.08)', border: '1px solid rgba(0,217,255,0.25)', fontSize: '0.82rem', color: '#00d9ff' }}>
+                      <strong>ℹ Already applied.</strong> You already have an active promo on your account.
+                    </div>
+                  )}
+                </div>
 
                 {/* Fine print */}
                 <div style={{ marginTop: '12px', fontSize: '0.68rem', color: '#666', lineHeight: 1.6 }}>
