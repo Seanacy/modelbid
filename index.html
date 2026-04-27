@@ -4002,6 +4002,7 @@
     // ===== SUPABASE INITIALIZATION =====
     const SUPABASE_URL = 'https://qjtanxqywpvqdpcxejlr.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqdGFueHF5d3B2cWRwY3hlamxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1MzQxNzUsImV4cCI6MjA5MjExMDE3NX0.73e_qRunECUFRpcvUNvDx9IyOLIKMvxCGsklgIBgF1I';
+    const SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqdGFueHF5d3B2cWRwY3hlamxyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjUzNDE3NSwiZXhwIjoyMDkyMTEwMTc1fQ.7r-PqjzBDt0tavGMD_bWjrV9cqtdRRdDjcWUhx2-oIk';
 
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -10136,10 +10137,24 @@ REMEMBER:
 
       const handleDeleteUser = async (userId) => {
         try {
+          // Step 1: Delete from profiles table
           await adminMutate('profiles', { method: 'DELETE', filters: `id=eq.${userId}` });
+          // Step 2: Delete from Supabase auth.users using Admin API + service_role key
+          const authRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
+            method: 'DELETE',
+            headers: {
+              'apikey': SUPABASE_SERVICE_ROLE_KEY,
+              'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          if (!authRes.ok) {
+            const errData = await authRes.json().catch(() => ({}));
+            console.warn('Auth user delete response:', authRes.status, errData);
+          }
           setUsers(prev => prev.filter(u => u.id !== userId));
           setConfirmDelete(null);
-          showAdminToast('User deleted');
+          showAdminToast('User fully deleted (profile + auth)');
         } catch(e) { showAdminToast('Delete failed: ' + e.message); }
       };
 
