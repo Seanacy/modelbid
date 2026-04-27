@@ -9860,6 +9860,9 @@ REMEMBER:
       const [editingUser, setEditingUser] = useState(null);
       const [editForm, setEditForm] = useState({});
       const [confirmDelete, setConfirmDelete] = useState(null);
+      const [verifications, setVerifications] = useState([]);
+      const [loadingVerifications, setLoadingVerifications] = useState(false);
+      const [rejectNotes, setRejectNotes] = useState({});
       const [showChangePassword, setShowChangePassword] = useState(false);
       const [newPassword, setNewPassword] = useState('');
       const [confirmNewPassword, setConfirmNewPassword] = useState('');
@@ -10063,10 +10066,65 @@ REMEMBER:
         setLoadingPosts(false);
       };
 
+      // Fetch verification requests
+      const fetchVerifications = async () => {
+        setLoadingVerifications(true);
+        try {
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/verification_requests?select=*&order=submitted_at.desc`, {
+            headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` }
+          });
+          const data = await res.json();
+          // Enrich with profile data
+          const enriched = await Promise.all((data || []).map(async (vr) => {
+            const profRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${vr.user_id}&select=display_name,email`, {
+              headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` }
+            });
+            const profs = await profRes.json();
+            return { ...vr, profile: profs[0] || {} };
+          }));
+          setVerifications(enriched);
+        } catch(e) { console.error('Verifications fetch error:', e); }
+        setLoadingVerifications(false);
+      };
+
+      // Approve verification — sets verified=true on profile
+      const approveVerification = async (vr) => {
+        try {
+          await fetch(`${SUPABASE_URL}/rest/v1/verification_requests?id=eq.${vr.id}`, {
+            method: 'PATCH',
+            headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ status: 'approved', reviewed_at: new Date().toISOString() })
+          });
+          await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${vr.user_id}`, {
+            method: 'PATCH',
+            headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ verified: true })
+          });
+          showAdminToast('Verification approved — user now has the green checkmark ✓');
+          fetchVerifications();
+        } catch(e) { showAdminToast('Approve failed: ' + e.message); }
+      };
+
+      // Reject verification
+      const rejectVerification = async (vr) => {
+        const notes = rejectNotes[vr.id] || '';
+        try {
+          await fetch(`${SUPABASE_URL}/rest/v1/verification_requests?id=eq.${vr.id}`, {
+            method: 'PATCH',
+            headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ status: 'rejected', reviewed_at: new Date().toISOString(), admin_notes: notes || 'Rejected by admin' })
+          });
+          showAdminToast('Verification rejected');
+          fetchVerifications();
+          setRejectNotes(prev => { const n = {...prev}; delete n[vr.id]; return n; });
+        } catch(e) { showAdminToast('Reject failed: ' + e.message); }
+      };
+
       useEffect(() => {
         if (!adminAuthed) return;
         if (tab === 'users' && users.length === 0) fetchUsers();
         if (tab === 'auth') fetchAuthUsers();
+        if (tab === 'verify') fetchVerifications();
         if (tab === 'bookings' && allBookings.length === 0) fetchBookings();
         if (tab === 'posts' && allPosts.length === 0) fetchPosts();
       }, [tab, adminAuthed]);
@@ -10254,6 +10312,7 @@ REMEMBER:
               <button onClick={() => setTab('users')} style={tabStyle('users')}>Users</button>
               <button onClick={() => setTab('promos')} style={tabStyle('promos')}>Promo Codes</button>
               <button onClick={() => setTab('auth')} style={tabStyle('auth')}>Auth Users</button>
+              <button onClick={() => { setTab('verify'); fetchVerifications(); }} style={tabStyle('verify')}>Verifications</button>
               <button onClick={() => setTab('bookings')} style={tabStyle('bookings')}>Bookings</button>
               <button onClick={() => setTab('posts')} style={tabStyle('posts')}>Posts</button>
             </div>
@@ -10582,6 +10641,87 @@ REMEMBER:
                         </div>
                       </div>
                       <button onClick={() => handleDeleteBooking(b.id)} style={{ padding: '0.35rem 0.7rem', borderRadius: 6, border: '1px solid rgba(255,82,82,0.3)', background: 'rgba(255,82,82,0.08)', color: '#ff5252', fontSize: '0.75rem', cursor: 'pointer' }}>Delete</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* VERIFICATIONS TAB */}
+          {tab === 'verify' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 style={{ margin: 0 }}>ID Verifications</h3>
+                <button onClick={fetchVerifications} style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#ccc', fontSize: '0.78rem', cursor: 'pointer' }}>↻ Refresh</button>
+              </div>
+              {loadingVerifications ? <div style={{ color: '#888', textAlign: 'center', padding: '2rem' }}>Loading...</div> : verifications.length === 0 ? (
+                <div style={{ color: '#888', textAlign: 'center', padding: '2rem' }}>No verification requests yet</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {verifications.map(vr => (
+                    <div key={vr.id} style={{
+                      background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1rem',
+                      border: `1px solid ${vr.status === 'pending' ? 'rgba(255,215,0,0.3)' : vr.status === 'approved' ? 'rgba(0,230,118,0.3)' : 'rgba(255,82,82,0.3)'}`
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        <div>
+                          <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            {vr.profile?.display_name || 'Unknown'}
+                            <span style={{
+                              fontSize: '0.65rem', padding: '2px 8px', borderRadius: 20, fontWeight: 700,
+                              background: vr.status === 'pending' ? 'rgba(255,215,0,0.15)' : vr.status === 'approved' ? 'rgba(0,230,118,0.15)' : 'rgba(255,82,82,0.15)',
+                              color: vr.status === 'pending' ? '#ffd700' : vr.status === 'approved' ? '#00e676' : '#ff5252'
+                            }}>{vr.status.toUpperCase()}</span>
+                          </div>
+                          <div style={{ fontSize: '0.78rem', color: '#888' }}>
+                            {vr.profile?.email || 'No email'} · Submitted {new Date(vr.submitted_at).toLocaleDateString()}
+                            {vr.reviewed_at && <span> · Reviewed {new Date(vr.reviewed_at).toLocaleDateString()}</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Photo previews */}
+                      <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: '150px' }}>
+                          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#aaa', marginBottom: '4px' }}>Government ID</div>
+                          <img alt="ID"
+                            style={{ width: '100%', maxHeight: '200px', objectFit: 'contain', borderRadius: '8px', background: '#000', cursor: 'pointer' }}
+                            ref={(el) => { if (el && !el.dataset.loaded) { el.dataset.loaded = '1'; fetch(vr.id_photo_url, { headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` } }).then(r => r.blob()).then(b => el.src = URL.createObjectURL(b)).catch(() => el.alt = 'Could not load ID image'); } }}
+                          />
+                        </div>
+                        <div style={{ flex: 1, minWidth: '150px' }}>
+                          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#aaa', marginBottom: '4px' }}>Selfie</div>
+                          <img alt="Selfie"
+                            style={{ width: '100%', maxHeight: '200px', objectFit: 'contain', borderRadius: '8px', background: '#000', cursor: 'pointer' }}
+                            ref={(el) => { if (el && !el.dataset.loaded) { el.dataset.loaded = '1'; fetch(vr.selfie_url, { headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` } }).then(r => r.blob()).then(b => el.src = URL.createObjectURL(b)).catch(() => el.alt = 'Could not load selfie'); } }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Admin notes for rejected */}
+                      {vr.status === 'rejected' && vr.admin_notes && (
+                        <div style={{ fontSize: '0.82rem', color: '#ff5252', marginBottom: '0.5rem', padding: '0.4rem 0.75rem', background: 'rgba(255,82,82,0.08)', borderRadius: '6px' }}>
+                          Rejection reason: {vr.admin_notes}
+                        </div>
+                      )}
+
+                      {/* Action buttons for pending */}
+                      {vr.status === 'pending' && (
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <button onClick={() => approveVerification(vr)}
+                            style={{ padding: '0.45rem 1rem', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #00e676, #00c853)', color: '#1a1a2e', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>
+                            ✓ Approve
+                          </button>
+                          <input placeholder="Rejection reason (optional)" value={rejectNotes[vr.id] || ''}
+                            onChange={(e) => setRejectNotes(prev => ({ ...prev, [vr.id]: e.target.value }))}
+                            style={{ flex: 1, minWidth: '150px', padding: '0.45rem 0.75rem', borderRadius: 8, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.82rem' }} />
+                          <button onClick={() => rejectVerification(vr)}
+                            style={{ padding: '0.45rem 1rem', borderRadius: 8, border: '1px solid rgba(255,82,82,0.3)', background: 'rgba(255,82,82,0.08)', color: '#ff5252', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>
+                            ✗ Reject
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -12476,7 +12616,64 @@ REMEMBER:
       const [promoSocialUrl, setPromoSocialUrl] = useState(profile?.promo_social_url || '');
       const [verifying, setVerifying] = useState(false);
       const [verifyStatus, setVerifyStatus] = useState(profile?.promo_verified ? 'verified' : (profile?.promo_social_url ? 'pending' : null));
+      const [idVerification, setIdVerification] = useState(null);
+      const [uploadingId, setUploadingId] = useState(false);
+      const [uploadingSelfie, setUploadingSelfie] = useState(false);
+      const [idPhotoPreview, setIdPhotoPreview] = useState(null);
+      const [selfiePreview, setSelfiePreview] = useState(null);
+      const [idSubmitting, setIdSubmitting] = useState(false);
       const waiveSectionRef = React.useRef(null);
+
+      // Fetch existing verification request
+      useEffect(() => {
+        if (!currentUser) return;
+        (async () => {
+          const { data: vr } = await supabase.from('verification_requests').select('*').eq('user_id', currentUser.id).single();
+          if (vr) setIdVerification(vr);
+        })();
+      }, [currentUser]);
+
+      const handleIdUpload = async (file, type) => {
+        if (!file) return;
+        if (file.size > 10 * 1024 * 1024) { alert('File too large. Max 10MB.'); return; }
+        const setUploading = type === 'id' ? setUploadingId : setUploadingSelfie;
+        const setPreview = type === 'id' ? setIdPhotoPreview : setSelfiePreview;
+        setUploading(true);
+        try {
+          const ext = file.name.split('.').pop();
+          const fileName = `${currentUser.id}/${type}_${Date.now()}.${ext}`;
+          const { error } = await supabase.storage.from('verification').upload(fileName, file, { upsert: true });
+          if (error) throw error;
+          const url = `${SUPABASE_URL}/storage/v1/object/verification/${fileName}`;
+          setPreview(url);
+        } catch (err) {
+          console.error('Verification upload error:', err);
+          alert('Upload failed: ' + err.message);
+        }
+        setUploading(false);
+      };
+
+      const handleIdSubmit = async () => {
+        if (!idPhotoPreview || !selfiePreview) { alert('Please upload both your government ID and a selfie.'); return; }
+        setIdSubmitting(true);
+        try {
+          if (idVerification) {
+            await supabase.from('verification_requests').update({
+              id_photo_url: idPhotoPreview, selfie_url: selfiePreview, status: 'pending', admin_notes: null, reviewed_at: null, submitted_at: new Date().toISOString()
+            }).eq('user_id', currentUser.id);
+          } else {
+            await supabase.from('verification_requests').insert({
+              user_id: currentUser.id, id_photo_url: idPhotoPreview, selfie_url: selfiePreview
+            });
+          }
+          setIdVerification({ status: 'pending', id_photo_url: idPhotoPreview, selfie_url: selfiePreview });
+          setIdPhotoPreview(null); setSelfiePreview(null);
+        } catch (err) {
+          console.error('Verification submit error:', err);
+          alert('Submit failed: ' + err.message);
+        }
+        setIdSubmitting(false);
+      };
 
       // Auto-scroll to Waive section when arriving from email confirmation
       useEffect(() => {
@@ -12998,6 +13195,114 @@ REMEMBER:
                 <div style={{ marginTop: '12px', fontSize: '0.68rem', color: '#666', lineHeight: 1.6 }}>
                   We scan your social page weekly. If your ModelBid link is removed, you'll receive an email and have 48 hours to put it back before your subscription fee resumes.
                 </div>
+              </div>
+            )}
+
+            {/* ===== VERIFY YOUR IDENTITY ===== */}
+            {isModel && (
+              <div style={{
+                marginTop: '1.5rem', marginBottom: '1.5rem', padding: '1.25rem',
+                background: profile.verified
+                  ? 'rgba(0,230,118,0.06)'
+                  : idVerification?.status === 'pending'
+                    ? 'rgba(255,215,0,0.06)'
+                    : idVerification?.status === 'rejected'
+                      ? 'rgba(255,82,82,0.06)'
+                      : 'rgba(0,217,255,0.06)',
+                border: `1px solid ${profile.verified ? 'rgba(0,230,118,0.2)' : idVerification?.status === 'pending' ? 'rgba(255,215,0,0.2)' : idVerification?.status === 'rejected' ? 'rgba(255,82,82,0.2)' : 'rgba(0,217,255,0.2)'}`,
+                borderRadius: '12px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                  <span style={{ fontSize: '1.3rem' }}>{profile.verified ? '✅' : idVerification?.status === 'pending' ? '⏳' : idVerification?.status === 'rejected' ? '❌' : '🪪'}</span>
+                  <div style={{ fontWeight: 800, fontSize: '1rem', color: profile.verified ? '#00e676' : idVerification?.status === 'pending' ? '#ffd700' : idVerification?.status === 'rejected' ? '#ff5252' : 'var(--accent-teal)' }}>
+                    {profile.verified ? 'Identity Verified' : idVerification?.status === 'pending' ? 'Verification Pending' : idVerification?.status === 'rejected' ? 'Verification Rejected' : 'Verify Your Identity'}
+                  </div>
+                </div>
+
+                {profile.verified ? (
+                  <div style={{ fontSize: '0.85rem', color: '#aaa', lineHeight: 1.6 }}>
+                    Your identity has been verified. The green checkmark (✓) is now visible on your profile.
+                  </div>
+                ) : idVerification?.status === 'pending' ? (
+                  <div style={{ fontSize: '0.85rem', color: '#aaa', lineHeight: 1.6 }}>
+                    Your ID and selfie have been submitted and are being reviewed. You'll get the green checkmark (✓) once approved.
+                  </div>
+                ) : (
+                  <>
+                    {idVerification?.status === 'rejected' && idVerification.admin_notes && (
+                      <div style={{ fontSize: '0.82rem', color: '#ff5252', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(255,82,82,0.08)', borderRadius: '8px' }}>
+                        Reason: {idVerification.admin_notes}
+                      </div>
+                    )}
+                    <div style={{ fontSize: '0.85rem', color: '#aaa', lineHeight: 1.6, marginBottom: '1rem' }}>
+                      Upload a photo of your government ID (driver's license or passport) and a selfie. Once approved, you'll get the green verified checkmark (✓) on your profile.
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                      {/* Government ID upload */}
+                      <div style={{ flex: 1, minWidth: '200px' }}>
+                        <label style={{ display: 'block', fontWeight: 600, fontSize: '0.82rem', marginBottom: '6px' }}>Government ID</label>
+                        <div style={{
+                          width: '100%', height: '120px', borderRadius: '10px', overflow: 'hidden',
+                          border: '2px dashed var(--border-color)', background: 'var(--bg-card)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          cursor: 'pointer', position: 'relative'
+                        }} onClick={() => document.getElementById('id-photo-upload').click()}>
+                          {idPhotoPreview ? (
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ fontSize: '1.5rem' }}>✅</div>
+                              <div style={{ fontSize: '0.75rem', color: '#00e676', fontWeight: 600 }}>ID Uploaded</div>
+                            </div>
+                          ) : (
+                            <div style={{ textAlign: 'center', color: '#666' }}>
+                              <div style={{ fontSize: '1.5rem' }}>🪪</div>
+                              <div style={{ fontSize: '0.75rem', fontWeight: 600 }}>{uploadingId ? 'Uploading...' : 'Upload ID'}</div>
+                            </div>
+                          )}
+                        </div>
+                        <input id="id-photo-upload" type="file" accept="image/*" style={{ display: 'none' }}
+                          onChange={(e) => handleIdUpload(e.target.files[0], 'id')} disabled={uploadingId} />
+                        <div style={{ fontSize: '0.68rem', color: '#666', marginTop: '4px' }}>Driver's license or passport</div>
+                      </div>
+
+                      {/* Selfie upload */}
+                      <div style={{ flex: 1, minWidth: '200px' }}>
+                        <label style={{ display: 'block', fontWeight: 600, fontSize: '0.82rem', marginBottom: '6px' }}>Selfie</label>
+                        <div style={{
+                          width: '100%', height: '120px', borderRadius: '10px', overflow: 'hidden',
+                          border: '2px dashed var(--border-color)', background: 'var(--bg-card)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          cursor: 'pointer', position: 'relative'
+                        }} onClick={() => document.getElementById('selfie-upload').click()}>
+                          {selfiePreview ? (
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ fontSize: '1.5rem' }}>✅</div>
+                              <div style={{ fontSize: '0.75rem', color: '#00e676', fontWeight: 600 }}>Selfie Uploaded</div>
+                            </div>
+                          ) : (
+                            <div style={{ textAlign: 'center', color: '#666' }}>
+                              <div style={{ fontSize: '1.5rem' }}>🤳</div>
+                              <div style={{ fontSize: '0.75rem', fontWeight: 600 }}>{uploadingSelfie ? 'Uploading...' : 'Upload Selfie'}</div>
+                            </div>
+                          )}
+                        </div>
+                        <input id="selfie-upload" type="file" accept="image/*" style={{ display: 'none' }}
+                          onChange={(e) => handleIdUpload(e.target.files[0], 'selfie')} disabled={uploadingSelfie} />
+                        <div style={{ fontSize: '0.68rem', color: '#666', marginTop: '4px' }}>Clear photo of your face</div>
+                      </div>
+                    </div>
+
+                    <button onClick={handleIdSubmit} disabled={!idPhotoPreview || !selfiePreview || idSubmitting}
+                      style={{
+                        padding: '0.6rem 1.5rem', borderRadius: '10px', border: 'none',
+                        background: (!idPhotoPreview || !selfiePreview) ? '#333' : 'linear-gradient(135deg, #00d9ff, #9d4edd)',
+                        color: '#fff', fontWeight: 700, fontSize: '0.85rem', cursor: (!idPhotoPreview || !selfiePreview) ? 'not-allowed' : 'pointer',
+                        opacity: idSubmitting ? 0.6 : 1
+                      }}>
+                      {idSubmitting ? 'Submitting...' : idVerification?.status === 'rejected' ? 'Resubmit for Verification' : 'Submit for Verification'}
+                    </button>
+                  </>
+                )}
               </div>
             )}
 
