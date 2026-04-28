@@ -7533,95 +7533,44 @@
       const auth = useContext(AuthContext);
       const [sortBy, setSortBy] = useState('sessions');
       const [expandedClient, setExpandedClient] = useState(null);
+      const [topClients, setTopClients] = useState([]);
+      const [loading, setLoading] = useState(true);
 
-      const topClients = [
-        {
-          id: 'tc1', name: 'Marcus Thompson', emoji: '📷', verified: true,
-          location: 'Atlanta, GA', sessions: 28, rating: 4.9, reviews: 22,
-          trustScore: 95, repeatRate: '82%', memberSince: '2023', totalSpent: 7200,
-          tags: ['Respectful', 'Professional', 'Creative', 'Punctual'],
-          recentModels: ['Aria V.', 'Jade M.', 'Sophie L.'],
-          latestSession: 'Boudoir Editorial with Aria V.',
-          quote: '"Every session is a collaboration. I\'m here to make art, not just take photos."',
-          photos: ['📸', '🎭', '✨', '🌹'],
-        },
-        {
-          id: 'tc2', name: 'David Rodriguez', emoji: '🎬', verified: true,
-          location: 'Los Angeles, CA', sessions: 19, rating: 4.8, reviews: 16,
-          trustScore: 91, repeatRate: '75%', memberSince: '2023', totalSpent: 5400,
-          tags: ['Professional', 'Fair Pay', 'Great Vision', 'Repeat Client'],
-          recentModels: ['Raven K.', 'Sophie L.'],
-          latestSession: 'Luxury Editorial with Raven K.',
-          quote: '"I look for models who bring their own creative energy to the shoot."',
-          photos: ['💎', '🌙', '🔥'],
-        },
-        {
-          id: 'tc3', name: 'James Kim', emoji: '🖤', verified: true,
-          location: 'New York, NY', sessions: 14, rating: 4.7, reviews: 11,
-          trustScore: 88, repeatRate: '70%', memberSince: '2024', totalSpent: 4100,
-          tags: ['Respectful', 'Punctual', 'Great Communicator'],
-          recentModels: ['Aria V.', 'Jade M.'],
-          latestSession: 'Glamour Session with Jade M.',
-          quote: '"ModelBid made it easy to find exactly the right talent for my projects."',
-          photos: ['✨', '🎀', '💫'],
-        },
-        {
-          id: 'tc4', name: 'Alex Chen', emoji: '📱', verified: false,
-          location: 'San Francisco, CA', sessions: 9, rating: 4.6, reviews: 7,
-          trustScore: 82, repeatRate: '65%', memberSince: '2024', totalSpent: 2700,
-          tags: ['Professional', 'Creative', 'Repeat Client'],
-          recentModels: ['Sophie L.'],
-          latestSession: 'Spring Collection with Sophie L.',
-          quote: '"Content creation needs real talent. ModelBid delivers."',
-          photos: ['🌸', '📷'],
-        },
-        {
-          id: 'tc5', name: 'Brandon Williams', emoji: '🎯', verified: true,
-          location: 'Chicago, IL', sessions: 7, rating: 4.8, reviews: 6,
-          trustScore: 85, repeatRate: '72%', memberSince: '2024', totalSpent: 2100,
-          tags: ['Respectful', 'Fair Pay', 'Punctual'],
-          recentModels: ['Aria V.', 'Raven K.'],
-          latestSession: 'Fantasy Theme with Raven K.',
-          quote: '"Great platform, great models, great results."',
-          photos: ['🦋', '🔥'],
-        },
-        {
-          id: 'tc6', name: 'Ryan Martinez', emoji: '🌟', verified: false,
-          location: 'Miami, FL', sessions: 5, rating: 4.5, reviews: 4,
-          trustScore: 78, repeatRate: '60%', memberSince: '2025', totalSpent: 1500,
-          tags: ['Professional', 'Great Communicator'],
-          recentModels: ['Jade M.'],
-          latestSession: 'Cosplay Session with Jade M.',
-          quote: '"Started booking 3 months ago and I\'m already hooked."',
-          photos: ['🎭'],
-        },
-        {
-          id: 'tc7', name: 'Tyler Jackson', emoji: '💼', verified: false,
-          location: 'Houston, TX', sessions: 4, rating: 4.6, reviews: 3,
-          trustScore: 75, repeatRate: '50%', memberSince: '2025', totalSpent: 1200,
-          tags: ['Respectful', 'Punctual'],
-          recentModels: ['Sophie L.', 'Aria V.'],
-          latestSession: 'Retro Pin-Up with Aria V.',
-          quote: '"The trust scores give you confidence before you even book."',
-          photos: ['🎀', '📸'],
-        },
-        {
-          id: 'tc8', name: 'Chris Moore', emoji: '⚡', verified: false,
-          location: 'Denver, CO', sessions: 3, rating: 4.4, reviews: 3,
-          trustScore: 72, repeatRate: '33%', memberSince: '2025', totalSpent: 900,
-          tags: ['Professional'],
-          recentModels: ['Jade M.'],
-          latestSession: 'Casual Glamour with Jade M.',
-          quote: '"Just hit 3 sessions and made the wall. Let\'s go!"',
-          photos: ['✨'],
-        },
-      ];
+      useEffect(() => {
+        const fetchTopClients = async () => {
+          try {
+            // Fetch clients with 3+ sessions
+            const { data } = await supabase.from('profiles')
+              .select('id, display_name, avatar_emoji, verified, city, state, location, sessions_completed, rating, review_count, trust_score, created_at, profile_photo_url')
+              .eq('role', 'client')
+              .gte('sessions_completed', 3)
+              .order('sessions_completed', { ascending: false })
+              .limit(20);
+            if (data) {
+              setTopClients(data.map(c => ({
+                id: c.id,
+                name: c.display_name || 'Client',
+                emoji: c.avatar_emoji || '👤',
+                verified: c.verified || false,
+                location: c.location || [c.city, c.state].filter(Boolean).join(', ') || '',
+                sessions: c.sessions_completed || 0,
+                rating: c.rating || 0,
+                reviews: c.review_count || 0,
+                trustScore: c.trust_score || 0,
+                memberSince: c.created_at ? new Date(c.created_at).getFullYear().toString() : '',
+                profilePhoto: c.profile_photo_url || null,
+              })));
+            }
+          } catch (e) { console.error('Fetch top clients:', e); }
+          setLoading(false);
+        };
+        fetchTopClients();
+      }, []);
 
       const sorted = [...topClients].sort((a, b) => {
         if (sortBy === 'sessions') return b.sessions - a.sessions;
         if (sortBy === 'rating') return b.rating - a.rating;
         if (sortBy === 'trust') return b.trustScore - a.trustScore;
-        if (sortBy === 'spent') return b.totalSpent - a.totalSpent;
         return 0;
       });
 
@@ -7631,6 +7580,8 @@
         if (index === 2) return { rank: 'bronze', card: 'rank-3' };
         return { rank: 'default', card: '' };
       };
+
+      if (loading) return <div className="text-center" style={{ padding: '2rem' }}>Loading The Wall...</div>;
 
       return (
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
@@ -7649,7 +7600,6 @@
               { key: 'sessions', label: '📸 Most Sessions' },
               { key: 'rating', label: '⭐ Highest Rated' },
               { key: 'trust', label: '🛡️ Trust Score' },
-              { key: 'spent', label: '💰 Top Spenders' },
             ].map(s => (
               <button
                 key={s.key}
@@ -7662,6 +7612,8 @@
             ))}
           </div>
 
+          {topClients.length > 0 && (
+          <>
           {/* Stats Summary */}
           <div className="profile-stats-bar" style={{ marginBottom: '2rem' }}>
             <div className="profile-stat">
@@ -7675,10 +7627,6 @@
             <div className="profile-stat">
               <div className="profile-stat-value">{(topClients.reduce((sum, c) => sum + c.rating, 0) / topClients.length).toFixed(1)} ★</div>
               <div className="profile-stat-label">Avg Rating</div>
-            </div>
-            <div className="profile-stat">
-              <div className="profile-stat-value">${(topClients.reduce((sum, c) => sum + c.totalSpent, 0) / 1000).toFixed(1)}k</div>
-              <div className="profile-stat-label">Total Booked</div>
             </div>
           </div>
 
@@ -7695,14 +7643,15 @@
                     <div className={`top-client-rank ${rs.rank}`}>
                       {index === 0 ? '👑' : index + 1}
                     </div>
-                    <div className="top-client-banner-emoji">
-                      {client.photos.map((p, i) => <span key={i}>{p}</span>)}
-                    </div>
                   </div>
 
                   {/* Avatar */}
                   <div className="top-client-avatar-wrap">
-                    <div className="top-client-avatar">{client.emoji}</div>
+                    <div className="top-client-avatar">
+                      {client.profilePhoto ? (
+                        <img src={client.profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                      ) : client.emoji}
+                    </div>
                   </div>
 
                   {/* Body */}
@@ -7715,7 +7664,7 @@
                         return <span className="rep-badge-inline" style={{ background: `${r.color}22`, color: r.color }}>{r.icon} {r.name}</span>;
                       })()}
                     </div>
-                    <div className="top-client-location">📍 {client.location}</div>
+                    {client.location && <div className="top-client-location">📍 {client.location}</div>}
 
                     {/* Stats */}
                     <div className="top-client-stats">
@@ -7724,7 +7673,7 @@
                         <div className="top-client-stat-label">Sessions</div>
                       </div>
                       <div className="top-client-stat">
-                        <div className="top-client-stat-value">{client.rating} ★</div>
+                        <div className="top-client-stat-value">{client.rating ? client.rating.toFixed(1) : '0.0'} ★</div>
                         <div className="top-client-stat-label">Rating</div>
                       </div>
                       <div className="top-client-stat">
@@ -7733,53 +7682,23 @@
                       </div>
                     </div>
 
-                    {/* Tags */}
-                    <div className="top-client-tags">
-                      {client.tags.slice(0, 3).map((tag, i) => (
-                        <span key={i} className="top-client-tag">{tag}</span>
-                      ))}
-                    </div>
-
-                    {/* Latest Session */}
-                    <div className="top-client-latest">
-                      Latest: <span>{client.latestSession}</span>
-                    </div>
-
                     {/* Expanded Details */}
                     {isExpanded && (
                       <div style={{ marginTop: '1rem', textAlign: 'left' }}>
-                        {/* Quote */}
-                        <div style={{
-                          padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '0.75rem',
-                          background: 'rgba(0,217,255,0.05)', borderLeft: '3px solid var(--accent-teal)',
-                          fontStyle: 'italic', fontSize: '0.85rem', color: 'var(--text-secondary)'
-                        }}>
-                          {client.quote}
-                        </div>
-
-                        {/* More Details */}
                         <div className="profile-detail-row">
                           <span className="profile-detail-label">Member since</span>
                           <span className="profile-detail-value">{client.memberSince}</span>
                         </div>
                         <div className="profile-detail-row">
-                          <span className="profile-detail-label">Repeat rate</span>
-                          <span className="profile-detail-value" style={{ color: 'var(--success-green)' }}>{client.repeatRate}</span>
-                        </div>
-                        <div className="profile-detail-row">
-                          <span className="profile-detail-label">Total booked</span>
-                          <span className="profile-detail-value" style={{ color: 'var(--accent-gold)' }}>${client.totalSpent.toLocaleString()}</span>
-                        </div>
-                        <div className="profile-detail-row">
-                          <span className="profile-detail-label">Worked with</span>
-                          <span className="profile-detail-value">{client.recentModels.join(', ')}</span>
+                          <span className="profile-detail-label">Reviews</span>
+                          <span className="profile-detail-value">{client.reviews}</span>
                         </div>
 
                         {/* View Full Profile Button */}
                         <button
                           className="btn glow-btn btn-block"
                           style={{ marginTop: '0.75rem', fontSize: '0.85rem' }}
-                          onClick={(e) => { e.stopPropagation(); window.location.hash = 'client/demo-client'; }}
+                          onClick={(e) => { e.stopPropagation(); window.location.hash = 'client/' + client.id; }}
                         >
                           View Full Profile
                         </button>
@@ -7790,6 +7709,16 @@
               );
             })}
           </div>
+          </>
+          )}
+
+          {topClients.length === 0 && (
+            <div className="empty-state" style={{ marginBottom: '2rem' }}>
+              <div className="empty-state-icon">🏆</div>
+              <div className="empty-state-title">The Wall is waiting</div>
+              <div className="empty-state-text">No clients have hit 3 sessions yet. Be the first to earn your spot.</div>
+            </div>
+          )}
 
           {/* CTA for new clients */}
           <div className="top-clients-cta">
