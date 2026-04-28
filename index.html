@@ -1060,6 +1060,7 @@
       top: 0; left: 0; right: 0; bottom: 0;
       background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ff6ec7' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
       opacity: 0.5;
+      pointer-events: none;
     }
 
     .profile-cover::after {
@@ -1068,6 +1069,7 @@
       bottom: 0; left: 0; right: 0;
       height: 120px;
       background: linear-gradient(to top, var(--bg-dark), transparent);
+      pointer-events: none;
     }
 
     .profile-cover-content {
@@ -5679,14 +5681,7 @@
           </button>
           )}
 
-          {/* View as Public toggle — only on own profile */}
-          {isOwnProfile && !viewAsPublic && (
-          <button onClick={() => setViewAsPublic(true)} style={{
-            marginBottom: '1rem', padding: '8px 16px', borderRadius: '8px', fontSize: '0.8rem',
-            background: 'rgba(0,217,255,0.08)', border: '1px solid rgba(0,217,255,0.2)',
-            color: '#00d9ff', fontWeight: 600, cursor: 'pointer', width: '100%',
-          }}>👁️ View as Public — see what visitors see</button>
-          )}
+          {/* View as Public toggle moved to the Edit Profile bar above the cover */}
 
           {viewAsPublic && (
           <div style={{
@@ -5803,6 +5798,26 @@
           </div>
           )}
 
+          {/* Edit Profile + View as Public buttons — outside cover so nothing blocks taps */}
+          {isOwnProfile && !viewAsPublic && (
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+              <button onClick={() => setViewAsPublic(true)} style={{
+                padding: '0.5rem 1rem', borderRadius: '0.5rem',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)',
+                fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '0.4rem',
+              }}>👁️ View as Public</button>
+              <button onClick={() => window.location.hash = 'edit-profile'} style={{
+                padding: '0.5rem 1rem', borderRadius: '0.5rem',
+                background: 'linear-gradient(135deg, #c44dff, #ff6ec7)',
+                border: 'none', color: '#fff',
+                fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '0.4rem',
+              }}>⚙️ Edit Profile</button>
+            </div>
+          )}
+
           {/* Cover / Hero */}
           <div className="profile-cover">
             <div className="profile-cover-content">
@@ -5816,18 +5831,6 @@
                 {model.location && <div className="profile-location">📍 {model.location}</div>}
               </div>
             </div>
-            {/* Edit/Settings button — only visible on your own profile, hidden in public view */}
-            {isOwnProfile && !viewAsPublic && (
-              <button onClick={() => window.location.hash = 'edit-profile'} style={{
-                position: 'absolute', top: '1rem', right: '1rem',
-                padding: '0.5rem 1rem', borderRadius: '0.5rem',
-                background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)',
-                border: '1px solid rgba(255,255,255,0.2)', color: '#fff',
-                fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '0.4rem',
-                transition: 'background 0.2s',
-              }}>⚙️ Edit Profile</button>
-            )}
           </div>
 
           {/* Stats Bar */}
