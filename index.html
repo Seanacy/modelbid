@@ -5632,10 +5632,12 @@
 
       return (
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-          {/* Back Button */}
-          <button className="btn btn-secondary" onClick={() => window.location.hash = 'browse'} style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
-            ← Back to Browse
+          {/* Back Button — models go to dashboard, clients go to browse, hide on own profile */}
+          {!(auth.currentUser && (modelId === auth.currentUser.id || modelId === 'demo')) && (
+          <button className="btn btn-secondary" onClick={() => window.location.hash = auth.profile?.role === 'model' ? 'dashboard' : 'browse'} style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
+            ← {auth.profile?.role === 'model' ? 'Back to Dashboard' : 'Back to Browse'}
           </button>
+          )}
 
           {/* Cover / Hero */}
           <div className="profile-cover">
@@ -16705,7 +16707,11 @@ RULES
           return component;
         };
 
-        if (page === 'home') return !auth.currentUser ? <HomePage /> : (subActive ? <FeedPage /> : <BrowseModelsPage />);
+        if (page === 'home') {
+          if (!auth.currentUser) return <HomePage />;
+          if (!subActive) return <BrowseModelsPage />;
+          return auth.profile?.role === 'model' ? <DashboardPage /> : <FeedPage />;
+        }
         if (page === 'feed') return requiresSub(<FeedPage />);
         if (page === 'wall') return <TopClientsPage />;
         if (page === 'reputation') return <ReputationPage />;
