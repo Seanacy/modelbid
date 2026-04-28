@@ -17337,7 +17337,7 @@ RULES
                       <span className="dd-icon">💰</span> Money Tour
                     </a>
                   )}
-                  {auth.profile?.role !== 'client' && (
+                  {!auth.currentUser && (
                     <a className="nav-dropdown-item" onClick={() => window.location.hash = 'formodels'}>
                       <span className="dd-icon">🎀</span> For Models
                     </a>
@@ -17449,7 +17449,7 @@ RULES
                   <span className="mm-icon">💰</span> Money Tour
                 </div>
               )}
-              {auth.profile?.role !== 'client' && (
+              {!auth.currentUser && (
                 <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'formodels'; }}>
                   <span className="mm-icon">🎀</span> For Models
                 </div>
