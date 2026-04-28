@@ -5937,7 +5937,7 @@
                 <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🔒</div>
                 <div style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '0.4rem', color: '#999' }}>Verification Required</div>
                 <div style={{ fontSize: '0.78rem', color: '#888', marginBottom: '1rem', lineHeight: 1.5 }}>Get verified to unlock Inner Circle and Private Feed features.</div>
-                <button onClick={() => window.location.hash = 'edit-profile'} style={{
+                <button onClick={() => window.location.hash = 'edit-profile?verify=true'} style={{
                   width: '100%', maxWidth: '260px', padding: '11px 0', borderRadius: '999px', border: 'none',
                   background: 'rgba(255,255,255,0.08)', color: '#999',
                   fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer',
@@ -7412,10 +7412,14 @@
           <div style={{ maxWidth: "500px", margin: "0 auto", padding: "2rem", textAlign: "center" }}>
             <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🔒</div>
             <h2 style={{ fontWeight: 800, marginBottom: "0.5rem" }}>Verification Required</h2>
-            <p style={{ color: "#999", marginBottom: "0.75rem", lineHeight: 1.6 }}>You need to be verified before you can create or join an Inner Circle or Private Feed. This keeps the platform safe and trustworthy for everyone.</p>
-            <button onClick={() => window.location.hash = "edit-profile"} className="btn glow-btn" style={{ padding: "0.75rem 2rem", fontSize: "1rem" }}>
-              Go to Edit Profile to Get Verified
+            <p style={{ color: "#999", marginBottom: "0.75rem", lineHeight: 1.6 }}>Inner Circle and Private Feed are only available to verified models. This keeps the platform safe and trustworthy for everyone.</p>
+            <p style={{ color: "#ccc", marginBottom: "1.25rem", fontSize: "0.95rem" }}>Would you like to get verified now?</p>
+            <button onClick={() => window.location.hash = "edit-profile?verify=true"} className="btn glow-btn" style={{ padding: "0.75rem 2rem", fontSize: "1rem" }}>
+              Yes, Verify Me →
             </button>
+            <div style={{ marginTop: "0.75rem" }}>
+              <button onClick={() => window.history.back()} style={{ background: "none", border: "none", color: "#888", fontSize: "0.85rem", cursor: "pointer" }}>Not right now</button>
+            </div>
           </div>
         );
       }
@@ -7558,10 +7562,14 @@
           <div style={{ maxWidth: "500px", margin: "0 auto", padding: "2rem", textAlign: "center" }}>
             <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🔒</div>
             <h2 style={{ fontWeight: 800, marginBottom: "0.5rem" }}>Verification Required</h2>
-            <p style={{ color: "#999", marginBottom: "0.75rem", lineHeight: 1.6 }}>You need to be verified before you can create or join an Inner Circle or Private Feed. This keeps the platform safe and trustworthy for everyone.</p>
-            <button onClick={() => window.location.hash = "edit-profile"} className="btn glow-btn" style={{ padding: "0.75rem 2rem", fontSize: "1rem" }}>
-              Go to Edit Profile to Get Verified
+            <p style={{ color: "#999", marginBottom: "0.75rem", lineHeight: 1.6 }}>Inner Circle and Private Feed are only available to verified models. This keeps the platform safe and trustworthy for everyone.</p>
+            <p style={{ color: "#ccc", marginBottom: "1.25rem", fontSize: "0.95rem" }}>Would you like to get verified now?</p>
+            <button onClick={() => window.location.hash = "edit-profile?verify=true"} className="btn glow-btn" style={{ padding: "0.75rem 2rem", fontSize: "1rem" }}>
+              Yes, Verify Me →
             </button>
+            <div style={{ marginTop: "0.75rem" }}>
+              <button onClick={() => window.history.back()} style={{ background: "none", border: "none", color: "#888", fontSize: "0.85rem", cursor: "pointer" }}>Not right now</button>
+            </div>
           </div>
         );
       }
@@ -14031,6 +14039,7 @@ REMEMBER:
       const [selfiePreview, setSelfiePreview] = useState(null);
       const [idSubmitting, setIdSubmitting] = useState(false);
       const waiveSectionRef = React.useRef(null);
+      const verifySectionRef = React.useRef(null);
 
       // Fetch existing verification request
       useEffect(() => {
@@ -14090,6 +14099,14 @@ REMEMBER:
           setTimeout(() => {
             if (waiveSectionRef.current) {
               waiveSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 500);
+        }
+        // Auto-scroll to Verify Identity section when arriving from verification gate
+        if (window.location.hash.includes('verify=true')) {
+          setTimeout(() => {
+            if (verifySectionRef.current) {
+              verifySectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
           }, 500);
         }
@@ -14893,7 +14910,7 @@ REMEMBER:
 
             {/* ===== VERIFY YOUR IDENTITY ===== */}
             {isModel && (
-              <div style={{
+              <div id="verify-identity" ref={verifySectionRef} style={{
                 marginTop: '1.5rem', marginBottom: '1.5rem', padding: '1.25rem',
                 background: profile.verified
                   ? 'rgba(0,230,118,0.06)'
