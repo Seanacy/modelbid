@@ -5248,41 +5248,60 @@
     }
 
     function SuggestedModels() {
-      const suggested = [
-        { id: 's1', name: 'Luna Noir', rate: '$280/session', detail: '★ 4.9 • Boudoir', state: 'MN', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=320&h=400&fit=crop', hash: 'profile/demo' },
-        { id: 's2', name: 'Sasha Velvet', rate: '$320/session', detail: '★ 5.0 • Luxury', state: 'MN', img: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=320&h=400&fit=crop', hash: 'profile/demo' },
-        { id: 's3', name: 'Mika Rose', rate: '$200/session', detail: '★ 4.8 • Cosplay', state: 'TX', img: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=320&h=400&fit=crop', hash: 'profile/demo' },
-        { id: 's4', name: 'Jade Monroe', rate: '$350/session', detail: '★ 4.9 • Pin-Up', state: 'MN', img: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=320&h=400&fit=crop', hash: 'profile/demo' },
-        { id: 's5', name: 'Nova Starr', rate: '$275/session', detail: '★ 4.7 • Fantasy', state: 'CA', img: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=320&h=400&fit=crop', hash: 'profile/demo' },
-        { id: 's6', name: 'Elara Bliss', rate: '$240/session', detail: '★ 4.8 • Glamour', state: 'MN', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=320&h=400&fit=crop', hash: 'profile/demo' },
-      ];
+      const [suggested, setSuggested] = useState([]);
+      const [loaded, setLoaded] = useState(false);
+
+      useEffect(() => {
+        const fetch = async () => {
+          try {
+            const { data } = await supabase.from('profiles')
+              .select('id, display_name, rate, rating, tags, state, city, profile_photo_url, profile_photo_pos_x, profile_photo_pos_y, avatar_emoji')
+              .eq('role', 'model').limit(12);
+            if (data && data.length > 0) {
+              // Shuffle and take up to 6
+              const shuffled = [...data].sort(() => Math.random() - 0.5).slice(0, 6);
+              setSuggested(shuffled);
+            }
+          } catch (e) { console.error('SuggestedModels fetch:', e); }
+          setLoaded(true);
+        };
+        fetch();
+      }, []);
+
+      if (!loaded || suggested.length === 0) return null;
 
       return (
         <div className="suggested-section">
           <div className="suggested-header">
             <span className="suggested-label">Suggested for you</span>
-            <div className="suggested-dots">
-              <div className="suggested-dot active"></div>
-              <div className="suggested-dot"></div>
-              <div className="suggested-dot"></div>
-            </div>
           </div>
           <div className="suggested-scroll">
-            {suggested.map(m => (
-              <div key={m.id} className="suggested-card" onClick={() => window.location.hash = m.hash}>
-                <div className="boost-badge"></div>
-                <img className="suggested-card-img" src={m.img} alt={m.name} />
-                <div className="suggested-card-overlay">
-                  <div className="suggested-card-name">{m.name}</div>
-                  <div className="suggested-card-detail">{m.detail}</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div className="suggested-card-rate">{m.rate}</div>
-                    {m.state && <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#ffd700',
-                      background: 'rgba(0,0,0,0.4)', padding: '1px 6px', borderRadius: '4px' }}>📍 {m.state}</div>}
+            {suggested.map(m => {
+              const loc = [m.city, m.state].filter(Boolean).join(', ');
+              const style = (m.tags && m.tags[0]) || '';
+              const detail = `★ ${m.rating ? m.rating.toFixed(1) : '0.0'}${style ? ' • ' + style : ''}`;
+              return (
+                <div key={m.id} className="suggested-card" onClick={() => window.location.hash = 'profile/' + m.id}>
+                  <div className="boost-badge"></div>
+                  {m.profile_photo_url ? (
+                    <img className="suggested-card-img" src={m.profile_photo_url} alt={m.display_name}
+                      style={{ objectPosition: `${m.profile_photo_pos_x ?? 50}% ${m.profile_photo_pos_y ?? 50}%` }} />
+                  ) : (
+                    <div className="suggested-card-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: 'linear-gradient(135deg, #1a0a2e, #0f3460)', fontSize: '3rem' }}>{m.avatar_emoji || '👤'}</div>
+                  )}
+                  <div className="suggested-card-overlay">
+                    <div className="suggested-card-name">{m.display_name || 'Model'}</div>
+                    <div className="suggested-card-detail">{detail}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div className="suggested-card-rate">${m.rate || 0}/session</div>
+                      {loc && <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#ffd700',
+                        background: 'rgba(0,0,0,0.4)', padding: '1px 6px', borderRadius: '4px' }}>📍 {loc}</div>}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       );
