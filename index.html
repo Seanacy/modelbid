@@ -5924,7 +5924,8 @@
             </div>
           </div>
 
-          {/* 5. Private Feed */}
+          {/* 5. Private Feed — only show if model has BTS content set up, or on own profile as setup prompt */}
+          {model.bts_enabled ? (
           <div className="profile-section" data-tour="private-feed" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,110,199,0.08))', borderColor: 'rgba(255,215,0,0.25)' }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>💎</div>
@@ -5932,29 +5933,41 @@
               <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
                 Exclusive BTS content, early bookings, member discounts & group chat
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--accent-gold)', marginBottom: '0.75rem' }}>
-                👥 89 members • From $9.99/mo
-              </div>
               <button className="btn glow-btn btn-block" style={{ background: 'linear-gradient(135deg, var(--accent-gold), #ffaa00)', fontSize: '0.85rem' }}
                 onClick={() => window.location.hash = `circle/${model.id || 'demo'}`}>
                 Join Private Feed →
               </button>
             </div>
           </div>
+          ) : isOwnProfile && !viewAsPublic ? (
+          <div className="profile-section" data-tour="private-feed" style={{ background: 'rgba(255,215,0,0.04)', border: '1px dashed rgba(255,215,0,0.2)', borderRadius: '1rem', padding: '1.25rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '1.2rem', marginBottom: '0.4rem' }}>💎</div>
+            <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.3rem', color: 'var(--accent-gold)' }}>Private Feed</div>
+            <div style={{ fontSize: '0.78rem', color: '#888', marginBottom: '0.75rem' }}>Not set up yet. Launch your BTS feed to earn from exclusive content.</div>
+            <button onClick={() => window.location.hash = 'edit-profile'} style={{
+              padding: '8px 20px', borderRadius: '8px', border: '1px solid rgba(255,215,0,0.3)',
+              background: 'transparent', color: 'var(--accent-gold)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
+            }}>Set Up Private Feed →</button>
+          </div>
+          ) : null}
 
-          {/* 6. 360° Outfit Viewer */}
+          {/* 6. 360° Outfit Viewer — only show if model uploaded real outfits, or on own profile */}
+          {model.outfits360 ? (
           <div className="profile-section">
             <div className="profile-section-title"><span>🔄</span> 360° Outfit Viewer</div>
-            <div className="viewer360-promo">
-              <div className="viewer360-promo-icon">🔄</div>
-              <div className="viewer360-promo-text">
-                <h4>See every angle before you book</h4>
-                <p>Drag or swipe to rotate outfits in 360°. Models upload 8 photos per look from every angle — so you know exactly what you're getting.</p>
-              </div>
-              <div className="viewer360-promo-new">New</div>
-            </div>
-            <OutfitViewer360 outfits={model.outfits360 || demo360Outfits} />
+            <OutfitViewer360 outfits={model.outfits360} />
           </div>
+          ) : isOwnProfile && !viewAsPublic ? (
+          <div className="profile-section" style={{ background: 'rgba(0,217,255,0.04)', border: '1px dashed rgba(0,217,255,0.2)', borderRadius: '1rem', padding: '1.25rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '1.2rem', marginBottom: '0.4rem' }}>🔄</div>
+            <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.3rem', color: '#00d9ff' }}>360° Outfit Viewer</div>
+            <div style={{ fontSize: '0.78rem', color: '#888', marginBottom: '0.75rem' }}>Upload 8 photos per outfit from every angle so clients see what they're booking.</div>
+            <button onClick={() => window.location.hash = 'edit-profile'} style={{
+              padding: '8px 20px', borderRadius: '8px', border: '1px solid rgba(0,217,255,0.3)',
+              background: 'transparent', color: '#00d9ff', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
+            }}>Upload Outfits →</button>
+          </div>
+          ) : null}
 
           {/* 7. Details + Availability side by side on desktop, stacked on mobile */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
