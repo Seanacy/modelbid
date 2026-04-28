@@ -11912,30 +11912,30 @@ REMEMBER:
                     {/* Circle */}
                     <div style={{
                       width: '48px', height: '48px', borderRadius: '50%',
-                      background: s.active ? s.color : 'rgba(255,255,255,0.04)',
-                      border: `2px solid ${s.active ? s.color : 'rgba(255,255,255,0.1)'}`,
+                      background: s.active ? s.color : `${s.color}25`,
+                      border: `2px solid ${s.color}`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: '1.2rem', transition: 'all 0.3s',
-                      opacity: s.active ? 1 : 0.4,
-                      boxShadow: s.active ? `0 0 15px ${s.color}40` : 'none'
+                      opacity: 1,
+                      boxShadow: `0 0 15px ${s.color}40`
                     }}>
-                      {s.active ? s.icon : '🔒'}
+                      {s.icon}
                     </div>
                     {/* Label */}
                     <div style={{
                       fontSize: '0.68rem', fontWeight: 700, marginTop: '6px',
-                      color: s.active ? s.color : '#555', textAlign: 'center'
+                      color: s.color, textAlign: 'center'
                     }}>{s.label}</div>
                     {/* Tip for inactive */}
                     {!s.active && (
-                      <div style={{ fontSize: '0.58rem', color: '#444', textAlign: 'center', marginTop: '2px', maxWidth: '80px', lineHeight: 1.3 }}>{s.tip}</div>
+                      <div style={{ fontSize: '0.58rem', color: '#999', textAlign: 'center', marginTop: '2px', maxWidth: '80px', lineHeight: 1.3 }}>{s.tip}</div>
                     )}
                   </div>
                   {/* Connector line */}
                   {i < stages.length - 1 && (
                     <div style={{
                       flex: '0 0 auto', height: '2px', width: '20px', marginTop: '-18px',
-                      background: (s.active && stages[i + 1].active) ? `linear-gradient(90deg, ${s.color}, ${stages[i + 1].color})` : 'rgba(255,255,255,0.08)'
+                      background: `linear-gradient(90deg, ${s.color}, ${stages[i + 1].color})`
                     }} />
                   )}
                 </React.Fragment>
