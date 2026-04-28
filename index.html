@@ -15544,12 +15544,7 @@ RULES
           setPosts(enriched);
         } catch (err) {
           console.error('Bid board fetch error:', err);
-          // Show demo data as fallback
-          setPosts([
-            { id: 'demo1', displayName: 'Marcus T.', avatarEmoji: '📷', concept: 'Looking for a high-end boudoir shoot with a vintage Hollywood vibe. Think silk robes, champagne glasses, soft warm lighting. Must be comfortable with implied nudity.', budget_min: 300, budget_max: 500, style_tag: 'Boudoir', location: 'Minneapolis, MN', bidCount: 7, created_at: new Date(Date.now() - 3600000).toISOString() },
-            { id: 'demo2', displayName: 'David R.', avatarEmoji: '🎬', concept: 'Cosplay shoot — I have full costume sets for 3 anime characters. Need a model who can embody the character energy, not just wear the outfit. Studio provided.', budget_min: 200, budget_max: 350, style_tag: 'Cosplay', location: 'Austin, TX', bidCount: 12, created_at: new Date(Date.now() - 7200000).toISOString() },
-            { id: 'demo3', displayName: 'James K.', avatarEmoji: '🖤', concept: 'Dark fantasy editorial — think Game of Thrones meets high fashion. Outdoor forest location, dramatic lighting, flowing fabrics. Need someone who can do fierce.', budget_min: 400, budget_max: 600, style_tag: 'Fantasy', location: 'Open to Travel', bidCount: 15, created_at: new Date(Date.now() - 14400000).toISOString() },
-          ]);
+          setPosts([]);
         }
         setLoading(false);
       };
