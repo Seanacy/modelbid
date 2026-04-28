@@ -14956,9 +14956,17 @@ REMEMBER:
 
     // ===== REPUTATION PAGE =====
     function ReputationPage() {
-      // Demo client stats (in production, pull from auth context)
-      const demoStats = { sessions: 7, trustScore: 85, rating: 4.8, reviews: 6, totalSpent: 2100, memberSince: '2024' };
-      const rep = getClientRepLevel(demoStats.sessions, demoStats.trustScore);
+      const auth = useContext(AuthContext);
+      const profile = auth.profile || {};
+      const userStats = {
+        sessions: profile.sessions_completed || 0,
+        trustScore: profile.trust_score || 0,
+        rating: profile.rating || 0,
+        reviews: profile.review_count || 0,
+        totalSpent: profile.total_spent || 0,
+        memberSince: profile.created_at ? new Date(profile.created_at).getFullYear().toString() : '—'
+      };
+      const rep = getClientRepLevel(userStats.sessions, userStats.trustScore);
 
       const tiers = [
         { level: 1, name: 'Newcomer', icon: '🌱', reqSessions: 0, reqTrust: 0, perks: 'Browse and book any model, view profiles, send messages' },
@@ -14985,7 +14993,7 @@ REMEMBER:
         const currentTier = tiers[rep.level - 1];
         const nextTier = tiers[rep.level];
         const sessRange = nextTier.reqSessions - currentTier.reqSessions;
-        const sessDone = demoStats.sessions - currentTier.reqSessions;
+        const sessDone = userStats.sessions - currentTier.reqSessions;
         return Math.min(100, Math.round((sessDone / sessRange) * 100));
       })();
 
@@ -15018,19 +15026,19 @@ REMEMBER:
           {/* Stats */}
           <div className="rep-stats-row">
             <div className="rep-stat-card">
-              <div className="rep-stat-value">{demoStats.sessions}</div>
+              <div className="rep-stat-value">{userStats.sessions}</div>
               <div className="rep-stat-label">Sessions</div>
             </div>
             <div className="rep-stat-card">
-              <div className="rep-stat-value">{demoStats.trustScore}</div>
+              <div className="rep-stat-value">{userStats.trustScore}</div>
               <div className="rep-stat-label">Trust Score</div>
             </div>
             <div className="rep-stat-card">
-              <div className="rep-stat-value">{demoStats.rating} ★</div>
+              <div className="rep-stat-value">{userStats.rating} ★</div>
               <div className="rep-stat-label">Avg Rating</div>
             </div>
             <div className="rep-stat-card">
-              <div className="rep-stat-value">${(demoStats.totalSpent / 1000).toFixed(1)}k</div>
+              <div className="rep-stat-value">${(userStats.totalSpent / 1000).toFixed(1)}k</div>
               <div className="rep-stat-label">Total Spent</div>
             </div>
           </div>
