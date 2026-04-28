@@ -4307,11 +4307,14 @@
           window.location.hash = hash.replace(/[?&]checkout=cancel/, '');
         }
 
-        // Listen for auth changes
+        // Listen for auth changes — only re-fetch profile on meaningful events, not token refreshes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
           if (session?.user) {
             setCurrentUser(session.user);
-            await fetchProfile(session.user.id);
+            // Skip profile re-fetch on TOKEN_REFRESHED — the profile hasn't changed
+            if (event !== 'TOKEN_REFRESHED') {
+              await fetchProfile(session.user.id);
+            }
 
             // After email confirmation, redirect to edit-profile with scroll to waive section
             if (sessionStorage.getItem('pendingSignupRedirect') === 'true') {
@@ -4365,8 +4368,11 @@
           setProfile(data);
         } catch (error) {
           console.error('Profile fetch error:', error);
-          // Set a minimal profile so the app doesn't hang
-          setProfile({ id: userId, display_name: '', role: 'model' });
+          // Set a minimal fallback profile so the app doesn't hang — but only if we don't already have a real profile
+          setProfile(prev => {
+            if (prev && !prev._fallback) return prev; // keep existing real profile
+            return { id: userId, display_name: '', role: 'model', _fallback: true };
+          });
           // Retry once after 2 seconds
           setTimeout(async () => {
             try {
@@ -17027,13 +17033,16 @@ RULES
         const subActive = isSubscriptionActive(auth.profile);
 
         // Pages that require subscription (Feed, Messages, Dashboard, Contracts, etc.)
+        // If profile is still a fallback (real data hasn't loaded yet), show a loading spinner
+        // instead of the gate — prevents the flash of "Activate Your Account" before real profile arrives
         const requiresSub = (component) => {
           if (!auth.currentUser) return <LoginPage />;
+          if (auth.profile?._fallback) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}><div className="loading-spinner"></div></div>;
           if (!subActive) return <SubscriptionGatePage />;
           return component;
         };
 
-        if (page === 'home') return !auth.currentUser ? <HomePage /> : (subActive ? <FeedPage /> : <BrowseModelsPage />);
+        if (page === 'home') return !auth.currentUser ? <HomePage /> : (auth.profile?._fallback ? <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}><div className="loading-spinner"></div></div> : (subActive ? <FeedPage /> : <BrowseModelsPage />));
         if (page === 'feed') return requiresSub(<FeedPage />);
         if (page === 'wall') return <TopClientsPage />;
         if (page === 'reputation') return <ReputationPage />;
