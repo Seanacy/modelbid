@@ -5818,32 +5818,52 @@
             </div>
           )}
 
-          {/* Cover / Hero */}
-          <div className="profile-cover" style={model.cover_photo_url ? {
-            backgroundImage: `url(${model.cover_photo_url})`,
-            backgroundSize: 'cover',
-            backgroundPosition: `${model.cover_photo_pos_x ?? 50}% ${model.cover_photo_pos_y ?? 50}%`,
-          } : {}}>
-            <div className="profile-cover-content">
-              <div className="profile-avatar" style={{ overflow: 'hidden' }}>
-                {model.profile_photo_url ? (
-                  <img src={model.profile_photo_url} alt={model.display_name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover',
-                      objectPosition: `${model.profile_photo_pos_x ?? 50}% ${model.profile_photo_pos_y ?? 50}%` }} />
-                ) : (
-                  model.avatar_emoji || '👤'
-                )}
-              </div>
-              <div className="profile-cover-info">
-                <h1>
-                  {model.display_name}
-                  {model.verified && <div className="verified-badge">✓</div>}
-                </h1>
-                {model.tagline && <div className="profile-tagline">"{model.tagline}"</div>}
-                {model.location && <div className="profile-location">📍 {model.location}</div>}
-              </div>
+          {/* Profile Photo — large, centered */}
+          <div style={{ textAlign: 'center', marginBottom: '0.75rem' }}>
+            <div style={{
+              width: '220px', height: '280px', borderRadius: '1rem', overflow: 'hidden',
+              margin: '0 auto',
+              background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-pink))',
+              border: '3px solid rgba(196,77,255,0.3)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '4rem',
+            }}>
+              {model.profile_photo_url ? (
+                <img src={model.profile_photo_url} alt={model.display_name}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover',
+                    objectPosition: `${model.profile_photo_pos_x ?? 50}% ${model.profile_photo_pos_y ?? 50}%` }} />
+              ) : (
+                model.avatar_emoji || '👤'
+              )}
             </div>
+            {/* Name + Location below photo */}
+            <h1 style={{
+              fontSize: '1.6rem', fontWeight: 800, marginTop: '0.75rem', marginBottom: '0.25rem',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+            }}>
+              {model.display_name}
+              {model.verified && <span style={{
+                background: '#22c55e', color: '#fff', borderRadius: '50%',
+                width: '22px', height: '22px', display: 'inline-flex', alignItems: 'center',
+                justifyContent: 'center', fontSize: '0.75rem', flexShrink: 0,
+              }}>✓</span>}
+            </h1>
+            {model.tagline && <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.88rem', fontStyle: 'italic', marginBottom: '0.25rem' }}>"{model.tagline}"</div>}
+            {model.location && <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>📍 {model.location}</div>}
           </div>
+
+          {/* Cover Photo — wide banner below (only if they have one) */}
+          {model.cover_photo_url && (
+            <div style={{
+              width: '100%', height: '160px', borderRadius: '1rem', overflow: 'hidden',
+              marginBottom: '0', position: 'relative',
+            }}>
+              <img src={model.cover_photo_url} alt="Cover"
+                style={{ width: '100%', height: '100%', objectFit: 'cover',
+                  objectPosition: `${model.cover_photo_pos_x ?? 50}% ${model.cover_photo_pos_y ?? 50}%` }} />
+            </div>
+          )}
 
           {/* Stats Bar */}
           <div className="profile-stats-bar">
