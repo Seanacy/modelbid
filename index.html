@@ -5250,13 +5250,68 @@
       const allTags = ['Lingerie', 'Costume', 'Glamour', 'Boudoir', 'Pin-Up', 'Cosplay', 'Fantasy', 'Retro', 'Luxury', 'Fun', 'Casual', 'Elegant', 'Swimwear', 'Streetwear', 'Artistic', 'Fitness', 'Bridal', 'Editorial'];
       const allStates = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'];
 
-      // Get unique cities from models in the selected state (for the city dropdown)
+      const majorCitiesByState = {
+        'AL': ['Birmingham','Huntsville','Mobile','Montgomery','Tuscaloosa'],
+        'AK': ['Anchorage','Fairbanks','Juneau'],
+        'AZ': ['Chandler','Gilbert','Glendale','Mesa','Phoenix','Scottsdale','Tempe','Tucson'],
+        'AR': ['Fayetteville','Fort Smith','Little Rock','North Little Rock'],
+        'CA': ['Anaheim','Bakersfield','Berkeley','Burbank','Chula Vista','Fremont','Fresno','Glendale','Hollywood','Huntington Beach','Irvine','Long Beach','Los Angeles','Modesto','Oakland','Oceanside','Ontario','Oxnard','Pasadena','Riverside','Sacramento','San Bernardino','San Diego','San Francisco','San Jose','Santa Ana','Santa Barbara','Santa Clarita','Santa Monica','Santa Rosa','Stockton','Torrance'],
+        'CO': ['Aurora','Boulder','Colorado Springs','Denver','Fort Collins','Lakewood','Pueblo','Thornton'],
+        'CT': ['Bridgeport','Hartford','New Haven','Stamford','Waterbury'],
+        'DE': ['Dover','Newark','Wilmington'],
+        'FL': ['Cape Coral','Clearwater','Coral Springs','Fort Lauderdale','Hialeah','Hollywood','Jacksonville','Lakeland','Miami','Miami Beach','Naples','Orlando','Palm Bay','Pembroke Pines','Port St. Lucie','St. Petersburg','Tallahassee','Tampa','West Palm Beach'],
+        'GA': ['Athens','Atlanta','Augusta','Columbus','Macon','Marietta','Roswell','Sandy Springs','Savannah'],
+        'HI': ['Hilo','Honolulu','Kailua','Pearl City'],
+        'ID': ['Boise','Idaho Falls','Meridian','Nampa','Pocatello'],
+        'IL': ['Aurora','Champaign','Chicago','Elgin','Joliet','Naperville','Peoria','Rockford','Springfield'],
+        'IN': ['Carmel','Evansville','Fort Wayne','Gary','Indianapolis','South Bend'],
+        'IA': ['Cedar Rapids','Davenport','Des Moines','Iowa City','Sioux City','Waterloo'],
+        'KS': ['Kansas City','Lawrence','Olathe','Overland Park','Topeka','Wichita'],
+        'KY': ['Bowling Green','Covington','Lexington','Louisville'],
+        'LA': ['Baton Rouge','Lafayette','Lake Charles','Metairie','New Orleans','Shreveport'],
+        'ME': ['Augusta','Bangor','Portland'],
+        'MD': ['Annapolis','Baltimore','Bethesda','Frederick','Rockville','Silver Spring'],
+        'MA': ['Boston','Brockton','Cambridge','Fall River','Lowell','New Bedford','Newton','Quincy','Springfield','Worcester'],
+        'MI': ['Ann Arbor','Dearborn','Detroit','Flint','Grand Rapids','Kalamazoo','Lansing','Livonia','Sterling Heights','Warren'],
+        'MN': ['Bloomington','Brooklyn Park','Duluth','Minneapolis','Plymouth','Rochester','St. Cloud','St. Paul','Woodbury'],
+        'MS': ['Biloxi','Gulfport','Hattiesburg','Jackson','Southaven','Tupelo'],
+        'MO': ['Columbia','Independence','Kansas City','Springfield','St. Louis','St. Peters'],
+        'MT': ['Billings','Bozeman','Great Falls','Helena','Missoula'],
+        'NE': ['Bellevue','Grand Island','Lincoln','Omaha'],
+        'NV': ['Carson City','Henderson','Las Vegas','North Las Vegas','Reno','Sparks'],
+        'NH': ['Concord','Manchester','Nashua'],
+        'NJ': ['Camden','Elizabeth','Jersey City','Newark','Paterson','Trenton'],
+        'NM': ['Albuquerque','Las Cruces','Rio Rancho','Roswell','Santa Fe'],
+        'NY': ['Albany','Bronx','Brooklyn','Buffalo','Manhattan','New York','Queens','Rochester','Staten Island','Syracuse','Yonkers'],
+        'NC': ['Asheville','Cary','Charlotte','Durham','Fayetteville','Greensboro','Raleigh','Wilmington','Winston-Salem'],
+        'ND': ['Bismarck','Fargo','Grand Forks','Minot'],
+        'OH': ['Akron','Canton','Cincinnati','Cleveland','Columbus','Dayton','Parma','Toledo','Youngstown'],
+        'OK': ['Broken Arrow','Edmond','Lawton','Norman','Oklahoma City','Tulsa'],
+        'OR': ['Beaverton','Bend','Corvallis','Eugene','Gresham','Hillsboro','Medford','Portland','Salem'],
+        'PA': ['Allentown','Erie','Harrisburg','Lancaster','Philadelphia','Pittsburgh','Reading','Scranton'],
+        'RI': ['Cranston','East Providence','Providence','Warwick','Woonsocket'],
+        'SC': ['Charleston','Columbia','Greenville','Myrtle Beach','North Charleston','Rock Hill'],
+        'SD': ['Aberdeen','Rapid City','Sioux Falls'],
+        'TN': ['Chattanooga','Clarksville','Franklin','Knoxville','Memphis','Murfreesboro','Nashville'],
+        'TX': ['Amarillo','Arlington','Austin','Beaumont','Brownsville','Corpus Christi','Dallas','Denton','El Paso','Fort Worth','Frisco','Garland','Grand Prairie','Houston','Irving','Killeen','Laredo','Lubbock','McAllen','McKinney','Midland','Odessa','Pasadena','Plano','San Antonio','Waco'],
+        'UT': ['Layton','Logan','Ogden','Orem','Provo','Salt Lake City','Sandy','St. George','West Jordan','West Valley City'],
+        'VT': ['Burlington','Montpelier','Rutland'],
+        'VA': ['Alexandria','Arlington','Chesapeake','Hampton','Lynchburg','Newport News','Norfolk','Portsmouth','Richmond','Roanoke','Virginia Beach'],
+        'WA': ['Bellevue','Everett','Kent','Olympia','Renton','Seattle','Spokane','Tacoma','Vancouver','Yakima'],
+        'WV': ['Charleston','Huntington','Morgantown','Parkersburg','Wheeling'],
+        'WI': ['Appleton','Green Bay','Kenosha','Madison','Milwaukee','Oshkosh','Racine','Waukesha'],
+        'WY': ['Casper','Cheyenne','Laramie'],
+        'DC': ['Washington'],
+      };
+
+      // Merge major cities with any model cities, sorted alphabetically
       const citiesInState = React.useMemo(() => {
-        const cities = models
+        const majorCities = selectedState ? (majorCitiesByState[selectedState] || []) : [];
+        const modelCities = models
           .filter(m => !selectedState || m.state === selectedState)
           .map(m => m.city)
           .filter(Boolean);
-        return [...new Set(cities)].sort();
+        return [...new Set([...majorCities, ...modelCities])].sort();
       }, [models, selectedState]);
 
       useEffect(() => {
