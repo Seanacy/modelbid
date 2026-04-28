@@ -6025,15 +6025,15 @@
           {/* Action Buttons — booking always open, reputation adds perks */}
           {(() => {
             const isElite = model.sessions_completed > 100;
-            const demoClientRep = getClientRepLevel(7, 85);
+            const viewerRep = getClientRepLevel(auth.profile?.sessions_completed || 0, auth.profile?.trust_score || 0);
             return (
               <div>
-                {isElite && demoClientRep.level >= 3 && (
+                {isElite && viewerRep.level >= 3 && (
                   <div style={{ background: 'rgba(0,217,163,0.06)', border: '1px solid rgba(0,217,163,0.2)', borderRadius: '8px', padding: '0.5rem 0.75rem', marginBottom: '0.75rem', fontSize: '0.8rem', color: 'var(--success-green)', textAlign: 'center' }}>
-                    ✅ Your <strong>{demoClientRep.name}</strong> status gives you priority booking with top models
+                    ✅ Your <strong>{viewerRep.name}</strong> status gives you priority booking with top models
                   </div>
                 )}
-                {isElite && demoClientRep.level < 3 && (
+                {isElite && viewerRep.level < 3 && (
                   <div style={{ background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.15)', borderRadius: '8px', padding: '0.5rem 0.75rem', marginBottom: '0.75rem', fontSize: '0.8em', color: '#aaa', textAlign: 'center' }}>
                     ⭐ <span style={{ color: '#ffd700' }}>Level up to Silver Pro</span> for priority booking and discounts with top models
                   </div>
@@ -13186,8 +13186,8 @@ REMEMBER:
     function ContractsPage() {
       const auth = useContext(AuthContext);
       const [showProPreview, setShowProPreview] = useState(false);
-      const demoClientRep = getClientRepLevel(7, 85);
-      const hasFreeProPerk = demoClientRep.level >= 2; // Bronze+ gets 1 free Pro/month
+      const clientRep = getClientRepLevel(auth.profile?.sessions_completed || 0, auth.profile?.trust_score || 0);
+      const hasFreeProPerk = clientRep.level >= 2; // Bronze+ gets 1 free Pro/month
 
       const generateContractPDF = (type) => {
         const isStandard = type === 'standard';
@@ -13490,7 +13490,7 @@ REMEMBER:
               {/* Reputation perk callout */}
               {hasFreeProPerk && (
                 <div style={{ background: 'rgba(0,217,163,0.06)', border: '1px solid rgba(0,217,163,0.2)', borderRadius: '8px', padding: '0.5rem 0.75rem', marginBottom: '0.75rem', fontSize: '0.8rem', color: 'var(--success-green)', textAlign: 'center' }}>
-                  🎁 Your <strong>{demoClientRep.name}</strong> status includes 1 free Pro Contract/month!
+                  🎁 Your <strong>{clientRep.name}</strong> status includes 1 free Pro Contract/month!
                 </div>
               )}
 
