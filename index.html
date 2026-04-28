@@ -6106,7 +6106,7 @@
                 Exclusive BTS content, early bookings, member discounts & group chat
               </div>
               <button className="btn glow-btn btn-block" style={{ background: 'linear-gradient(135deg, var(--accent-gold), #ffaa00)', fontSize: '0.85rem' }}
-                onClick={() => window.location.hash = `circle/${model.id || 'demo'}`}>
+                onClick={() => { if (model.id) window.location.hash = `circle/${model.id}`; }}>
                 Join Private Feed →
               </button>
             </div>
@@ -7747,6 +7747,7 @@
       const [showCreatePost, setShowCreatePost] = useState(false);
       const [newPostText, setNewPostText] = useState('');
       const [newPostType, setNewPostType] = useState('portfolio');
+      const [newPostLocked, setNewPostLocked] = useState(false);
       const [tippingPost, setTippingPost] = useState(null);
       const [tipAmount, setTipAmount] = useState('');
       const [tipMessage, setTipMessage] = useState('');
@@ -7807,6 +7808,7 @@
       const resetPostForm = () => {
         setNewPostText('');
         setNewPostType('portfolio');
+        setNewPostLocked(false);
         setPostEngagementType(null);
         setPostPollQuestion('');
         setPostPollOptions(['', '']);
@@ -8012,7 +8014,7 @@
             user_id: auth.profile.id,
             text: newPostText.trim(),
             type: newPostType,
-            locked: false
+            locked: newPostLocked
           };
           if (postEngagementType === 'poll') {
             postData.poll_question = postPollQuestion.trim();
@@ -8251,8 +8253,11 @@
                 />
 
                 <div className="feed-create-actions" style={{ marginBottom: '0.75rem' }}>
-                  <button className="feed-create-btn">📷 Add Photo</button>
-                  <button className="feed-create-btn">🔒 Premium Only</button>
+                  <button className="feed-create-btn" onClick={() => auth?.showToast?.('Photo uploads coming soon!', 'info') || alert('Photo uploads coming soon!')}>📷 Add Photo</button>
+                  <button className="feed-create-btn" onClick={() => setNewPostLocked(!newPostLocked)}
+                    style={newPostLocked ? { background: 'rgba(255,110,199,0.15)', borderColor: 'rgba(255,110,199,0.4)', color: '#ff6ec7' } : {}}>
+                    {newPostLocked ? '🔒 Premium Only' : '🔓 Public Post'}
+                  </button>
                 </div>
 
                 {/* === ENGAGEMENT TOOL — REQUIRED === */}
@@ -9890,7 +9895,7 @@ REMEMBER:
           earn: 'Recurring revenue',
           earnBg: 'rgba(157,78,221,0.1)',
           earnColor: '#c44dff',
-          link: 'circle/' + (profile.id || 'demo'),
+          link: 'circle/' + (profile.id || ''),
           contexts: ['dashboard', 'feed']
         });
       }
@@ -12868,6 +12873,7 @@ REMEMBER:
         return {
           id: c.id, title: c.title, status: c.funded ? 'funded' : daysLeft === 0 ? 'expired' : 'active',
           creator: {
+            id: c.creator_id,
             name: c.creator?.display_name || 'Anonymous',
             type: c.creator?.role || 'client',
             avatar: c.creator?.avatar_emoji || '👤'
@@ -12966,7 +12972,7 @@ REMEMBER:
                       <div>
                         <div className="ws-card-title">{c.title}</div>
                         <div className="ws-card-creator">
-                          by <span>{c.creator.name}</span> • {c.creator.type === 'model' ? '🎀 Model' : '📸 Client'}
+                          by <span onClick={() => { if (c.creator.id) window.location.hash = (c.creator.type === 'model' ? 'profile/' : 'client/') + c.creator.id; }}>{c.creator.name}</span> • {c.creator.type === 'model' ? '🎀 Model' : '📸 Client'}
                         </div>
                       </div>
                       <span className={'ws-card-badge ' + (c.funded ? 'ws-badge-funded' : c.status === 'new' ? 'ws-badge-new' : 'ws-badge-active')}>
@@ -13751,17 +13757,18 @@ REMEMBER:
       };
 
       const validatePromoCode = async () => {
-        if (!promoCode.trim()) return;
+        if (!promoCode.trim()) return 'empty';
         const { data, error: err } = await supabase
           .from('promo_codes')
           .select('code, max_uses, times_used, expires_at')
           .eq('code', promoCode.trim().toUpperCase())
           .eq('active', true)
           .single();
-        if (err || !data) { setPromoStatus('invalid'); return; }
-        if (data.times_used >= data.max_uses) { setPromoStatus('used_up'); return; }
-        if (data.expires_at && new Date(data.expires_at) < new Date()) { setPromoStatus('expired'); return; }
+        if (err || !data) { setPromoStatus('invalid'); return 'invalid'; }
+        if (data.times_used >= data.max_uses) { setPromoStatus('used_up'); return 'used_up'; }
+        if (data.expires_at && new Date(data.expires_at) < new Date()) { setPromoStatus('expired'); return 'expired'; }
         setPromoStatus('valid');
+        return 'valid';
       };
 
       const handleSignup = async () => {
@@ -13771,10 +13778,10 @@ REMEMBER:
           return;
         }
         if (promoCode.trim() && promoStatus !== 'valid') {
-          await validatePromoCode();
-          if (promoStatus === 'invalid') { setError('Invalid promo code'); return; }
-          if (promoStatus === 'used_up') { setError('This promo code has been fully redeemed'); return; }
-          if (promoStatus === 'expired') { setError('This promo code has expired'); return; }
+          const result = await validatePromoCode();
+          if (result === 'invalid') { setError('Invalid promo code'); return; }
+          if (result === 'used_up') { setError('This promo code has been fully redeemed'); return; }
+          if (result === 'expired') { setError('This promo code has expired'); return; }
         }
         setLoading(true);
         const success = await signup(displayName, email, password, role);
@@ -16336,7 +16343,7 @@ RULES
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
                   Browse models and request to join their team to start repping!
                 </div>
-                <button className="btn glow-btn" onClick={() => window.location.hash = 'explore'}>Browse Models</button>
+                <button className="btn glow-btn" onClick={() => window.location.hash = 'browse'}>Browse Models</button>
               </div>
             )}
 
@@ -16525,7 +16532,7 @@ RULES
             <span style={{ color: '#ffd700' }}>The Team, The Fam, The Sauce</span>
           </div>
           <div style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Set up your profile to access team features.</div>
-          <button className="btn glow-btn" onClick={() => window.location.hash = 'settings'}>Set Up Profile</button>
+          <button className="btn glow-btn" onClick={() => window.location.hash = 'edit-profile'}>Set Up Profile</button>
         </div>
       );
     }
@@ -17065,7 +17072,7 @@ RULES
                   <a className="nav-link" onClick={() => window.location.hash = 'messages'}>📬 Messages</a>
                   <a className="nav-link" onClick={() => window.location.hash = 'dashboard'}>Dashboard</a>
                   {/* Admin link removed — admin panel is standalone at #admin */}
-                  <div className="user-info" onClick={() => window.location.hash = 'profile/' + (auth.currentUser?.id || 'demo')} style={{ cursor: 'pointer' }}>
+                  <div className="user-info" onClick={() => { if (auth.currentUser?.id) window.location.hash = 'profile/' + auth.currentUser.id; }} style={{ cursor: 'pointer' }}>
                     <div className="avatar">{auth.profile?.avatar_emoji || '👤'}</div>
                     <div className="user-name">{auth.profile?.display_name || 'User'}</div>
                   </div>
@@ -17092,7 +17099,7 @@ RULES
             </div>
 
             {auth.currentUser && (
-              <div className="mobile-menu-user" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'profile/' + (auth.currentUser?.id || 'demo'); }}>
+              <div className="mobile-menu-user" onClick={() => { setMobileMenuOpen(false); if (auth.currentUser?.id) window.location.hash = 'profile/' + auth.currentUser.id; }}>
                 <div className="avatar">{auth.profile?.avatar_emoji || '👤'}</div>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{auth.profile?.display_name || 'User'}</div>
