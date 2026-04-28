@@ -15055,24 +15055,23 @@ REMEMBER:
                   <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
                     Step 3: Paste the link to your social page so we can verify
                   </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <input
                       type="url"
                       placeholder="https://instagram.com/yourname"
                       value={promoSocialUrl}
                       onChange={(e) => setPromoSocialUrl(e.target.value)}
                       style={{
-                        flex: 1, padding: '10px 12px', borderRadius: '10px',
+                        width: '100%', padding: '10px 12px', borderRadius: '10px',
                         border: '1px solid var(--border-color)', background: 'var(--bg-card)',
-                        color: 'var(--text-primary)', fontSize: '0.85rem'
+                        color: 'var(--text-primary)', fontSize: '0.85rem', boxSizing: 'border-box'
                       }}
                     />
                     <button onClick={handlePromoSubmit} disabled={verifying}
                       style={{
-                        padding: '10px 20px', borderRadius: '10px', border: 'none',
+                        width: '100%', padding: '10px 20px', borderRadius: '10px', border: 'none',
                         background: verifying ? '#555' : 'linear-gradient(135deg, #ff6ec7, #c44dff)',
-                        color: '#fff', fontWeight: 700, fontSize: '0.82rem', cursor: verifying ? 'wait' : 'pointer',
-                        flexShrink: 0
+                        color: '#fff', fontWeight: 700, fontSize: '0.82rem', cursor: verifying ? 'wait' : 'pointer'
                       }}>
                       {verifying ? 'Verifying...' : 'Verify'}
                     </button>
