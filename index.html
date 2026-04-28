@@ -4781,32 +4781,73 @@
     function HomePage() {
       return (
         <div>
-          {/* ===== HERO — compact on mobile, spacious on desktop ===== */}
-          <div className="hero" style={{ padding: '0' }}>
-            <div className="hero-content" style={{ padding: 'clamp(1.5rem, 5vw, 4rem) clamp(1rem, 4vw, 2rem)' }}>
-              <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '3px', color: 'var(--accent-pink)', marginBottom: '0.6rem', opacity: 0.8 }}>For Models & Clients</div>
-              <h1 style={{ fontSize: 'clamp(1.6rem, 5vw, 3rem)', lineHeight: 1.15, marginBottom: '0.75rem' }}>Where Models Get Booked</h1>
-              <p style={{ fontSize: 'clamp(0.85rem, 2.5vw, 1.2rem)', marginBottom: '1.25rem', maxWidth: '520px', marginLeft: 'auto', marginRight: 'auto' }}>Models: build your audience, set your rates, and get booked directly. Clients: browse verified talent and book private sessions.</p>
-              <div className="hero-buttons" style={{ marginBottom: '0.75rem' }}>
-                <button className="btn glow-btn" onClick={() => window.location.hash = 'signup'} style={{ padding: '0.7rem 2rem', fontSize: '0.95rem' }}>Sign Up Free</button>
-                <button className="btn btn-secondary" onClick={() => window.location.hash = 'login'} style={{ padding: '0.7rem 2rem', fontSize: '0.95rem' }}>Sign In</button>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', fontSize: '0.78rem', marginBottom: '1rem' }}>
-                <a onClick={() => window.location.hash = 'browse'} style={{ color: '#00d9ff', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: '2px' }}>Browse Models</a>
-                <a onClick={() => window.location.hash = 'formodels'} style={{ color: '#ff6ec7', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: '2px' }}>I'm a Model →</a>
-              </div>
-              {/* Trust signals */}
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 'clamp(0.75rem, 3vw, 1.5rem)', flexWrap: 'wrap', opacity: 0.7, fontSize: '0.72rem', color: '#999' }}>
-                <span>🔒 Secure</span>
-                <span>✅ Verified</span>
-                <span>📜 Contracts</span>
-                <span>💸 Free to Start</span>
-              </div>
+          {/* ===== INNER CIRCLE HERO ===== */}
+          <div style={{ padding: 'clamp(2.5rem, 8vw, 4rem) clamp(1rem, 4vw, 2rem)', textAlign: 'center', background: 'linear-gradient(180deg, #1a0a2e 0%, #0d0015 100%)' }}>
+            <div style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '3px', color: '#c44dff', marginBottom: '0.8rem' }}>Introducing</div>
+            <h1 style={{ fontSize: 'clamp(1.8rem, 6vw, 2.8rem)', fontWeight: 800, lineHeight: 1.15, marginBottom: '0.75rem', background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Inner Circle</h1>
+            <p style={{ fontSize: 'clamp(0.85rem, 2.5vw, 1.1rem)', color: '#aaa', maxWidth: '460px', margin: '0 auto 1.5rem', lineHeight: 1.6 }}>2–4 models. One exclusive feed. Split the work, share the audience, grow faster together.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '320px', margin: '0 auto' }}>
+              <button onClick={() => window.location.hash = 'signup'} style={{ padding: '14px 0', borderRadius: '999px', border: 'none', background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', color: '#fff', fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer', width: '100%' }}>Start your circle</button>
+              <button onClick={() => {
+                const el = document.getElementById('how-it-works');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }} style={{ padding: '14px 0', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#fff', fontSize: '0.95rem', cursor: 'pointer', width: '100%' }}>See how it works</button>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginTop: '1.25rem', fontSize: '0.78rem' }}>
+              <a onClick={() => window.location.hash = 'browse'} style={{ color: '#00d9ff', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: '2px' }}>Browse Models</a>
+              <a onClick={() => window.location.hash = 'login'} style={{ color: '#999', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: '2px' }}>Sign In</a>
             </div>
           </div>
 
-          {/* ===== FOR MODELS / FOR CLIENTS — two-column pitch ===== */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px', marginBottom: '1.5rem' }}>
+          {/* ===== WHY IT WORKS — 3 steps ===== */}
+          <div id="how-it-works" style={{ padding: 'clamp(1.5rem, 4vw, 2.5rem) clamp(1rem, 4vw, 2rem)' }}>
+            <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+              <div style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', color: '#666', marginBottom: '0.3rem' }}>Why it works</div>
+              <div style={{ fontSize: 'clamp(1.1rem, 3vw, 1.4rem)', fontWeight: 800 }}>Grow 4x faster with a crew</div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '500px', margin: '0 auto' }}>
+              {[
+                { icon: '👯‍♀️', title: 'Team up', desc: 'Invite 1–3 models to your circle. Each brings her audience.' },
+                { icon: '📰', title: 'One shared feed', desc: 'Post exclusive content to 3 subscriber tiers. Privacy controls built in.' },
+                { icon: '💸', title: 'Split the earnings', desc: '85% goes to the crew, split by post count. Referral tracking shows who brought who.' },
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '14px', background: 'var(--bg-card)', borderRadius: '14px', padding: '16px' }}>
+                  <div style={{ minWidth: '42px', height: '42px', borderRadius: '50%', background: 'rgba(196,77,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>{item.icon}</div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '2px' }}>{item.title}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', lineHeight: 1.5 }}>{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ===== ALSO INCLUDED — full toolkit ===== */}
+          <div style={{ padding: '0 clamp(1rem, 4vw, 2rem) clamp(1.5rem, 4vw, 2rem)', borderTop: '1px solid var(--border-color)' }}>
+            <div style={{ textAlign: 'center', padding: 'clamp(1.25rem, 3vw, 2rem) 0 1rem' }}>
+              <div style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', color: '#666', marginBottom: '0.3rem' }}>Also included</div>
+              <div style={{ fontSize: 'clamp(1rem, 3vw, 1.3rem)', fontWeight: 800 }}>The full ModelBid toolkit</div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', maxWidth: '500px', margin: '0 auto' }}>
+              {[
+                { icon: '📸', label: 'BTS Feed', desc: 'Solo private feed', color: '#00d9ff', hash: 'formodels' },
+                { icon: '📅', label: 'Now Booking', desc: 'Real-time availability', color: '#00e676', hash: 'browse' },
+                { icon: '🍒', label: 'Cherry Picker', desc: 'Premium casting', color: '#ffd700', hash: 'formodels' },
+                { icon: '💬', label: 'Messaging', desc: 'Direct model chat', color: '#c44dff', hash: 'formodels' },
+                { icon: '📝', label: 'Contracts', desc: 'Smart agreements', color: '#ff8a00', hash: 'formodels' },
+                { icon: '🛡️', label: 'Verified IDs', desc: 'Trust & safety', color: '#9d4edd', hash: 'formodels' },
+              ].map((t, i) => (
+                <div key={i} onClick={() => window.location.hash = t.hash} style={{ background: 'var(--bg-card)', borderRadius: '12px', padding: '14px 12px', textAlign: 'center', cursor: 'pointer', border: '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: '1.3rem', marginBottom: '4px' }}>{t.icon}</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.8rem', color: t.color, marginBottom: '2px' }}>{t.label}</div>
+                  <div style={{ fontSize: '0.68rem', color: '#777' }}>{t.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ===== FOR MODELS / FOR CLIENTS — two paths ===== */}
+          <div style={{ padding: 'clamp(1rem, 3vw, 1.5rem) clamp(1rem, 4vw, 2rem)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
             <div onClick={() => window.location.hash = 'formodels'} style={{
               padding: '16px 14px', borderRadius: '14px', cursor: 'pointer',
               background: 'linear-gradient(135deg, rgba(255,110,199,0.08), rgba(157,78,221,0.08))',
@@ -4814,7 +4855,7 @@
             }}>
               <div style={{ fontSize: '1.3rem', marginBottom: '6px' }}>📸</div>
               <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#ff6ec7', marginBottom: '4px' }}>For Models</div>
-              <div style={{ fontSize: '0.72rem', color: '#bbb', lineHeight: 1.5 }}>Set your rates, build your audience, get booked directly. Waive fees by placing your link.</div>
+              <div style={{ fontSize: '0.72rem', color: '#bbb', lineHeight: 1.5 }}>Set your rates, build your audience, get booked directly.</div>
             </div>
             <div onClick={() => window.location.hash = 'browse'} style={{
               padding: '16px 14px', borderRadius: '14px', cursor: 'pointer',
@@ -4823,71 +4864,18 @@
             }}>
               <div style={{ fontSize: '1.3rem', marginBottom: '6px' }}>🎯</div>
               <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#00d9ff', marginBottom: '4px' }}>For Clients</div>
-              <div style={{ fontSize: '0.72rem', color: '#bbb', lineHeight: 1.5 }}>Browse verified models, view portfolios & reviews, book sessions with smart contracts.</div>
+              <div style={{ fontSize: '0.72rem', color: '#bbb', lineHeight: 1.5 }}>Browse verified models, view portfolios & reviews, book sessions.</div>
             </div>
           </div>
 
-          {/* ===== QUICK FEATURES — horizontal scroll on mobile ===== */}
-          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '0 0 1rem', WebkitOverflowScrolling: 'touch' }}>
-            {[
-              { icon: '🛡️', label: 'ID Verified', color: '#9d4edd' },
-              { icon: '📅', label: 'Instant Book', color: '#ffd700' },
-              { icon: '💬', label: 'Direct Chat', color: '#00d9ff' },
-              { icon: '📜', label: 'Contracts', color: '#00e676' },
-              { icon: '⭐', label: 'Reviews', color: '#ff8a00' },
-            ].map((v, i) => (
-              <div key={i} style={{
-                minWidth: '90px', flex: '0 0 auto', padding: '10px 8px', textAlign: 'center',
-                background: `${v.color}08`, border: `1px solid ${v.color}15`, borderRadius: '10px',
-              }}>
-                <div style={{ fontSize: '1.2rem', marginBottom: '2px' }}>{v.icon}</div>
-                <div style={{ fontWeight: 700, fontSize: '0.68rem', color: v.color }}>{v.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* ===== HOW IT WORKS — compact cards ===== */}
-          <div style={{ maxWidth: '900px', margin: '1.5rem auto 0', padding: '0 0 2rem' }}>
-            <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
-              <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', color: 'var(--accent-pink)', marginBottom: '0.4rem' }}>How it works</div>
-              <div style={{ fontSize: 'clamp(1rem, 3vw, 1.3rem)', fontWeight: 800 }}>From Discovery to Session in Minutes</div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem' }}>
-              {[
-                { step: '01', icon: '🔍', title: 'Browse', desc: 'Explore models by style, rate & rating' },
-                { step: '02', icon: '👤', title: 'Preview', desc: 'Portfolios, reviews & availability' },
-                { step: '03', icon: '📅', title: 'Book', desc: 'Pick a date & request a session' },
-                { step: '04', icon: '💬', title: 'Connect', desc: 'Message & coordinate details' },
-              ].map(s => (
-                <div key={s.step} style={{
-                  background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                  borderRadius: '12px', padding: 'clamp(0.75rem, 2vw, 1.5rem) clamp(0.6rem, 2vw, 1.25rem)',
-                  textAlign: 'center',
-                }}>
-                  <div style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>{s.icon}</div>
-                  <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.2rem' }}>{s.title}</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>{s.desc}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ===== CTA STRIP ===== */}
+          {/* ===== BOTTOM CTA ===== */}
           <div style={{
-            textAlign: 'center', padding: '1.5rem 1rem', marginBottom: '1rem',
-            background: 'linear-gradient(135deg, rgba(255,110,199,0.08), rgba(157,78,221,0.08))',
-            borderRadius: '14px', border: '1px solid rgba(255,110,199,0.15)',
+            textAlign: 'center', padding: 'clamp(1.5rem, 4vw, 2.5rem) clamp(1rem, 4vw, 2rem)',
+            background: 'linear-gradient(180deg, rgba(13,0,21,0), rgba(26,10,46,0.5))',
           }}>
-            <div style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '0.4rem' }}>Join ModelBid</div>
-            <div style={{ fontSize: '0.8rem', color: '#999', marginBottom: '1rem' }}>Models: waive your fee by placing your link. Clients: browse free.</div>
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button className="btn glow-btn" onClick={() => window.location.hash = 'signup'} style={{ padding: '0.7rem 1.5rem', fontSize: '0.9rem' }}>
-                Sign Up Free
-              </button>
-              <button className="btn btn-secondary" onClick={() => window.location.hash = 'login'} style={{ padding: '0.7rem 1.5rem', fontSize: '0.9rem' }}>
-                Sign In
-              </button>
-            </div>
+            <div style={{ fontSize: 'clamp(1.1rem, 3vw, 1.4rem)', fontWeight: 800, marginBottom: '0.5rem' }}>Ready to start your circle?</div>
+            <div style={{ fontSize: '0.82rem', color: '#888', marginBottom: '1.25rem' }}>Free to create. Invite your crew. Start earning together.</div>
+            <button onClick={() => window.location.hash = 'signup'} style={{ padding: '14px 0', borderRadius: '999px', border: 'none', background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', color: '#fff', fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer', width: '100%', maxWidth: '320px' }}>Get started free</button>
           </div>
         </div>
       );
@@ -16753,7 +16741,15 @@ RULES
           <nav className="nav">
             <div className="nav-brand" onClick={() => window.location.hash = 'home'}>🎀 ModelBid</div>
 
-            {/* Desktop nav links — only show when signed in */}
+            {/* Desktop nav links — logged-out visitors */}
+            {!auth.currentUser && (
+            <div className="nav-links desktop-nav">
+              <a className="nav-link" onClick={() => window.location.hash = 'browse'}>Browse</a>
+              <a className="nav-link" onClick={() => window.location.hash = 'formodels'}>For Models</a>
+            </div>
+            )}
+
+            {/* Desktop nav links — signed-in users */}
             {auth.currentUser && (
             <div className="nav-links desktop-nav">
               <a className="nav-link" onClick={() => window.location.hash = 'browse'}>Browse</a>
