@@ -12186,103 +12186,447 @@ REMEMBER:
 
       if (isModel) {
         const pendingBookings = bookings.filter(b => b.status === 'pending');
+        const acceptedBookings = bookings.filter(b => b.status === 'accepted');
+
+        // ===== ACTION-FOCUSED DASHBOARD STATE =====
+        const [actionData, setActionData] = useState({ unreadCount: 0, newFollowers: [], topPosts: [], hotClients: [], loadedActions: false });
+        const [openSections, setOpenSections] = useState({ bookings: pendingBookings.length > 0, analytics: false, growth: false, circles: false, campaigns: false, nudges: false, allBookings: false });
+        const toggleSection = (key) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
+
+        // Fetch action data
+        useEffect(() => {
+          if (!auth.currentUser) return;
+          const fetchActionData = async () => {
+            const uid = auth.currentUser.id;
+            try {
+              // Unread messages: conversations where latest message isn't from me
+              let unreadCount = 0;
+              try {
+                const { data: convos } = await supabase.from('conversations').select('id, participant_1, participant_2')
+                  .or(`participant_1.eq.${uid},participant_2.eq.${uid}`);
+                if (convos && convos.length > 0) {
+                  const convoIds = convos.map(c => c.id);
+                  const { data: latestMsgs } = await supabase.from('messages').select('conversation_id, sender_id, created_at')
+                    .in('conversation_id', convoIds).order('created_at', { ascending: false });
+                  if (latestMsgs) {
+                    const seen = {};
+                    latestMsgs.forEach(m => { if (!seen[m.conversation_id]) seen[m.conversation_id] = m; });
+                    unreadCount = Object.values(seen).filter(m => m.sender_id !== uid).length;
+                  }
+                }
+              } catch(e) {}
+
+              // New followers in last 7 days
+              let newFollowers = [];
+              try {
+                const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+                const { data: follows } = await supabase.from('follows').select('follower_id, created_at')
+                  .eq('following_id', uid).gte('created_at', weekAgo.toISOString()).order('created_at', { ascending: false });
+                if (follows && follows.length > 0) {
+                  const followerIds = follows.map(f => f.follower_id);
+                  const { data: profiles } = await supabase.from('profiles').select('id, display_name, profile_photo_url').in('id', followerIds);
+                  const profMap = {};
+                  (profiles || []).forEach(p => profMap[p.id] = p);
+                  newFollowers = follows.map(f => ({ ...f, profile: profMap[f.follower_id] || { display_name: 'Someone' } }));
+                }
+              } catch(e) {}
+
+              // Top posts (last 30 days by likes)
+              let topPosts = [];
+              try {
+                const monthAgo = new Date(); monthAgo.setDate(monthAgo.getDate() - 30);
+                const { data: myPosts } = await supabase.from('posts').select('id, text, created_at, media_urls')
+                  .eq('user_id', uid).gte('created_at', monthAgo.toISOString()).order('created_at', { ascending: false }).limit(20);
+                if (myPosts && myPosts.length > 0) {
+                  const postIds = myPosts.map(p => p.id);
+                  const { data: likes } = await supabase.from('post_likes').select('post_id').in('post_id', postIds);
+                  const { data: comments } = await supabase.from('comments').select('post_id').in('post_id', postIds);
+                  const { data: reactions } = await supabase.from('reactions').select('post_id').in('post_id', postIds);
+                  const likeCounts = {}; (likes || []).forEach(l => { likeCounts[l.post_id] = (likeCounts[l.post_id] || 0) + 1; });
+                  const commentCounts = {}; (comments || []).forEach(c => { commentCounts[c.post_id] = (commentCounts[c.post_id] || 0) + 1; });
+                  const reactionCounts = {}; (reactions || []).forEach(r => { reactionCounts[r.post_id] = (reactionCounts[r.post_id] || 0) + 1; });
+                  topPosts = myPosts.map(p => ({
+                    ...p,
+                    likeCount: likeCounts[p.id] || 0,
+                    commentCount: commentCounts[p.id] || 0,
+                    reactionCount: reactionCounts[p.id] || 0,
+                    totalEngagement: (likeCounts[p.id] || 0) + (commentCounts[p.id] || 0) * 2 + (reactionCounts[p.id] || 0),
+                  })).sort((a, b) => b.totalEngagement - a.totalEngagement).slice(0, 5);
+                }
+              } catch(e) {}
+
+              // Hot clients — most active in last 14 days
+              let hotClients = [];
+              try {
+                const twoWeeksAgo = new Date(); twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+                const { data: myPosts2 } = await supabase.from('posts').select('id').eq('user_id', uid);
+                const postIds2 = (myPosts2 || []).map(p => p.id);
+                if (postIds2.length > 0) {
+                  const { data: recentLikes } = await supabase.from('post_likes').select('user_id').in('post_id', postIds2);
+                  const { data: recentComments } = await supabase.from('comments').select('user_id').in('post_id', postIds2);
+                  const clientActivity = {};
+                  (recentLikes || []).forEach(l => { if (l.user_id !== uid) clientActivity[l.user_id] = (clientActivity[l.user_id] || 0) + 1; });
+                  (recentComments || []).forEach(c => { if (c.user_id !== uid) clientActivity[c.user_id] = (clientActivity[c.user_id] || 0) + 2; });
+                  const topClientIds = Object.entries(clientActivity).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([id]) => id);
+                  if (topClientIds.length > 0) {
+                    const { data: clientProfiles } = await supabase.from('profiles').select('id, display_name, profile_photo_url').in('id', topClientIds);
+                    hotClients = topClientIds.map(id => {
+                      const prof = (clientProfiles || []).find(p => p.id === id) || { display_name: 'Client' };
+                      return { id, ...prof, score: clientActivity[id] };
+                    });
+                  }
+                }
+              } catch(e) {}
+
+              setActionData({ unreadCount, newFollowers, topPosts, hotClients, loadedActions: true });
+            } catch(e) { console.error('Action data fetch:', e); setActionData(prev => ({ ...prev, loadedActions: true })); }
+          };
+          fetchActionData();
+        }, [auth.currentUser]);
+
+        // Count total action items needing attention
+        const actionItems = [];
+        if (pendingBookings.length > 0) actionItems.push({ icon: '📅', color: '#ff6ec7', label: `${pendingBookings.length} booking${pendingBookings.length > 1 ? 's' : ''} waiting`, action: () => toggleSection('bookings'), actionLabel: 'Review' });
+        if (actionData.unreadCount > 0) actionItems.push({ icon: '💬', color: '#00d9ff', label: `${actionData.unreadCount} unread conversation${actionData.unreadCount > 1 ? 's' : ''}`, action: () => { window.location.hash = 'messages'; }, actionLabel: 'Reply' });
+        if (actionData.newFollowers.length > 0) actionItems.push({ icon: '👋', color: '#9d4edd', label: `${actionData.newFollowers.length} new follower${actionData.newFollowers.length > 1 ? 's' : ''} this week`, action: () => toggleSection('analytics'), actionLabel: 'See who' });
+        if (actionData.hotClients.length > 0) actionItems.push({ icon: '🔥', color: '#ff8a00', label: `${actionData.hotClients.length} active client${actionData.hotClients.length > 1 ? 's' : ''} engaging with you`, action: () => toggleSection('analytics'), actionLabel: 'Spotlight' });
 
         return (
           <div>
-            <h2 style={{ marginBottom: '1rem' }}>Model Dashboard</h2>
-
-            <GrowthRing />
-
-            <ClientAnalytics />
-
-            <div className="dashboard-grid">
-              <div className="stat-card gradient">
-                <div className="stat-value">${auth.profile.earnings || 0}</div>
-                <div className="stat-label">Total Earnings</div>
+            {/* ===== ACTION CENTER ===== */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                <h2 style={{ margin: 0 }}>Command Center</h2>
+                {actionItems.length > 0 && (
+                  <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '3px 8px', borderRadius: 20,
+                    background: 'rgba(255,110,199,0.15)', color: '#ff6ec7' }}>
+                    {actionItems.length} action{actionItems.length > 1 ? 's' : ''}
+                  </span>
+                )}
               </div>
-              <div className="stat-card">
-                <div className="stat-value">{pendingBookings.length}</div>
-                <div className="stat-label">Pending Requests</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-value">{auth.profile.rating ? auth.profile.rating.toFixed(1) : '0.0'}★</div>
-                <div className="stat-label">Rating</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-value">{auth.profile.review_count || 0}</div>
-                <div className="stat-label">Total Reviews</div>
-              </div>
-            </div>
 
-            {/* Revenue nudges — contextual, progression-ordered */}
-            <ModelNudges context="dashboard" limit={3} />
-
-            {/* Inner Circles */}
-            <div style={{ marginBottom: '2rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <h3 style={{ margin: 0 }}>👯‍♀️ Inner Circles</h3>
-                <button onClick={() => window.location.hash = 'crew/crew-demo'} className="btn glow-btn" style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}>Manage Crew</button>
-              </div>
-              <div onClick={() => window.location.hash = 'crew/crew-demo'} style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1.25rem', border: '1px solid var(--border-color)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{ fontSize: '2rem' }}>👯‍♀️</div>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>Inner Circle</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>3 members · 47 subscribers · $14.99/mo</div>
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--accent-gold)' }}>$287.45</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Your earnings</div>
-                </div>
-              </div>
-              <div style={{ marginTop: '0.75rem', textAlign: 'center' }}>
-                <button onClick={() => window.location.hash = 'crew/new'} style={{ background: 'none', border: '1px dashed var(--border-color)', borderRadius: '0.5rem', padding: '0.6rem 1.25rem', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer', width: '100%' }}>+ Create New Crew</button>
-              </div>
-            </div>
-
-            {/* PromoCodeManager removed — promo management is in admin panel */}
-
-            <h3 style={{ marginBottom: '1rem' }}>Booking Requests</h3>
-            <div className="grid">
-              {bookings.map(booking => (
-                <div key={booking.id} className="card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
-                    <div>
-                      <div style={{ fontWeight: '700' }}>Client</div>
-                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{booking.session_date} • {booking.duration_hours}h</div>
+              {/* Action Items */}
+              {actionItems.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.25rem' }}>
+                  {actionItems.map((item, i) => (
+                    <div key={i} onClick={item.action} style={{
+                      display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem',
+                      background: `${item.color}10`, border: `1px solid ${item.color}30`, borderRadius: '12px',
+                      cursor: 'pointer', transition: 'all 0.2s'
+                    }}>
+                      <div style={{ fontSize: '1.2rem', width: '32px', textAlign: 'center' }}>{item.icon}</div>
+                      <div style={{ flex: 1, fontWeight: 600, fontSize: '0.9rem' }}>{item.label}</div>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: item.color, padding: '4px 12px',
+                        borderRadius: 20, background: `${item.color}18` }}>
+                        {item.actionLabel} →
+                      </div>
                     </div>
-                    <div className={`badge ${booking.status === 'pending' ? 'badge-pending' : 'badge-success'}`}>
-                      {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                    </div>
-                  </div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-                    <strong>Rate:</strong> ${booking.rate}<br />
-                    <strong>Contract:</strong> {booking.contract_type}
-                  </div>
-                  {booking.status === 'pending' && (
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button className="btn glow-btn btn-small" onClick={async () => {
-                        await auth.updateBooking(booking.id, 'accepted');
-                        setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, status: 'accepted' } : b));
-                      }}>Accept</button>
-                      <button className="btn btn-secondary btn-small" onClick={async () => {
-                        await auth.updateBooking(booking.id, 'declined');
-                        setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, status: 'declined' } : b));
-                      }}>Decline</button>
-                    </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-              {bookings.length === 0 && (
-                <div className="empty-state">
-                  <div className="empty-state-icon">📅</div>
-                  <div className="empty-state-title">No bookings yet</div>
+              ) : (
+                <div style={{
+                  padding: '1.25rem', background: 'rgba(0,230,118,0.06)', border: '1px solid rgba(0,230,118,0.15)',
+                  borderRadius: '12px', textAlign: 'center', marginBottom: '1.25rem'
+                }}>
+                  <span style={{ fontSize: '1.2rem' }}>✅</span>
+                  <span style={{ marginLeft: '0.5rem', fontWeight: 600, color: '#00e676', fontSize: '0.9rem' }}>
+                    All caught up! No actions needed right now.
+                  </span>
                 </div>
               )}
             </div>
 
-            {renderMyCampaigns()}
+            {/* ===== QUICK STATS ROW ===== */}
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '1.5rem'
+            }}>
+              <div style={{ background: 'linear-gradient(135deg, rgba(255,110,199,0.12), rgba(157,78,221,0.12))',
+                borderRadius: '12px', padding: '0.75rem', textAlign: 'center', border: '1px solid rgba(255,110,199,0.15)' }}>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#ff6ec7' }}>${auth.profile.earnings || 0}</div>
+                <div style={{ fontSize: '0.68rem', color: '#999', fontWeight: 600, marginTop: '2px' }}>EARNINGS</div>
+              </div>
+              <div style={{ background: 'rgba(255,215,0,0.08)', borderRadius: '12px', padding: '0.75rem',
+                textAlign: 'center', border: '1px solid rgba(255,215,0,0.12)' }}>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#ffd700' }}>{auth.profile.rating ? auth.profile.rating.toFixed(1) : '0.0'}★</div>
+                <div style={{ fontSize: '0.68rem', color: '#999', fontWeight: 600, marginTop: '2px' }}>RATING</div>
+              </div>
+              <div style={{ background: 'rgba(0,217,255,0.08)', borderRadius: '12px', padding: '0.75rem',
+                textAlign: 'center', border: '1px solid rgba(0,217,255,0.12)' }}>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#00d9ff' }}>{auth.profile.review_count || 0}</div>
+                <div style={{ fontSize: '0.68rem', color: '#999', fontWeight: 600, marginTop: '2px' }}>REVIEWS</div>
+              </div>
+              <div style={{ background: 'rgba(0,230,118,0.08)', borderRadius: '12px', padding: '0.75rem',
+                textAlign: 'center', border: '1px solid rgba(0,230,118,0.12)' }}>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#00e676' }}>{acceptedBookings.length}</div>
+                <div style={{ fontSize: '0.68rem', color: '#999', fontWeight: 600, marginTop: '2px' }}>BOOKED</div>
+              </div>
+            </div>
+
+            {/* ===== HOT CLIENTS STRIP ===== */}
+            {actionData.hotClients.length > 0 && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#ff8a00', marginBottom: '8px', letterSpacing: '0.5px' }}>🔥 HOT CLIENTS — MOST ACTIVE</div>
+                <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+                  {actionData.hotClients.map(client => (
+                    <div key={client.id} onClick={() => window.location.hash = 'client/' + client.id}
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px',
+                        background: 'rgba(255,138,0,0.08)', border: '1px solid rgba(255,138,0,0.15)',
+                        borderRadius: '10px', cursor: 'pointer', whiteSpace: 'nowrap', minWidth: 'fit-content' }}>
+                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', overflow: 'hidden',
+                        background: 'rgba(255,138,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '0.7rem', fontWeight: 700, color: '#ff8a00', flexShrink: 0 }}>
+                        {client.profile_photo_url
+                          ? <img src={client.profile_photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none'; e.target.parentNode.textContent = (client.display_name || '?')[0].toUpperCase(); }} />
+                          : (client.display_name || '?')[0].toUpperCase()
+                        }
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700 }}>{client.display_name}</div>
+                        <div style={{ fontSize: '0.65rem', color: '#ff8a00' }}>{client.score} interactions</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ===== TOP POSTS STRIP ===== */}
+            {actionData.topPosts.length > 0 && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9d4edd', marginBottom: '8px', letterSpacing: '0.5px' }}>📈 TOP PERFORMING CONTENT</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {actionData.topPosts.slice(0, 3).map((post, i) => (
+                    <div key={post.id} style={{
+                      display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px',
+                      background: 'rgba(157,78,221,0.06)', border: '1px solid rgba(157,78,221,0.1)',
+                      borderRadius: '10px'
+                    }}>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#9d4edd', width: '20px' }}>#{i + 1}</div>
+                      <div style={{ flex: 1, fontSize: '0.82rem', color: '#ccc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {post.text ? post.text.substring(0, 60) + (post.text.length > 60 ? '...' : '') : '(media post)'}
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px', fontSize: '0.72rem', color: '#999', whiteSpace: 'nowrap' }}>
+                        <span>❤️ {post.likeCount}</span>
+                        <span>💬 {post.commentCount}</span>
+                        {post.reactionCount > 0 && <span>😄 {post.reactionCount}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ===== NEW FOLLOWERS ===== */}
+            {actionData.newFollowers.length > 0 && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9d4edd', marginBottom: '8px', letterSpacing: '0.5px' }}>👋 NEW FOLLOWERS THIS WEEK</div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {actionData.newFollowers.slice(0, 8).map((f, i) => (
+                    <div key={i} onClick={() => window.location.hash = 'client/' + f.follower_id}
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 10px',
+                        background: 'rgba(157,78,221,0.08)', border: '1px solid rgba(157,78,221,0.12)',
+                        borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem' }}>
+                      <span style={{ fontWeight: 600 }}>{f.profile?.display_name || 'Someone'}</span>
+                    </div>
+                  ))}
+                  {actionData.newFollowers.length > 8 && (
+                    <span style={{ fontSize: '0.75rem', color: '#888', padding: '5px 8px' }}>+{actionData.newFollowers.length - 8} more</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ===== COLLAPSIBLE SECTIONS ===== */}
+
+            {/* Pending Bookings (auto-open if there are pending ones) */}
+            {bookings.length > 0 && (
+              <div style={{ marginBottom: '0.75rem' }}>
+                <div onClick={() => toggleSection('bookings')} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem',
+                  background: pendingBookings.length > 0 ? 'rgba(255,110,199,0.06)' : 'rgba(255,255,255,0.02)',
+                  border: `1px solid ${pendingBookings.length > 0 ? 'rgba(255,110,199,0.15)' : 'rgba(255,255,255,0.06)'}`,
+                  borderRadius: openSections.bookings ? '12px 12px 0 0' : '12px', cursor: 'pointer'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '1rem' }}>📅</span>
+                    <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Booking Requests</span>
+                    {pendingBookings.length > 0 && (
+                      <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '2px 7px', borderRadius: 10,
+                        background: 'rgba(255,110,199,0.15)', color: '#ff6ec7' }}>{pendingBookings.length} pending</span>
+                    )}
+                  </div>
+                  <span style={{ color: '#666', fontSize: '0.9rem', transition: 'transform 0.2s',
+                    transform: openSections.bookings ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                </div>
+                {openSections.bookings && (
+                  <div style={{ border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none',
+                    borderRadius: '0 0 12px 12px', padding: '0.75rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {bookings.map(booking => (
+                        <div key={booking.id} style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.6rem 0.75rem',
+                          background: booking.status === 'pending' ? 'rgba(255,110,199,0.04)' : 'rgba(255,255,255,0.02)',
+                          borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)'
+                        }}>
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                              {booking.session_date} · {booking.duration_hours}h · ${booking.rate}
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: '#888' }}>{booking.contract_type}</div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {booking.status === 'pending' ? (
+                              <>
+                                <button onClick={async (e) => { e.stopPropagation();
+                                  await auth.updateBooking(booking.id, 'accepted');
+                                  setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, status: 'accepted' } : b));
+                                }} style={{ padding: '4px 12px', borderRadius: '6px', border: 'none', fontSize: '0.78rem',
+                                  fontWeight: 700, background: '#ff6ec7', color: '#fff', cursor: 'pointer' }}>Accept</button>
+                                <button onClick={async (e) => { e.stopPropagation();
+                                  await auth.updateBooking(booking.id, 'declined');
+                                  setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, status: 'declined' } : b));
+                                }} style={{ padding: '4px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)',
+                                  fontSize: '0.78rem', fontWeight: 600, background: 'none', color: '#888', cursor: 'pointer' }}>Decline</button>
+                              </>
+                            ) : (
+                              <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: 6,
+                                background: booking.status === 'accepted' ? 'rgba(0,230,118,0.12)' : 'rgba(255,82,82,0.12)',
+                                color: booking.status === 'accepted' ? '#00e676' : '#ff5252' }}>
+                                {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Client Analytics */}
+            <div style={{ marginBottom: '0.75rem' }}>
+              <div onClick={() => toggleSection('analytics')} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem',
+                background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: openSections.analytics ? '12px 12px 0 0' : '12px', cursor: 'pointer'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '1rem' }}>📊</span>
+                  <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Client Analytics</span>
+                  <span style={{ fontSize: '0.68rem', color: '#888' }}>Full drill-down</span>
+                </div>
+                <span style={{ color: '#666', fontSize: '0.9rem', transition: 'transform 0.2s',
+                  transform: openSections.analytics ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+              </div>
+              {openSections.analytics && (
+                <div style={{ border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none',
+                  borderRadius: '0 0 12px 12px', padding: '0.75rem' }}>
+                  <ClientAnalytics />
+                </div>
+              )}
+            </div>
+
+            {/* Growth Ring */}
+            <div style={{ marginBottom: '0.75rem' }}>
+              <div onClick={() => toggleSection('growth')} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem',
+                background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: openSections.growth ? '12px 12px 0 0' : '12px', cursor: 'pointer'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '1rem' }}>🌀</span>
+                  <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Growth Ring</span>
+                </div>
+                <span style={{ color: '#666', fontSize: '0.9rem', transition: 'transform 0.2s',
+                  transform: openSections.growth ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+              </div>
+              {openSections.growth && (
+                <div style={{ border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none',
+                  borderRadius: '0 0 12px 12px', padding: '0.75rem' }}>
+                  <GrowthRing />
+                </div>
+              )}
+            </div>
+
+            {/* Revenue Tips */}
+            <div style={{ marginBottom: '0.75rem' }}>
+              <div onClick={() => toggleSection('nudges')} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem',
+                background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: openSections.nudges ? '12px 12px 0 0' : '12px', cursor: 'pointer'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '1rem' }}>💡</span>
+                  <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Revenue Tips</span>
+                </div>
+                <span style={{ color: '#666', fontSize: '0.9rem', transition: 'transform 0.2s',
+                  transform: openSections.nudges ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+              </div>
+              {openSections.nudges && (
+                <div style={{ border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none',
+                  borderRadius: '0 0 12px 12px', padding: '0.75rem' }}>
+                  <ModelNudges context="dashboard" limit={3} />
+                </div>
+              )}
+            </div>
+
+            {/* Inner Circles */}
+            <div style={{ marginBottom: '0.75rem' }}>
+              <div onClick={() => toggleSection('circles')} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem',
+                background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: openSections.circles ? '12px 12px 0 0' : '12px', cursor: 'pointer'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '1rem' }}>👯‍♀️</span>
+                  <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Inner Circles</span>
+                </div>
+                <span style={{ color: '#666', fontSize: '0.9rem', transition: 'transform 0.2s',
+                  transform: openSections.circles ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+              </div>
+              {openSections.circles && (
+                <div style={{ border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none',
+                  borderRadius: '0 0 12px 12px', padding: '0.75rem' }}>
+                  <div onClick={() => window.location.hash = 'crew/crew-demo'} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '10px', padding: '1rem', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>Inner Circle</div>
+                      <div style={{ fontSize: '0.78rem', color: '#888' }}>3 members · 47 subscribers · $14.99/mo</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontWeight: 700, fontSize: '1rem', color: '#ffd700' }}>$287.45</div>
+                      <div style={{ fontSize: '0.68rem', color: '#888' }}>earnings</div>
+                    </div>
+                  </div>
+                  <button onClick={() => window.location.hash = 'crew/new'} style={{ background: 'none', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '8px', padding: '0.5rem', color: '#888', fontSize: '0.78rem', cursor: 'pointer', width: '100%' }}>+ Create New Crew</button>
+                </div>
+              )}
+            </div>
+
+            {/* Campaigns */}
+            {myCampaigns.length > 0 && (
+              <div style={{ marginBottom: '0.75rem' }}>
+                <div onClick={() => toggleSection('campaigns')} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem',
+                  background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: openSections.campaigns ? '12px 12px 0 0' : '12px', cursor: 'pointer'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '1rem' }}>⚡</span>
+                    <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>My Campaigns</span>
+                    <span style={{ fontSize: '0.68rem', color: '#888' }}>{myCampaigns.length}</span>
+                  </div>
+                  <span style={{ color: '#666', fontSize: '0.9rem', transition: 'transform 0.2s',
+                    transform: openSections.campaigns ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                </div>
+                {openSections.campaigns && (
+                  <div style={{ border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none',
+                    borderRadius: '0 0 12px 12px', padding: '0.75rem' }}>
+                    {renderMyCampaigns()}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
       } else {
