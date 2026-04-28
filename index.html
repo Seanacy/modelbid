@@ -4355,9 +4355,16 @@
 
           if (error) throw error;
 
-          // Promo expiration is now handled inside isSubscriptionActive() — no need to
-          // wipe subscription_waived on every profile load, which was causing the gate flash.
-          // The gate function checks promo_expires_at directly.
+          // Self-heal: if promo_code_used is set but subscription_waived got wiped, fix it
+          if (data && data.promo_code_used && data.subscription_waived !== true) {
+            data.subscription_waived = true;
+            data.cherry_picker_active = true;
+            // Fire-and-forget DB repair — don't block profile load
+            supabase.from('profiles').update({
+              subscription_waived: true,
+              cherry_picker_active: true,
+            }).eq('id', userId).then(() => {});
+          }
 
           setProfile(data);
         } catch (error) {
@@ -16946,8 +16953,8 @@ RULES
       if (profile.subscription_tier === 'premium') active = true;
       // Social link verified
       if (profile.promo_verified === true) active = true;
-      // Has a promo code that hasn't expired
-      if (profile.promo_code_used && (!profile.promo_expires_at || new Date(profile.promo_expires_at) > new Date())) active = true;
+      // Has a promo code — active regardless of expiration date. Admin can revoke manually.
+      if (profile.promo_code_used) active = true;
       // Clients don't need a subscription
       if (profile.role === 'client') active = true;
 
