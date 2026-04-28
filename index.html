@@ -14521,6 +14521,37 @@ REMEMBER:
               </div>
             </div>
 
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div className="form-group">
+                <label>City</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Minneapolis"
+                  value={data.city || ''}
+                  onChange={(e) => {
+                    const city = e.target.value;
+                    setData({ ...data, city, location: (city && data.state) ? `${city}, ${data.state}` : city || data.state || '' });
+                  }}
+                />
+              </div>
+              <div className="form-group">
+                <label>State</label>
+                <select
+                  value={data.state || ''}
+                  onChange={(e) => {
+                    const state = e.target.value;
+                    setData({ ...data, state, location: (data.city && state) ? `${data.city}, ${state}` : data.city || state || '' });
+                  }}
+                  style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}
+                >
+                  <option value="">Select</option>
+                  {['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'].map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             {isModel && (
               <>
                 <div className="form-group">
