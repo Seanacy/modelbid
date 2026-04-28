@@ -5644,7 +5644,7 @@
       const [showBookingModal, setShowBookingModal] = useState(false);
       const [showPaywallModal, setShowPaywallModal] = useState(false);
       const [selectedGalleryItem, setSelectedGalleryItem] = useState(null);
-      const [useDemo, setUseDemo] = useState(false);
+      const [notFound, setNotFound] = useState(false);
       const [bookingData, setBookingData] = useState({
         date: '',
         duration: 1,
@@ -5655,7 +5655,7 @@
       // Fetch this model's Inner Circle crew + members
       const [crewData, setCrewData] = useState(null); // { crew, members[] }
       useEffect(() => {
-        if (!modelId || modelId === 'demo') return;
+        if (!modelId) return;
         const fetchCrew = async () => {
           try {
             // Find crews this model belongs to
@@ -5687,78 +5687,16 @@
 
       // "View as Public" toggle — lets model preview their page as visitors see it
       const [viewAsPublic, setViewAsPublic] = useState(false);
-      const isOwnProfile = auth.currentUser && (modelId === auth.currentUser.id || modelId === 'demo');
-
-      // Demo data for preview
-      const demoModel = {
-        id: 'demo-1',
-        display_name: 'Aria Valentina',
-        avatar_emoji: '👩',
-        verified: true,
-        rate: 250,
-        rating: 4.9,
-        review_count: 47,
-        bio: 'Professional lingerie and glamour model with 5+ years of experience. Based in Miami. I specialize in boudoir, pin-up, and luxury editorial shoots. I bring my own wardrobe collection of 200+ pieces. Let\'s create something stunning together.',
-        tags: ['Lingerie', 'Glamour', 'Boudoir', 'Pin-Up', 'Luxury'],
-        location: 'Miami, FL',
-        tagline: 'Elegance meets confidence',
-        response_time: '< 1 hour',
-        sessions_completed: 134,
-        member_since: '2024',
-        availability: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: false },
-        gallery: [
-          { emoji: '👙', label: 'Lingerie Set' },
-          { emoji: '🎭', label: 'Masquerade' },
-          { emoji: '✨', label: 'Glamour Shot' },
-          { emoji: '🌹', label: 'Boudoir' },
-          { emoji: '💎', label: 'Luxury Editorial' },
-          { emoji: '🎀', label: 'Pin-Up Classic' },
-        ]
-      };
-
-      // Demo 360 outfit data — only loads into state when user opens viewer
-      const demo360Outfits = [
-        {
-          name: 'Red Lace Lingerie Set',
-          angles: ['👙', '🔴', '❤️', '💃', '🫦', '💋', '🌹', '♥️'],
-        },
-        {
-          name: 'Masquerade Noir',
-          angles: ['🎭', '🖤', '🃏', '🌙', '✨', '🎩', '🦇', '🌑'],
-        },
-        {
-          name: 'Golden Hour Glamour',
-          angles: ['✨', '💛', '👑', '🌟', '💫', '🔆', '⭐', '🌻'],
-        },
-        {
-          name: 'Classic Pin-Up',
-          angles: ['🎀', '💄', '👠', '🍒', '🎪', '💋', '🌸', '🎶'],
-        },
-      ];
-
-      const demoReviews = [
-        { id: 1, reviewer_name: 'Marcus T.', rating: 5, text: 'Absolutely professional from start to finish. Aria made the whole session feel comfortable and the photos turned out incredible.', date: '2 weeks ago' },
-        { id: 2, reviewer_name: 'David R.', rating: 5, text: 'Amazing wardrobe selection and she really knows her angles. Highly recommend for boudoir shoots.', date: '1 month ago' },
-        { id: 3, reviewer_name: 'James K.', rating: 4, text: 'Great energy and very punctual. The glamour session was exactly what I was looking for.', date: '2 months ago' },
-      ];
+      const isOwnProfile = auth.currentUser && modelId === auth.currentUser.id;
 
       useEffect(() => {
         const timeout = setTimeout(() => {
           setLoading(false);
-          if (!model) { setModel(demoModel); setReviews(demoReviews); setUseDemo(true); }
-        }, 3000);
+          if (!model) setNotFound(true);
+        }, 5000);
 
         const fetchData = async () => {
           try {
-            if (modelId === 'demo') {
-              setModel(demoModel);
-              setReviews(demoReviews);
-              setUseDemo(true);
-              setLoading(false);
-              clearTimeout(timeout);
-              return;
-            }
-
             const { data: modelData, error: modelError } = await supabase
               .from('profiles')
               .select('*')
@@ -5787,9 +5725,7 @@
             }
           } catch (error) {
             console.error('Fetch error:', error);
-            setModel(demoModel);
-            setReviews(demoReviews);
-            setUseDemo(true);
+            setNotFound(true);
           } finally {
             setLoading(false);
             clearTimeout(timeout);
@@ -5804,15 +5740,22 @@
         return <div className="text-center" style={{ padding: '2rem' }}>Loading profile...</div>;
       }
 
-      if (!model) {
-        return <div>Model not found</div>;
+      if (!model || notFound) {
+        return (
+          <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
+            <h2 style={{ marginBottom: '0.5rem' }}>Profile Not Found</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+              This model doesn't exist or may have been removed.
+            </p>
+            <button className="btn btn-secondary" onClick={() => window.location.hash = 'browse'}>
+              ← Browse Models
+            </button>
+          </div>
+        );
       }
 
       const handleBooking = async () => {
-        if (useDemo) {
-          auth.showToast('Demo mode - sign up to book real sessions!', 'info');
-          return;
-        }
         if (!auth.currentUser) {
           window.location.hash = 'login';
           return;
@@ -5833,10 +5776,6 @@
       };
 
       const handleMessage = async () => {
-        if (useDemo) {
-          auth.showToast('Demo mode - sign up to message models!', 'info');
-          return;
-        }
         if (!auth.currentUser) {
           window.location.hash = 'login';
           return;
