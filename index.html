@@ -5455,6 +5455,39 @@
         contractType: 'standard',
       });
 
+      // Fetch this model's Inner Circle crew + members
+      const [crewData, setCrewData] = useState(null); // { crew, members[] }
+      useEffect(() => {
+        if (!modelId || modelId === 'demo') return;
+        const fetchCrew = async () => {
+          try {
+            // Find crews this model belongs to
+            const { data: memberships } = await supabase.from('crew_members')
+              .select('crew_id, role').eq('user_id', modelId);
+            if (!memberships || memberships.length === 0) return;
+            // Get first crew
+            const crewId = memberships[0].crew_id;
+            const { data: crew } = await supabase.from('crews')
+              .select('*').eq('id', crewId).single();
+            if (!crew) return;
+            // Get all members with profiles
+            const { data: members } = await supabase.from('crew_members')
+              .select('user_id, role').eq('crew_id', crewId);
+            if (!members) return;
+            const memberIds = members.map(m => m.user_id);
+            const { data: profiles } = await supabase.from('profiles')
+              .select('id, display_name, avatar_emoji, profile_photo_url')
+              .in('id', memberIds);
+            const memberList = members.map(m => {
+              const prof = (profiles || []).find(p => p.id === m.user_id) || {};
+              return { ...m, ...prof };
+            });
+            setCrewData({ crew, members: memberList });
+          } catch (e) { console.error('Fetch crew for profile:', e); }
+        };
+        fetchCrew();
+      }, [modelId]);
+
       // Demo data for preview
       const demoModel = {
         id: 'demo-1',
@@ -5639,6 +5672,113 @@
           </button>
           )}
 
+          {/* ===== INNER CIRCLE — first thing on the page ===== */}
+          {crewData && crewData.members.length > 0 && (
+          <div style={{
+            marginBottom: '1rem', borderRadius: '16px', overflow: 'hidden',
+            background: 'linear-gradient(135deg, #1a0a2e, #0d0015)',
+            border: '1px solid rgba(196,77,255,0.25)',
+          }}>
+            <div style={{ padding: 'clamp(1rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.5rem) 0.5rem' }}>
+              <div style={{ textAlign: 'center', marginBottom: '0.75rem' }}>
+                <div style={{ fontSize: '0.55rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2.5px', color: '#c44dff', marginBottom: '0.25rem' }}>Exclusive</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 800, background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{crewData.crew.name || 'Inner Circle'}</div>
+              </div>
+
+              {/* Member grid — 2x2 for 4, 1x3 for 3, 1x2 for 2, centered */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: crewData.members.length >= 4 ? 'repeat(2, 1fr)' : `repeat(${Math.min(crewData.members.length, 3)}, 1fr)`,
+                gap: '6px',
+                maxWidth: crewData.members.length <= 3 ? `${crewData.members.length * 140}px` : '100%',
+                margin: '0 auto',
+                padding: '0 0.5rem',
+              }}>
+                {crewData.members.map((member, i) => (
+                  <div key={i} onClick={() => window.location.hash = 'profile/' + member.user_id}
+                    style={{
+                      position: 'relative', cursor: 'pointer',
+                      aspectRatio: '3/4', borderRadius: '12px', overflow: 'hidden',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: member.user_id === modelId ? '2px solid #c44dff' : '1px solid rgba(255,255,255,0.08)',
+                    }}>
+                    {member.profile_photo_url ? (
+                      <img src={member.profile_photo_url} alt={member.display_name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{
+                        width: '100%', height: '100%', display: 'flex', alignItems: 'center',
+                        justifyContent: 'center', fontSize: '2.5rem',
+                        background: 'linear-gradient(135deg, rgba(196,77,255,0.1), rgba(255,110,199,0.1))',
+                      }}>{member.avatar_emoji || '👤'}</div>
+                    )}
+                    {/* Name overlay at bottom */}
+                    <div style={{
+                      position: 'absolute', bottom: 0, left: 0, right: 0,
+                      padding: '20px 8px 6px', textAlign: 'center',
+                      background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
+                    }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#fff' }}>
+                        {member.display_name || 'Model'}
+                      </div>
+                    </div>
+                    {/* Current profile indicator */}
+                    {member.user_id === modelId && (
+                      <div style={{
+                        position: 'absolute', top: '6px', right: '6px',
+                        padding: '2px 8px', borderRadius: '999px',
+                        background: 'rgba(196,77,255,0.8)', fontSize: '0.6rem',
+                        color: '#fff', fontWeight: 600,
+                      }}>Viewing</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Tier badges + CTA */}
+            <div style={{ padding: '0.75rem clamp(1rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.25rem)', textAlign: 'center' }}>
+              <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                <span style={{ padding: '3px 10px', borderRadius: '999px', background: 'rgba(196,77,255,0.12)', fontSize: '0.68rem', color: '#c44dff', fontWeight: 600 }}>{crewData.crew.tier1_name || 'Fan'}</span>
+                <span style={{ padding: '3px 10px', borderRadius: '999px', background: 'rgba(255,110,199,0.12)', fontSize: '0.68rem', color: '#ff6ec7', fontWeight: 600 }}>{crewData.crew.tier2_name || 'VIP'}</span>
+                <span style={{ padding: '3px 10px', borderRadius: '999px', background: 'rgba(255,215,0,0.12)', fontSize: '0.68rem', color: '#ffd700', fontWeight: 600 }}>{crewData.crew.tier3_name || 'Elite'}</span>
+              </div>
+              {auth.currentUser && (modelId === auth.currentUser.id || modelId === 'demo') ? (
+                <button onClick={() => window.location.hash = 'circle/' + (auth.currentUser?.id || '')} style={{
+                  width: '100%', padding: '11px 0', borderRadius: '999px', border: 'none',
+                  background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', color: '#fff',
+                  fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer',
+                }}>Manage Your Circle →</button>
+              ) : (
+                <button onClick={() => window.location.hash = 'crew/' + crewData.crew.id} style={{
+                  width: '100%', padding: '11px 0', borderRadius: '999px', border: 'none',
+                  background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', color: '#fff',
+                  fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer',
+                }}>View Inner Circle →</button>
+              )}
+            </div>
+          </div>
+          )}
+
+          {/* If model has no crew yet and viewing own profile, show create prompt */}
+          {!crewData && auth.currentUser && (modelId === auth.currentUser.id) && (
+          <div style={{
+            marginBottom: '1rem', borderRadius: '16px', overflow: 'hidden',
+            background: 'linear-gradient(135deg, #1a0a2e, #0d0015)',
+            border: '1px dashed rgba(196,77,255,0.3)',
+            padding: 'clamp(1.25rem, 3vw, 1.5rem)', textAlign: 'center',
+          }}>
+            <div style={{ fontSize: '0.55rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2.5px', color: '#c44dff', marginBottom: '0.3rem' }}>Get started</div>
+            <div style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '0.4rem', background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Start Your Inner Circle</div>
+            <div style={{ fontSize: '0.78rem', color: '#888', marginBottom: '1rem', lineHeight: 1.5 }}>Team up with 1–3 models. One shared feed, split earnings.</div>
+            <button onClick={() => window.location.hash = 'circle/' + auth.currentUser.id} style={{
+              width: '100%', maxWidth: '260px', padding: '11px 0', borderRadius: '999px', border: 'none',
+              background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', color: '#fff',
+              fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer',
+            }}>Create Your Circle</button>
+          </div>
+          )}
+
           {/* Cover / Hero */}
           <div className="profile-cover">
             <div className="profile-cover-content">
@@ -5743,37 +5883,6 @@
             </div>
             <div style={{ textAlign: 'center', marginTop: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
               Tap any photo to enlarge • Models upload their own portfolio images
-            </div>
-          </div>
-
-          {/* 3. Inner Circle — the main pitch */}
-          <div className="profile-section" data-tour="inner-circle" style={{
-            background: 'linear-gradient(135deg, #1a0a2e, #0d0015)',
-            border: '1px solid rgba(196,77,255,0.25)', borderRadius: '1rem',
-            padding: 'clamp(1.25rem, 3vw, 1.75rem)', marginBottom: '1.25rem',
-          }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2.5px', color: '#c44dff', marginBottom: '0.4rem' }}>Exclusive</div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.4rem', background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Inner Circle</div>
-              <div style={{ fontSize: '0.82rem', color: '#999', marginBottom: '1rem', lineHeight: 1.5 }}>Multiple models. One private feed. Exclusive content from {model.display_name?.split(' ')[0] || 'this model'} and her crew.</div>
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '1rem', flexWrap: 'wrap' }}>
-                <span style={{ padding: '4px 12px', borderRadius: '999px', background: 'rgba(196,77,255,0.12)', fontSize: '0.72rem', color: '#c44dff', fontWeight: 600 }}>Fan Tier</span>
-                <span style={{ padding: '4px 12px', borderRadius: '999px', background: 'rgba(255,110,199,0.12)', fontSize: '0.72rem', color: '#ff6ec7', fontWeight: 600 }}>VIP Tier</span>
-                <span style={{ padding: '4px 12px', borderRadius: '999px', background: 'rgba(255,215,0,0.12)', fontSize: '0.72rem', color: '#ffd700', fontWeight: 600 }}>Elite Tier</span>
-              </div>
-              {auth.currentUser && (modelId === auth.currentUser.id || modelId === 'demo') ? (
-                <button onClick={() => window.location.hash = 'circle/' + (auth.currentUser?.id || '')} style={{
-                  width: '100%', padding: '12px 0', borderRadius: '999px', border: 'none',
-                  background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', color: '#fff',
-                  fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer',
-                }}>Manage Your Circle →</button>
-              ) : (
-                <button onClick={() => window.location.hash = 'crew/' + (model.id || 'demo')} style={{
-                  width: '100%', padding: '12px 0', borderRadius: '999px', border: 'none',
-                  background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', color: '#fff',
-                  fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer',
-                }}>View Inner Circle →</button>
-              )}
             </div>
           </div>
 
