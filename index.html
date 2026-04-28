@@ -8077,8 +8077,6 @@
         { id: 's1', name: 'Your Story', emoji: auth?.profile?.avatar_emoji || '➕', isOwn: true, items: [] },
       ];
 
-      const demoPosts = [];
-
       const toggleLike = async (postId) => {
         const wasLiked = liked[postId];
         setLiked(prev => ({ ...prev, [postId]: !prev[postId] }));
@@ -8160,9 +8158,8 @@
         }
       };
 
-      // Merge real posts (on top) with demo posts (as fallback content)
       // For "For You" — prioritize posts from followed users
-      const allPosts = [...realPosts, ...demoPosts];
+      const allPosts = realPosts;
       const forYouPosts = (() => {
         const followedPosts = allPosts.filter(p => following[p.userId]);
         const otherPosts = allPosts.filter(p => !following[p.userId]);
@@ -8491,12 +8488,12 @@
               {/* Post Header */}
               <div className="post-header">
                 <div className={`post-avatar ${post.userType === 'client' ? 'client-type' : ''}`}
-                  onClick={() => window.location.hash = post.userType === 'client' ? 'client/demo-client' : 'profile/demo'}>
+                  onClick={() => window.location.hash = post.userType === 'client' ? ('client/' + post.userId) : ('profile/' + post.userId)}>
                   {post.userEmoji}
                 </div>
                 <div className="post-user-info">
                   <div className="post-username"
-                    onClick={() => window.location.hash = post.userType === 'client' ? 'client/demo-client' : 'profile/demo'}>
+                    onClick={() => window.location.hash = post.userType === 'client' ? ('client/' + post.userId) : ('profile/' + post.userId)}>
                     {post.userName}
                     {post.verified && <div className="verified-badge" style={{ width: '16px', height: '16px', fontSize: '0.6rem' }}>✓</div>}
                   </div>
