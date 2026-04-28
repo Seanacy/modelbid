@@ -5244,8 +5244,20 @@
       const [loading, setLoading] = useState(true);
       const [searchTerm, setSearchTerm] = useState('');
       const [selectedTag, setSelectedTag] = useState(null);
+      const [selectedState, setSelectedState] = useState('');
+      const [selectedCity, setSelectedCity] = useState('');
 
       const allTags = ['Lingerie', 'Costume', 'Glamour', 'Boudoir', 'Pin-Up', 'Cosplay', 'Fantasy', 'Retro', 'Luxury', 'Fun', 'Casual', 'Elegant', 'Swimwear', 'Streetwear', 'Artistic', 'Fitness', 'Bridal', 'Editorial'];
+      const allStates = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'];
+
+      // Get unique cities from models in the selected state (for the city dropdown)
+      const citiesInState = React.useMemo(() => {
+        const cities = models
+          .filter(m => !selectedState || m.state === selectedState)
+          .map(m => m.city)
+          .filter(Boolean);
+        return [...new Set(cities)].sort();
+      }, [models, selectedState]);
 
       useEffect(() => {
         const fetchModels = async (attempt = 1) => {
@@ -5264,7 +5276,6 @@
               await new Promise(r => setTimeout(r, 1000 * attempt));
               return fetchModels(attempt + 1);
             }
-            // Only show toast after all retries fail
             auth.showToast('Failed to load models. Pull down to refresh.', 'error');
           } finally {
             setLoading(false);
@@ -5275,11 +5286,18 @@
         fetchModels().then(() => clearTimeout(timeout));
       }, []);
 
+      // Reset city when state changes
+      useEffect(() => { setSelectedCity(''); }, [selectedState]);
+
       const filtered = models.filter(m => {
         const matchesSearch = m.display_name?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesTag = !selectedTag || (m.tags && m.tags.includes(selectedTag));
-        return matchesSearch && matchesTag;
+        const matchesState = !selectedState || m.state === selectedState;
+        const matchesCity = !selectedCity || (m.city && m.city.toLowerCase() === selectedCity.toLowerCase());
+        return matchesSearch && matchesTag && matchesState && matchesCity;
       });
+
+      const hasActiveFilters = selectedTag || selectedState || selectedCity || searchTerm;
 
       return (
         <div>
@@ -5294,6 +5312,33 @@
             />
           </div>
 
+          {/* Location filters — State + City */}
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <select value={selectedState} onChange={(e) => setSelectedState(e.target.value)}
+              style={{
+                flex: 1, padding: '0.55rem 0.75rem', borderRadius: '0.5rem',
+                background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                color: selectedState ? '#fff' : 'rgba(255,255,255,0.4)',
+                fontSize: '0.85rem', cursor: 'pointer',
+              }}>
+              <option value="">All States</option>
+              {allStates.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <select value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)}
+              disabled={!selectedState && citiesInState.length === 0}
+              style={{
+                flex: 2, padding: '0.55rem 0.75rem', borderRadius: '0.5rem',
+                background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                color: selectedCity ? '#fff' : 'rgba(255,255,255,0.4)',
+                fontSize: '0.85rem', cursor: 'pointer',
+                opacity: (!selectedState && citiesInState.length === 0) ? 0.5 : 1,
+              }}>
+              <option value="">All Cities</option>
+              {citiesInState.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+
+          {/* Style tags filter */}
           <div className="filter-bar">
             <button
               className={`filter-btn ${!selectedTag ? 'active' : ''}`}
@@ -5312,6 +5357,16 @@
             ))}
           </div>
 
+          {/* Clear all filters */}
+          {hasActiveFilters && (
+            <button onClick={() => { setSearchTerm(''); setSelectedTag(null); setSelectedState(''); setSelectedCity(''); }}
+              style={{
+                marginBottom: '0.75rem', padding: '6px 14px', borderRadius: '8px',
+                background: 'rgba(255,110,199,0.1)', border: '1px solid rgba(255,110,199,0.25)',
+                color: '#ff6ec7', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
+              }}>✕ Clear all filters</button>
+          )}
+
           {/* Revenue nudges for models on Browse — 1 max, subtle */}
           <ModelNudges context="browse" limit={1} />
 
@@ -5320,6 +5375,14 @@
               <ModelCard key={model.id} model={model} />
             ))}
           </div>
+
+          {filtered.length === 0 && models.length > 0 && (
+            <div className="empty-state">
+              <div className="empty-state-icon">🔍</div>
+              <div className="empty-state-title">No models match your filters</div>
+              <div className="empty-state-text">Try removing a filter or searching a different name</div>
+            </div>
+          )}
 
           {filtered.length === 0 && models.length === 0 && (
             <div className="empty-state">
@@ -5333,13 +5396,21 @@
     }
 
     function ModelCard({ model }) {
+      const locationStr = [model.city, model.state].filter(Boolean).join(', ');
       return (
         <div className="card model-card" onClick={() => window.location.hash = `profile/${model.id}`}>
-          <div className="model-photo">{model.avatar_emoji || '👤'}</div>
+          <div className="model-photo" style={{ overflow: 'hidden' }}>
+            {model.profile_photo_url ? (
+              <img src={model.profile_photo_url} alt={model.display_name}
+                style={{ width: '100%', height: '100%', objectFit: 'cover',
+                  objectPosition: `${model.profile_photo_pos_x ?? 50}% ${model.profile_photo_pos_y ?? 50}%` }} />
+            ) : (model.avatar_emoji || '👤')}
+          </div>
           <div className="model-name">
             {model.display_name}
             {model.verified && <div className="verified-badge">✓</div>}
           </div>
+          {locationStr && <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', marginTop: '-2px', marginBottom: '4px' }}>📍 {locationStr}</div>}
           <div className="model-rate">${model.rate || 0}/session</div>
           <div className="model-rating">
             <span className="stars">{'★'.repeat(Math.floor(model.rating || 0))}</span>
