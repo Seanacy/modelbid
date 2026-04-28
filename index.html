@@ -3287,7 +3287,10 @@
       .role-option { padding: 14px 12px !important; }
 
       /* Growth ring */
-      .growth-ring-stages { gap: 2px !important; }
+      .growth-ring-stages { gap: 2px !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch; flex-wrap: nowrap !important; padding-bottom: 6px !important; }
+      .growth-ring-stage-item { min-width: 52px !important; max-width: 70px !important; }
+      .growth-ring-circle { width: 38px !important; height: 38px !important; font-size: 1rem !important; }
+      .growth-ring-connector { width: 12px !important; margin-top: 20px !important; }
 
       /* WeStackr */
       .ws-page { padding: 10px !important; }
@@ -12131,12 +12134,12 @@ REMEMBER:
             </div>
 
             {/* Stage circles in a row */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
+            <div className="growth-ring-stages" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '4px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '4px' }}>
               {stages.map((s, i) => (
                 <React.Fragment key={s.key}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                  <div className="growth-ring-stage-item" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: '0 0 auto', minWidth: '60px', maxWidth: '90px' }}>
                     {/* Circle */}
-                    <div style={{
+                    <div className="growth-ring-circle" style={{
                       width: '48px', height: '48px', borderRadius: '50%',
                       background: s.active ? s.color : `${s.color}25`,
                       border: `2px solid ${s.color}`,
@@ -12159,8 +12162,8 @@ REMEMBER:
                   </div>
                   {/* Connector line */}
                   {i < stages.length - 1 && (
-                    <div style={{
-                      flex: '0 0 auto', height: '2px', width: '20px', marginTop: '-18px',
+                    <div className="growth-ring-connector" style={{
+                      flex: '0 0 auto', height: '2px', width: '20px', marginTop: '24px',
                       background: `linear-gradient(90deg, ${s.color}, ${stages[i + 1].color})`
                     }} />
                   )}
