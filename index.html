@@ -12892,57 +12892,7 @@ REMEMBER:
         };
       });
 
-      // Demo campaigns as fallback/seed data
-      const demoCampaigns = [
-        {
-          id: 'demo-1', title: 'Ethereal Forest Fairy Shoot', status: 'active',
-          creator: { name: 'Aria Belle', type: 'model', avatar: '🧚' },
-          admins: [{ name: 'Aria Belle', avatar: '🧚' }, { name: 'Luna Noir', avatar: '🌙' }],
-          desc: 'A magical woodland photoshoot with flowing gowns, fairy wings, and natural lighting through ancient trees. Two models, one photographer, enchanted forest location.',
-          raised: 1240, goal: 2000, backers: 18, daysLeft: 12,
-          image: 'https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=600&h=300&fit=crop',
-          category: 'fantasy'
-        },
-        {
-          id: 'demo-2', title: 'Urban Rooftop Lingerie Editorial', status: 'active',
-          creator: { name: 'Marcus J.', type: 'client', avatar: '📸' },
-          admins: [{ name: 'Marcus J.', avatar: '📸' }],
-          desc: 'Sunset rooftop shoot overlooking the city skyline. Looking for 2-3 models for a high-fashion lingerie editorial with professional lighting crew and MUA.',
-          raised: 3500, goal: 3500, backers: 27, daysLeft: 0,
-          image: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=600&h=300&fit=crop',
-          category: 'editorial', funded: true
-        },
-        {
-          id: 'demo-3', title: 'Vintage Pin-Up Calendar Series', status: 'new',
-          creator: { name: 'Jade Monroe', type: 'model', avatar: '💋' },
-          admins: [{ name: 'Jade Monroe', avatar: '💋' }, { name: 'Sasha K.', avatar: '✨' }, { name: 'Tommy R.', avatar: '🎬' }],
-          desc: '12-month pin-up calendar featuring 6 models in retro vintage costumes. Studio rental, professional retouching, and printed calendars for all backers.',
-          raised: 890, goal: 5000, backers: 11, daysLeft: 28,
-          image: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&h=300&fit=crop',
-          category: 'vintage'
-        },
-        {
-          id: 'demo-4', title: 'Neon Cyberpunk Bodysuit Series', status: 'active',
-          creator: { name: 'Derek L.', type: 'client', avatar: '🎮' },
-          admins: [{ name: 'Derek L.', avatar: '🎮' }, { name: 'Nova X.', avatar: '⚡' }],
-          desc: 'Futuristic neon-lit studio shoot with custom bodysuits, LED props, and smoke machines. Backers get exclusive digital content pack and behind-the-scenes video.',
-          raised: 2100, goal: 3000, backers: 34, daysLeft: 8,
-          image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&h=300&fit=crop',
-          category: 'creative'
-        },
-        {
-          id: 'demo-5', title: 'Beach Goddess Golden Hour', status: 'active',
-          creator: { name: 'Tessa Ray', type: 'model', avatar: '🌊' },
-          admins: [{ name: 'Tessa Ray', avatar: '🌊' }],
-          desc: 'Malibu beach shoot during golden hour. Flowing fabrics, ocean backdrop, natural beauty. All backers get the full gallery plus a signed print.',
-          raised: 450, goal: 1500, backers: 7, daysLeft: 21,
-          image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=300&fit=crop',
-          category: 'outdoor'
-        }
-      ];
-
-      // Merge: real campaigns first, then demo
-      const allCampaigns = [...realCampaigns, ...demoCampaigns];
+      const allCampaigns = realCampaigns;
 
       const filteredCampaigns = activeTab === 'all' ? allCampaigns
         : activeTab === 'funded' ? allCampaigns.filter(c => c.funded)
