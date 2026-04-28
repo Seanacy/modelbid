@@ -7335,20 +7335,6 @@
       const isModel = auth?.profile?.role === 'model';
       const isVerified = auth?.profile?.verified;
 
-      // Models must be verified to use Inner Circle / Private Feed
-      if (isModel && !isVerified) {
-        return (
-          <div style={{ maxWidth: "500px", margin: "0 auto", padding: "2rem", textAlign: "center" }}>
-            <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🔒</div>
-            <h2 style={{ fontWeight: 800, marginBottom: "0.5rem" }}>Verification Required</h2>
-            <p style={{ color: "#999", marginBottom: "0.75rem", lineHeight: 1.6 }}>You need to be verified before you can create or join an Inner Circle or Private Feed. This keeps the platform safe and trustworthy for everyone.</p>
-            <button onClick={() => window.location.hash = "edit-profile"} className="btn glow-btn" style={{ padding: "0.75rem 2rem", fontSize: "1rem" }}>
-              Go to Edit Profile to Get Verified
-            </button>
-          </div>
-        );
-      }
-
       // Check if user is a member of this crew
       const [isMember, setIsMember] = useState(false);
       const [crew, setCrew] = useState(null);
@@ -7419,6 +7405,20 @@
         };
         load();
       }, [auth.currentUser, crewId]);
+
+      // Models must be verified to use Inner Circle / Private Feed
+      if (isModel && !isVerified) {
+        return (
+          <div style={{ maxWidth: "500px", margin: "0 auto", padding: "2rem", textAlign: "center" }}>
+            <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🔒</div>
+            <h2 style={{ fontWeight: 800, marginBottom: "0.5rem" }}>Verification Required</h2>
+            <p style={{ color: "#999", marginBottom: "0.75rem", lineHeight: 1.6 }}>You need to be verified before you can create or join an Inner Circle or Private Feed. This keeps the platform safe and trustworthy for everyone.</p>
+            <button onClick={() => window.location.hash = "edit-profile"} className="btn glow-btn" style={{ padding: "0.75rem 2rem", fontSize: "1rem" }}>
+              Go to Edit Profile to Get Verified
+            </button>
+          </div>
+        );
+      }
 
       if (loading) return React.createElement('div', { style: { textAlign: 'center', padding: '3rem', color: '#888' } }, 'Loading...');
 
