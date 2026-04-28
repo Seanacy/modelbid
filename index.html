@@ -6386,6 +6386,8 @@
       const [memberProfiles, setMemberProfiles] = useState({});
       const [postStats, setPostStats] = useState({});
       const [subCount, setSubCount] = useState(0);
+      const [referralStats, setReferralStats] = useState({});
+      const [viewStats, setViewStats] = useState({});
 
       // Fetch crew data
       useEffect(() => {
@@ -6431,6 +6433,35 @@
             // Sub count
             const { count } = await supabase.from('crew_subscriptions').select('id', { count: 'exact', head: true }).eq('crew_id', crewId).eq('active', true);
             setSubCount(count || 0);
+
+            // Referral stats — who brought in subscribers
+            const { data: subs } = await supabase.from('crew_subscriptions').select('referred_by').eq('crew_id', crewId).eq('active', true);
+            const refCounts = {};
+            (subs || []).forEach(s => {
+              if (s.referred_by) {
+                refCounts[s.referred_by] = (refCounts[s.referred_by] || 0) + 1;
+              }
+            });
+            setReferralStats(refCounts);
+
+            // View stats — traffic attribution (last 7 days)
+            const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+            const { data: views } = await supabase.from('crew_views').select('referred_by').eq('crew_id', crewId).gte('created_at', weekAgo.toISOString());
+            const viewCounts = {};
+            let totalViews = 0;
+            (views || []).forEach(v => {
+              totalViews++;
+              if (v.referred_by) {
+                viewCounts[v.referred_by] = (viewCounts[v.referred_by] || 0) + 1;
+              }
+            });
+            // Convert to percentages
+            const viewPcts = {};
+            Object.keys(viewCounts).forEach(uid => {
+              viewPcts[uid] = { count: viewCounts[uid], pct: totalViews > 0 ? Math.round((viewCounts[uid] / totalViews) * 100) : 0 };
+            });
+            viewPcts._total = totalViews;
+            setViewStats(viewPcts);
           } catch(e) { console.error('Crew load error:', e); }
           setLoading(false);
         };
@@ -6677,6 +6708,45 @@
                 <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#666', textAlign: 'center' }}>The more you post, the more you earn. Your cut is proportional to your content share.</div>
               </div>
 
+              {/* Referral Link */}
+              <div style={cardStyle}>
+                <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>🔗 Your Referral Link</div>
+                <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.5rem' }}>Put this in your bio. When clients subscribe through your link, you get credit.</div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input readOnly value={window.location.origin + '/#crew/' + crewId + '?ref=' + auth.currentUser?.id}
+                    style={{ flex: 1, padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.7rem', boxSizing: 'border-box' }} />
+                  <button onClick={() => {
+                    navigator.clipboard.writeText(window.location.origin + '/#crew/' + crewId + '?ref=' + auth.currentUser?.id);
+                    auth.showToast('Referral link copied!', 'success');
+                  }} style={{ padding: '0.5rem 0.75rem', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg, #ff6ec7, #9d4edd)', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Copy</button>
+                </div>
+              </div>
+
+              {/* Referral Stats */}
+              <div style={cardStyle}>
+                <div style={{ fontWeight: 700, marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>📈 Referral Performance</span>
+                  <button onClick={() => {
+                    const myRefs = referralStats[auth.currentUser?.id] || 0;
+                    const myViews = viewStats[auth.currentUser?.id] || { count: 0, pct: 0 };
+                    const text = `${profile.display_name || 'Model'} — Referral Stats\n👥 Subscribers brought in: ${myRefs}\n👀 Views driven this week: ${myViews.count} (${myViews.pct}% of traffic)\n📝 Posts this week: ${myStats.thisWeek}\n📊 Content share: ${myPostPct}%\nCircle: ${crew.name}`;
+                    navigator.clipboard.writeText(text);
+                    auth.showToast('Referral stats copied!', 'success');
+                  }} style={{ padding: '0.3rem 0.7rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'transparent', color: '#ff6ec7', fontSize: '0.7rem', fontWeight: 600, cursor: 'pointer' }}>📋 Share</button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div style={{ background: 'rgba(157,78,221,0.08)', borderRadius: '10px', padding: '0.75rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#9d4edd' }}>{referralStats[auth.currentUser?.id] || 0}</div>
+                    <div style={{ fontSize: '0.7rem', color: '#888' }}>Subscribers You Brought</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,215,0,0.08)', borderRadius: '10px', padding: '0.75rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffd700' }}>{(viewStats[auth.currentUser?.id] || { pct: 0 }).pct}%</div>
+                    <div style={{ fontSize: '0.7rem', color: '#888' }}>Traffic This Week</div>
+                  </div>
+                </div>
+                <div style={{ marginTop: '0.5rem', fontSize: '0.7rem', color: '#666', textAlign: 'center' }}>{(viewStats._total || 0)} total views this week</div>
+              </div>
+
               {/* Toggle */}
               {isAdmin && (
                 <button onClick={toggleEnabled} style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: 'none', background: crew.enabled ? 'rgba(255,82,82,0.15)' : 'linear-gradient(135deg, #ff6ec7, #9d4edd)', color: crew.enabled ? '#ff5252' : '#fff', fontWeight: 700, cursor: 'pointer', marginBottom: '1rem' }}>
@@ -6797,10 +6867,11 @@
                         <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{mp.display_name || 'Member'}</span>
                         {member.role === 'admin' && <span style={{ fontSize: '0.6rem', background: 'rgba(255,215,0,0.15)', color: '#ffd700', padding: '1px 6px', borderRadius: '6px' }}>Admin</span>}
                       </div>
-                      <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.7rem', color: '#888', marginTop: '0.25rem' }}>
+                      <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.7rem', color: '#888', marginTop: '0.25rem', flexWrap: 'wrap' }}>
                         <span>📝 {ms.total} posts</span>
-                        <span>📊 {pct}% share</span>
-                        <span>📅 {ms.thisWeek} this week</span>
+                        <span>📊 {pct}% content</span>
+                        <span>👥 {referralStats[member.user_id] || 0} referrals</span>
+                        <span>👀 {(viewStats[member.user_id] || { pct: 0 }).pct}% traffic</span>
                       </div>
                     </div>
                     {isAdmin && member.user_id !== auth.currentUser?.id && (
@@ -6972,6 +7043,15 @@
       const [loading, setLoading] = useState(true);
       const [subCount, setSubCount] = useState(0);
 
+      // Parse referral from URL: #crew/id?ref=model_id
+      const refParam = React.useMemo(() => {
+        const hash = window.location.hash;
+        const qIdx = hash.indexOf('?');
+        if (qIdx === -1) return null;
+        const params = new URLSearchParams(hash.slice(qIdx));
+        return params.get('ref');
+      }, []);
+
       useEffect(() => {
         if (crewId === 'new') { setLoading(false); return; }
         const load = async () => {
@@ -6979,6 +7059,13 @@
             const { data: crewData } = await supabase.from('crews').select('*').eq('id', crewId).single();
             if (!crewData) { setLoading(false); return; }
             setCrew(crewData);
+
+            // Log page view with referral attribution
+            supabase.from('crew_views').insert({
+              crew_id: crewId,
+              viewer_id: auth.currentUser?.id || null,
+              referred_by: refParam || null,
+            }).then(() => {});
 
             const { data: membersData } = await supabase.from('crew_members').select('*').eq('crew_id', crewId);
             setMembers(membersData || []);
@@ -7033,6 +7120,7 @@
             subscriber_id: auth.currentUser.id,
             tier: tier,
             active: true,
+            referred_by: refParam || null,
           }, { onConflict: 'crew_id,subscriber_id' });
           setIsSubscribed(true);
           setSubscribedTier(tier);
