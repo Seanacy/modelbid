@@ -4512,11 +4512,9 @@
           // Self-heal: if promo_code_used is set but subscription_waived got wiped, fix it
           if (data && data.promo_code_used && data.subscription_waived !== true) {
             data.subscription_waived = true;
-            data.cherry_picker_active = true;
             // Fire-and-forget DB repair — don't block profile load
             supabase.from('profiles').update({
               subscription_waived: true,
-              cherry_picker_active: true,
             }).eq('id', userId).then(() => {});
           }
 
@@ -14251,7 +14249,6 @@ REMEMBER:
           await supabase.from('profiles').update({
             promo_code_used: promo.code,
             promo_expires_at: expiresAt.toISOString(),
-            cherry_picker_active: true,
             subscription_waived: true,
           }).eq('id', userId);
 
@@ -14638,7 +14635,6 @@ REMEMBER:
           await supabase.from('profiles').update({
             promo_code_used: promo.code,
             promo_expires_at: expiresAt.toISOString(),
-            cherry_picker_active: true,
             subscription_waived: true,
           }).eq('id', currentUser.id);
 
@@ -14647,8 +14643,8 @@ REMEMBER:
           }).eq('id', promo.id);
 
           // Update local state AND auth profile so subscription gate sees the change immediately
-          setData(prev => ({ ...prev, promo_code_used: promo.code, cherry_picker_active: true, subscription_waived: true }));
-          patchProfile({ promo_code_used: promo.code, cherry_picker_active: true, subscription_waived: true });
+          setData(prev => ({ ...prev, promo_code_used: promo.code, subscription_waived: true }));
+          patchProfile({ promo_code_used: promo.code, subscription_waived: true });
           setPromoRedeemStatus('success');
           setPromoCodeInput('');
           auth.showToast('Promo code applied! Subscription waived.', 'success');
