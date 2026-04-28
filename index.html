@@ -4431,6 +4431,8 @@
 
       const logout = async () => {
         try {
+          // Clear subscription cache
+          try { Object.keys(sessionStorage).filter(k => k.startsWith('sub_active_')).forEach(k => sessionStorage.removeItem(k)); } catch(e) {}
           // Use scope: 'local' to avoid lock contention with realtime subscriptions
           await supabase.auth.signOut({ scope: 'local' });
           setCurrentUser(null);
@@ -4438,6 +4440,7 @@
           showToast('Logged out successfully!', 'success');
         } catch (error) {
           // Force logout even if signOut throws a lock error
+          try { Object.keys(sessionStorage).filter(k => k.startsWith('sub_active_')).forEach(k => sessionStorage.removeItem(k)); } catch(e) {}
           setCurrentUser(null);
           setProfile(null);
           showToast('Logged out successfully!', 'success');
@@ -16925,19 +16928,34 @@ RULES
     // ===== SUBSCRIPTION GATE =====
     function isSubscriptionActive(profile) {
       if (!profile) return false;
-      // Still loading real profile — don't block, let them through
+
+      // CACHE CHECK: if we've confirmed active this session, stay active.
+      // This prevents ANY flash — once active, always active until logout.
+      const cacheKey = profile.id ? `sub_active_${profile.id}` : null;
+      if (cacheKey) {
+        try { if (sessionStorage.getItem(cacheKey) === '1') return true; } catch(e) {}
+      }
+
+      // Still loading real profile — don't block
       if (profile._fallback) return true;
+
+      let active = false;
       // Explicit waiver (admin toggle, promo code, social link)
-      if (profile.subscription_waived === true) return true;
+      if (profile.subscription_waived === true) active = true;
       // Paying subscriber
-      if (profile.subscription_tier === 'premium') return true;
-      // Social link verified and not expired
-      if (profile.promo_verified === true) return true;
-      // Has a promo code that hasn't expired yet — active even if subscription_waived got lost
-      if (profile.promo_code_used && (!profile.promo_expires_at || new Date(profile.promo_expires_at) > new Date())) return true;
-      // Clients don't need a subscription to use the app
-      if (profile.role === 'client') return true;
-      return false;
+      if (profile.subscription_tier === 'premium') active = true;
+      // Social link verified
+      if (profile.promo_verified === true) active = true;
+      // Has a promo code that hasn't expired
+      if (profile.promo_code_used && (!profile.promo_expires_at || new Date(profile.promo_expires_at) > new Date())) active = true;
+      // Clients don't need a subscription
+      if (profile.role === 'client') active = true;
+
+      // Cache the result so it can't flash on subsequent renders
+      if (active && cacheKey) {
+        try { sessionStorage.setItem(cacheKey, '1'); } catch(e) {}
+      }
+      return active;
     }
 
     function SubscriptionGatePage() {
