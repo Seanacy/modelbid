@@ -5488,6 +5488,10 @@
         fetchCrew();
       }, [modelId]);
 
+      // "View as Public" toggle — lets model preview their page as visitors see it
+      const [viewAsPublic, setViewAsPublic] = useState(false);
+      const isOwnProfile = auth.currentUser && (modelId === auth.currentUser.id || modelId === 'demo');
+
       // Demo data for preview
       const demoModel = {
         id: 'demo-1',
@@ -5666,10 +5670,30 @@
       return (
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
           {/* Back Button — models go to dashboard, clients go to browse, hide on own profile */}
-          {!(auth.currentUser && (modelId === auth.currentUser.id || modelId === 'demo')) && (
-          <button className="btn btn-secondary" onClick={() => window.location.hash = auth.profile?.role === 'model' ? 'dashboard' : 'browse'} style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
-            ← {auth.profile?.role === 'model' ? 'Back to Dashboard' : 'Back to Browse'}
+          {(!isOwnProfile || viewAsPublic) && (
+          <button className="btn btn-secondary" onClick={() => {
+            if (viewAsPublic) { setViewAsPublic(false); return; }
+            window.location.hash = auth.profile?.role === 'model' ? 'dashboard' : 'browse';
+          }} style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
+            ← {viewAsPublic ? 'Exit Public View' : (auth.profile?.role === 'model' ? 'Back to Dashboard' : 'Back to Browse')}
           </button>
+          )}
+
+          {/* View as Public toggle — only on own profile */}
+          {isOwnProfile && !viewAsPublic && (
+          <button onClick={() => setViewAsPublic(true)} style={{
+            marginBottom: '1rem', padding: '8px 16px', borderRadius: '8px', fontSize: '0.8rem',
+            background: 'rgba(0,217,255,0.08)', border: '1px solid rgba(0,217,255,0.2)',
+            color: '#00d9ff', fontWeight: 600, cursor: 'pointer', width: '100%',
+          }}>👁️ View as Public — see what visitors see</button>
+          )}
+
+          {viewAsPublic && (
+          <div style={{
+            marginBottom: '1rem', padding: '8px 12px', borderRadius: '8px', fontSize: '0.78rem',
+            background: 'rgba(0,217,255,0.08)', border: '1px solid rgba(0,217,255,0.2)',
+            color: '#00d9ff', textAlign: 'center',
+          }}>👁️ Viewing as public — this is what visitors see</div>
           )}
 
           {/* ===== INNER CIRCLE — first thing on the page ===== */}
@@ -5743,7 +5767,7 @@
                 <span style={{ padding: '3px 10px', borderRadius: '999px', background: 'rgba(255,110,199,0.12)', fontSize: '0.68rem', color: '#ff6ec7', fontWeight: 600 }}>{crewData.crew.tier2_name || 'VIP'}</span>
                 <span style={{ padding: '3px 10px', borderRadius: '999px', background: 'rgba(255,215,0,0.12)', fontSize: '0.68rem', color: '#ffd700', fontWeight: 600 }}>{crewData.crew.tier3_name || 'Elite'}</span>
               </div>
-              {auth.currentUser && (modelId === auth.currentUser.id || modelId === 'demo') ? (
+              {isOwnProfile && !viewAsPublic ? (
                 <button onClick={() => window.location.hash = 'circle/' + (auth.currentUser?.id || '')} style={{
                   width: '100%', padding: '11px 0', borderRadius: '999px', border: 'none',
                   background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', color: '#fff',
@@ -5761,7 +5785,7 @@
           )}
 
           {/* If model has no crew yet and viewing own profile, show create prompt */}
-          {!crewData && auth.currentUser && (modelId === auth.currentUser.id) && (
+          {!crewData && isOwnProfile && !viewAsPublic && (
           <div style={{
             marginBottom: '1rem', borderRadius: '16px', overflow: 'hidden',
             background: 'linear-gradient(135deg, #1a0a2e, #0d0015)',
@@ -5792,8 +5816,8 @@
                 {model.location && <div className="profile-location">📍 {model.location}</div>}
               </div>
             </div>
-            {/* Edit/Settings button — only visible on your own profile */}
-            {auth.currentUser && (modelId === auth.currentUser.id || modelId === 'demo') && (
+            {/* Edit/Settings button — only visible on your own profile, hidden in public view */}
+            {isOwnProfile && !viewAsPublic && (
               <button onClick={() => window.location.hash = 'edit-profile'} style={{
                 position: 'absolute', top: '1rem', right: '1rem',
                 padding: '0.5rem 1rem', borderRadius: '0.5rem',
