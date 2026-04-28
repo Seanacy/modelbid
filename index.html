@@ -4898,17 +4898,43 @@
       const [passCounts, setPassCounts] = useState({}); // { modelId: times passed }
       const [seenCounts, setSeenCounts] = useState({}); // { modelId: times shown }
       const [totalPasses, setTotalPasses] = useState(0);
+      const [models, setModels] = useState([]);
+      const [modelsLoaded, setModelsLoaded] = useState(false);
 
-      const models = [
-        { id: 'tot1', name: 'Aria Valentina', rate: '$280', style: 'Boudoir', state: 'MN', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=500&fit=crop' },
-        { id: 'tot2', name: 'Sasha Velvet', rate: '$320', style: 'Luxury', state: 'MN', img: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400&h=500&fit=crop' },
-        { id: 'tot3', name: 'Mika Rose', rate: '$200', style: 'Cosplay', state: 'TX', img: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=500&fit=crop' },
-        { id: 'tot4', name: 'Jade Monroe', rate: '$350', style: 'Pin-Up', state: 'MN', img: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=400&h=500&fit=crop' },
-        { id: 'tot5', name: 'Nova Starr', rate: '$275', style: 'Fantasy', state: 'CA', img: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=500&fit=crop' },
-        { id: 'tot6', name: 'Elara Bliss', rate: '$240', style: 'Glamour', state: 'MN', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=500&fit=crop' },
-        { id: 'tot7', name: 'Raven Knight', rate: '$300', style: 'Editorial', state: 'NY', img: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&h=500&fit=crop' },
-        { id: 'tot8', name: 'Luna Noir', rate: '$260', style: 'Artistic', state: 'MN', img: 'https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=400&h=500&fit=crop' },
-      ];
+      useEffect(() => {
+        const fetchModels = async () => {
+          try {
+            const { data } = await supabase.from('profiles').select('id, display_name, rate, tags, state, city, profile_photo_url, profile_photo_pos_x, profile_photo_pos_y, avatar_emoji')
+              .eq('role', 'model').limit(20);
+            if (data && data.length >= 2) {
+              const mapped = data.map(m => ({
+                id: m.id,
+                name: m.display_name || 'Model',
+                rate: `$${m.rate || 0}`,
+                style: (m.tags && m.tags[0]) || '',
+                state: m.state || '',
+                city: m.city || '',
+                img: m.profile_photo_url || null,
+                imgPosX: m.profile_photo_pos_x ?? 50,
+                imgPosY: m.profile_photo_pos_y ?? 50,
+                emoji: m.avatar_emoji || '👤',
+              }));
+              // Shuffle so it's not always the same order
+              for (let i = mapped.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [mapped[i], mapped[j]] = [mapped[j], mapped[i]];
+              }
+              setModels(mapped);
+            }
+          } catch (e) { console.error('ThisOrThat fetch:', e); }
+          setModelsLoaded(true);
+        };
+        fetchModels();
+      }, []);
+
+      // Don't render until loaded, and need at least 2 models
+      if (!modelsLoaded) return null;
+      if (models.length < 2) return null;
 
       const handlePick = (side) => {
         if (picked) return;
@@ -4947,7 +4973,7 @@
         if (auth?.profile?.id) {
           try {
             await supabase.from('follows').insert({ follower_id: auth.profile.id, following_id: model.id }).select();
-          } catch (err) { /* demo models won't have real IDs, that's fine */ }
+          } catch (err) { console.error('Follow error:', err); }
         }
         if (advanceRound) nextRound(true);
       };
@@ -5000,20 +5026,28 @@
           <div style={{ display: 'flex', gap: '12px', marginBottom: '10px' }}>
             {/* Left Card */}
             <div style={cardStyle('left')} onClick={() => handlePick('left')}>
-              <img src={left.img} alt={left.name}
-                style={{ width: '100%', height: '280px', objectFit: 'cover', display: 'block' }} />
+              {left.img ? (
+                <img src={left.img} alt={left.name}
+                  style={{ width: '100%', height: '280px', objectFit: 'cover', display: 'block',
+                    objectPosition: `${left.imgPosX}% ${left.imgPosY}%` }} />
+              ) : (
+                <div style={{ width: '100%', height: '280px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'linear-gradient(135deg, #1a0a2e, #0f3460)', fontSize: '4rem' }}>{left.emoji}</div>
+              )}
               <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0,
                 background: 'linear-gradient(transparent, rgba(0,0,0,0.85))', padding: '40px 12px 12px' }}>
                 <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{left.name}</div>
-                <div style={{ fontSize: '0.78rem', color: '#ccc' }}>{left.style} • {left.rate}</div>
+                <div style={{ fontSize: '0.78rem', color: '#ccc' }}>{left.style}{left.style && ' • '}{left.rate}</div>
               </div>
-              {/* State badge */}
+              {/* Location badge */}
+              {(left.city || left.state) && (
               <div style={{ position: 'absolute', bottom: '12px', right: '10px',
                 background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
                 padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem',
                 fontWeight: 700, color: '#ffd700', letterSpacing: '0.5px' }}>
-                📍 {left.state}
+                📍 {[left.city, left.state].filter(Boolean).join(', ')}
               </div>
+              )}
               {/* Follow button */}
               <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 2 }}
                 onClick={(e) => { e.stopPropagation(); if (!following[left.id]) handleFollow(left, false); }}>
@@ -5054,20 +5088,28 @@
 
             {/* Right Card */}
             <div style={cardStyle('right')} onClick={() => handlePick('right')}>
-              <img src={right.img} alt={right.name}
-                style={{ width: '100%', height: '280px', objectFit: 'cover', display: 'block' }} />
+              {right.img ? (
+                <img src={right.img} alt={right.name}
+                  style={{ width: '100%', height: '280px', objectFit: 'cover', display: 'block',
+                    objectPosition: `${right.imgPosX}% ${right.imgPosY}%` }} />
+              ) : (
+                <div style={{ width: '100%', height: '280px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'linear-gradient(135deg, #1a0a2e, #0f3460)', fontSize: '4rem' }}>{right.emoji}</div>
+              )}
               <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0,
                 background: 'linear-gradient(transparent, rgba(0,0,0,0.85))', padding: '40px 12px 12px' }}>
                 <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{right.name}</div>
-                <div style={{ fontSize: '0.78rem', color: '#ccc' }}>{right.style} • {right.rate}</div>
+                <div style={{ fontSize: '0.78rem', color: '#ccc' }}>{right.style}{right.style && ' • '}{right.rate}</div>
               </div>
-              {/* State badge */}
+              {/* Location badge */}
+              {(right.city || right.state) && (
               <div style={{ position: 'absolute', bottom: '12px', right: '10px',
                 background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
                 padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem',
                 fontWeight: 700, color: '#ffd700', letterSpacing: '0.5px' }}>
-                📍 {right.state}
+                📍 {[right.city, right.state].filter(Boolean).join(', ')}
               </div>
+              )}
               {/* Follow button */}
               <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 2 }}
                 onClick={(e) => { e.stopPropagation(); if (!following[right.id]) handleFollow(right, false); }}>
@@ -5151,22 +5193,30 @@
                   letterSpacing: '1px' }}>Your Top Picks</div>
                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                   {top3.map((m, i) => (
-                    <div key={m.id} onClick={() => window.location.hash = 'profile/demo'}
+                    <div key={m.id} onClick={() => window.location.hash = 'profile/' + m.id}
                       style={{ flex: 1, maxWidth: '140px', background: 'var(--bg-card-light)',
                         borderRadius: '12px', overflow: 'hidden', cursor: 'pointer',
                         border: i === 0 ? '2px solid rgba(255,215,0,0.3)' : '1px solid rgba(255,255,255,0.06)',
                         transition: 'transform 0.2s' }}>
                       <div style={{ position: 'relative' }}>
-                        <img src={m.img} alt={m.name}
-                          style={{ width: '100%', height: '100px', objectFit: 'cover', display: 'block' }} />
+                        {m.img ? (
+                          <img src={m.img} alt={m.name}
+                            style={{ width: '100%', height: '100px', objectFit: 'cover', display: 'block',
+                              objectPosition: `${m.imgPosX}% ${m.imgPosY}%` }} />
+                        ) : (
+                          <div style={{ width: '100%', height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: 'linear-gradient(135deg, #1a0a2e, #0f3460)', fontSize: '2.5rem' }}>{m.emoji}</div>
+                        )}
                         <div style={{ position: 'absolute', top: '4px', left: '4px', fontSize: '1.2rem' }}>
                           {medals[i]}
                         </div>
+                        {(m.city || m.state) && (
                         <div style={{ position: 'absolute', bottom: '4px', right: '4px',
                           background: 'rgba(0,0,0,0.7)', padding: '1px 6px', borderRadius: '4px',
                           fontSize: '0.6rem', color: '#ffd700', fontWeight: 700 }}>
-                          📍 {m.state}
+                          📍 {[m.city, m.state].filter(Boolean).join(', ')}
                         </div>
+                        )}
                       </div>
                       <div style={{ padding: '6px 8px' }}>
                         <div style={{ fontSize: '0.78rem', fontWeight: 700, whiteSpace: 'nowrap',
