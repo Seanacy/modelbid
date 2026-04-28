@@ -3202,6 +3202,157 @@
       }
     }
 
+    /* ===== ROLE SELECTOR (SIGNUP) ===== */
+    .role-selector {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .role-option {
+      display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+      border-radius: 12px; border: 2px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03); cursor: pointer; transition: all 0.2s;
+    }
+    .role-option:hover { border-color: rgba(255,110,199,0.3); background: rgba(255,110,199,0.05); }
+    .role-option.selected { border-color: #ff6ec7; background: rgba(255,110,199,0.1); }
+    .role-icon { font-size: 1.5rem; width: 40px; text-align: center; }
+
+    /* ===== COMPREHENSIVE MOBILE RESPONSIVE ===== */
+    @media (max-width: 480px) {
+      /* Base typography & spacing */
+      body { font-size: 14px; }
+      h1 { font-size: 1.5rem !important; }
+      h2 { font-size: 1.25rem !important; }
+      h3 { font-size: 1.05rem !important; }
+
+      .main-content { padding: 0.75rem !important; }
+
+      /* Cards */
+      .card { padding: 1rem !important; border-radius: 10px !important; }
+
+      /* Grids — always single column on phones */
+      .grid, .grid-2, .grid-3, .grid-4 {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+      }
+      .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.75rem !important;
+      }
+
+      /* Stat cards */
+      .stat-card { padding: 0.75rem !important; }
+      .stat-value { font-size: 1.3rem !important; }
+      .stat-label { font-size: 0.75rem !important; }
+
+      /* Buttons */
+      .btn { padding: 0.6rem 1rem !important; font-size: 0.85rem !important; }
+
+      /* Nav */
+      .nav { padding: 0.5rem 0.75rem !important; }
+      .nav .logo { font-size: 1.1rem !important; }
+
+      /* Forms */
+      input, textarea, select {
+        font-size: 16px !important; /* prevents iOS zoom on focus */
+        padding: 0.6rem 0.75rem !important;
+      }
+
+      /* Signup & Login pages */
+      .card h2 { font-size: 1.3rem !important; }
+
+      /* Messages */
+      .conversations-list { height: 150px !important; }
+      .message-bubble { max-width: 85% !important; font-size: 0.85rem !important; }
+
+      /* Profile page */
+      .profile-cover { height: 150px !important; }
+      .profile-cover-info h1 { font-size: 1.2rem !important; }
+      .profile-avatar { width: 80px !important; height: 80px !important; font-size: 2rem !important; }
+      .profile-stats-bar { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+      .profile-gallery { grid-template-columns: repeat(2, 1fr) !important; gap: 6px !important; }
+      .profile-actions { flex-direction: column !important; }
+      .profile-actions .btn { width: 100% !important; }
+
+      /* Feed posts */
+      .post-actions { gap: 4px !important; }
+      .post-actions button { font-size: 0.75rem !important; padding: 4px 8px !important; }
+
+      /* Modals */
+      .modal { padding: 1rem !important; margin: 0.5rem !important; border-radius: 12px !important; }
+      .modal-overlay { padding: 0.5rem !important; }
+
+      /* Browse models grid */
+      .favorites-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+
+      /* Choose role page */
+      .role-option { padding: 14px 12px !important; }
+
+      /* Growth ring */
+      .growth-ring-stages { gap: 2px !important; }
+
+      /* WeStackr */
+      .ws-page { padding: 10px !important; }
+      .ws-hero h1 { font-size: 1.5em !important; }
+      .ws-tabs { gap: 6px !important; }
+      .ws-tab { padding: 8px 14px !important; font-size: 0.8em !important; }
+
+      /* Cherry Picker */
+      .cp-page { padding: 1rem 0.75rem !important; }
+
+      /* Nudge grid */
+      .nudge-grid { grid-template-columns: 1fr !important; }
+
+      /* Suggested models strip */
+      .suggested-card { min-width: 120px !important; max-width: 120px !important; }
+      .suggested-card-img { height: 140px !important; }
+
+      /* Reputation */
+      .rep-stats-row { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+
+      /* Inner circle / crew */
+      .client-photo-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+      /* Edit profile */
+      .form-group { margin-bottom: 1rem !important; }
+
+      /* Bid board */
+      .bid-card { padding: 0.75rem !important; }
+
+      /* ChooseRolePage buttons */
+      [data-page="choose-role"] button { padding: 1.25rem !important; }
+    }
+
+    /* Dashboard quick stats — 2x2 on phones */
+    @media (max-width: 480px) {
+      .dash-stats-row { grid-template-columns: repeat(2, 1fr) !important; }
+    }
+
+    /* Tablet adjustments */
+    @media (max-width: 768px) and (min-width: 481px) {
+      .dashboard-grid { grid-template-columns: repeat(2, 1fr) !important; }
+      .grid-3, .grid-4 { grid-template-columns: repeat(2, 1fr) !important; }
+      .profile-stats-bar { grid-template-columns: repeat(3, 1fr) !important; }
+    }
+
+    /* Viewport meta enforcement */
+    @media (max-width: 768px) {
+      /* Prevent horizontal scroll globally */
+      html, body { overflow-x: hidden !important; }
+      .app-container { overflow-x: hidden !important; max-width: 100vw !important; }
+
+      /* Homepage / Join page hero */
+      .hero h1 { font-size: 1.6rem !important; line-height: 1.3 !important; }
+      .hero p { font-size: 0.9rem !important; }
+
+      /* Signup/Login cards */
+      div[style*="maxWidth: '400px'"] { margin: 1.5rem auto !important; }
+
+      /* Fix long text overflow */
+      .card, .main-content, .app-container {
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+      }
+    }
+
     /* ===== SCROLLBAR STYLING ===== */
     ::-webkit-scrollbar {
       width: 8px;
@@ -12347,7 +12498,7 @@ REMEMBER:
             </div>
 
             {/* ===== QUICK STATS ROW ===== */}
-            <div style={{
+            <div className="dash-stats-row" style={{
               display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '1.5rem'
             }}>
               <div style={{ background: 'linear-gradient(135deg, rgba(255,110,199,0.12), rgba(157,78,221,0.12))',
@@ -14095,24 +14246,22 @@ REMEMBER:
 
             <div className="form-group">
               <label>I am a...</label>
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                  <input
-                    type="radio"
-                    value="client"
-                    checked={role === 'client'}
-                    onChange={(e) => setRole(e.target.value)}
-                  />
-                  Client
+              <div className="role-selector">
+                <label className={`role-option ${role === 'client' ? 'selected' : ''}`} onClick={() => setRole('client')}>
+                  <input type="radio" value="client" checked={role === 'client'} onChange={(e) => setRole(e.target.value)} style={{ display: 'none' }} />
+                  <div className="role-icon">🎯</div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>Client</div>
+                    <div style={{ fontSize: '0.75rem', color: '#999' }}>Book models & browse</div>
+                  </div>
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                  <input
-                    type="radio"
-                    value="model"
-                    checked={role === 'model'}
-                    onChange={(e) => setRole(e.target.value)}
-                  />
-                  Model ($29/mo)
+                <label className={`role-option ${role === 'model' ? 'selected' : ''}`} onClick={() => setRole('model')}>
+                  <input type="radio" value="model" checked={role === 'model'} onChange={(e) => setRole(e.target.value)} style={{ display: 'none' }} />
+                  <div className="role-icon">📸</div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>Model</div>
+                    <div style={{ fontSize: '0.75rem', color: '#999' }}>$29/mo · or free with link</div>
+                  </div>
                 </label>
               </div>
 
