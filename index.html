@@ -8599,7 +8599,7 @@ function InnerCircleManage() {
               { key: 'foryou', label: 'For You' },
               { key: 'models', label: 'Models' },
               { key: 'clients', label: 'Clients' },
-              { key: 'booking', label: 'Now Booking' },
+              ...(auth.profile?.role !== 'model' ? [{ key: 'booking', label: 'Now Booking' }] : []),
             ].map(tab => (
               <button key={tab.key} className={`feed-tab ${feedTab === tab.key ? 'active' : ''}`} onClick={() => setFeedTab(tab.key)}>
                 {tab.label}
