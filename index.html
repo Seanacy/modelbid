@@ -11728,14 +11728,14 @@ REMEMBER:
                   key: mc.key,
                   onClick: () => setExpandedMetric(isOpen ? null : mc.key),
                   style: {
-                    background: isOpen ? 'rgba(255,255,255,0.06)' : count > 0 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.01)',
-                    borderRadius: '10px', padding: '0.7rem 0.5rem', textAlign: 'center', cursor: count > 0 ? 'pointer' : 'default',
-                    border: isOpen ? '1px solid ' + mc.color : '1px solid transparent',
-                    opacity: count > 0 ? 1 : 0.5
+                    background: isOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
+                    borderRadius: '10px', padding: '0.7rem 0.5rem', textAlign: 'center', cursor: 'pointer',
+                    border: isOpen ? '1px solid ' + mc.color : '1px solid rgba(255,255,255,0.06)',
+                    opacity: 1
                   }
                 },
-                  React.createElement('div', { style: { fontSize: '1rem', marginBottom: '2px' } }, mc.emoji),
-                  React.createElement('div', { style: { fontSize: '1.2rem', fontWeight: 800, color: count > 0 ? mc.color : '#444' } }, count),
+                  React.createElement('div', { style: { fontSize: '1.1rem', marginBottom: '2px' } }, mc.emoji),
+                  React.createElement('div', { style: { fontSize: '1.2rem', fontWeight: 800, color: mc.color } }, count),
                   React.createElement('div', { style: { fontSize: '0.62rem', color: 'var(--text-secondary)' } }, mc.label)
                 );
               })
