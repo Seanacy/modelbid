@@ -5869,22 +5869,7 @@
                   <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>Inner Circle</div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Multiple Models. One PRIVATE Feed 😏</div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {[
-                    { name: 'Sophia Laurent', avatar: '👩‍🦰', role: 'Admin' },
-                    { name: 'Mia Chen', avatar: '👩‍🦱', role: 'Member' },
-                    { name: 'Zara Williams', avatar: '👱‍♀️', role: 'Member' }
-                  ].map((m, i) => (
-                    <div key={i} onClick={() => window.location.hash = 'profile/' + m.name.toLowerCase().replace(/ /g, '-')} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem', borderRadius: '0.6rem', background: 'var(--bg-card-light)', cursor: 'pointer', transition: 'transform 0.15s' }}>
-                      <span style={{ fontSize: '1.5rem' }}>{m.avatar}</span>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 600, fontSize: '0.8rem' }}>{m.name}</div>
-                        <div style={{ fontSize: '0.7rem', color: m.role === 'Admin' ? 'var(--accent-pink)' : 'var(--text-secondary)' }}>{m.role}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <button onClick={() => window.location.hash = 'crew/crew-demo'} style={{ width: '100%', marginTop: '0.75rem', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid rgba(255,110,199,0.3)', background: 'transparent', color: 'var(--accent-pink)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>View Full Crew Page →</button>
+                <button onClick={() => window.location.hash = 'circle/' + (auth?.currentUser?.id || '')} style={{ width: '100%', marginTop: '0.5rem', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid rgba(255,110,199,0.3)', background: 'transparent', color: 'var(--accent-pink)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>Manage Inner Circle →</button>
               </div>
 
             </div>
@@ -6380,550 +6365,594 @@
       );
     }
 
-        // ===== INNER CIRCLE — MODEL MANAGEMENT DASHBOARD =====
-    // ===== CIRCLE CREW — SHARED INNER CIRCLE FOR MODEL GROUPS =====
+    // ===== INNER CIRCLE — FULLY FUNCTIONAL =====
     function CircleCrewManage({ crewId }) {
       const auth = useContext(AuthContext);
       const profile = auth?.profile || {};
-
-      // ---- State ----
-      const [activeTab, setActiveTab] = useState('overview');
-      const [crewEnabled, setCrewEnabled] = useState(true);
-      const [showCreateFlow, setShowCreateFlow] = useState(!crewId);
-      const [crewName, setCrewName] = useState('');
-      const [crewPrice, setCrewPrice] = useState('14.99');
-
-    const [tiers, setTiers] = useState([
-      { id: 1, name: 'Basic', price: 9.99 },
-      { id: 2, name: 'Premium', price: 14.99 },
-      { id: 3, name: 'VIP', price: 24.99 }
-    ]);
-    const [editingTier, setEditingTier] = useState(null);
-    const [editTierName, setEditTierName] = useState('');
-    const [editTierPrice, setEditTierPrice] = useState('');
-    const [editingCrewName, setEditingCrewName] = useState(false);
-    const [editNameValue, setEditNameValue] = useState('');
+      const [crew, setCrew] = useState(null);
+      const [members, setMembers] = useState([]);
+      const [posts, setPosts] = useState([]);
+      const [invites, setInvites] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [tab, setTab] = useState('overview');
+      const [newPostTitle, setNewPostTitle] = useState('');
+      const [newPostContent, setNewPostContent] = useState('');
+      const [newPostTiers, setNewPostTiers] = useState(['fan', 'vip', 'elite']);
+      const [newPostVisible, setNewPostVisible] = useState(false);
       const [inviteSearch, setInviteSearch] = useState('');
-      const [newPostText, setNewPostText] = useState('');
-      const [newPostMedia, setNewPostMedia] = useState([]);
+      const [searchResults, setSearchResults] = useState([]);
+      const [editingTiers, setEditingTiers] = useState(false);
+      const [tierEdits, setTierEdits] = useState({});
+      const [memberProfiles, setMemberProfiles] = useState({});
+      const [postStats, setPostStats] = useState({});
+      const [subCount, setSubCount] = useState(0);
 
-      // Demo crew data
-      const [crew, setCrew] = useState({
-        id: crewId || 'crew-demo',
-        name: 'Inner Circle',
-        admin: { id: 'demo', name: profile.name || 'Your Name', avatar: '👩' },
-        price: 14.99,
-        members: [
-          { id: 'demo', name: profile.name || 'Your Name', avatar: '👩', posts: 12, earnings: 0 },
-          { id: 'm2', name: 'Luna Marquez', avatar: '👧', posts: 8, earnings: 0 },
-          { id: 'm3', name: 'Zara Knight', avatar: '👩‍🦱', posts: 5, earnings: 0 },
-        ],
-        subscribers: 47,
-        totalEarnings: 601.23,
-        createdAt: '2 weeks ago',
-      });
+      // Fetch crew data
+      useEffect(() => {
+        if (!auth.currentUser) return;
+        const load = async () => {
+          try {
+            // If creating new crew
+            if (crewId === 'new') { setLoading(false); return; }
 
-      const [pendingInvites, setPendingInvites] = useState([
-        { id: 'inv1', name: 'Mika Chen', avatar: '👧🏻', status: 'pending', sentAt: '1d ago' },
-      ]);
+            const { data: crewData } = await supabase.from('crews').select('*').eq('id', crewId).single();
+            if (!crewData) { setLoading(false); return; }
+            setCrew(crewData);
+            setTierEdits({ tier1_name: crewData.tier1_name, tier1_price: crewData.tier1_price, tier2_name: crewData.tier2_name, tier2_price: crewData.tier2_price, tier3_name: crewData.tier3_name, tier3_price: crewData.tier3_price });
 
-      const [clientSuggestions, setClientSuggestions] = useState([
-        { id: 'sug1', clientName: 'Jason R.', suggestedModel: 'Priya Sharma', avatar: '👩🏽', suggestedAt: '3h ago' },
-        { id: 'sug2', clientName: 'Tyler M.', suggestedModel: 'Bella Rose', avatar: '👱‍♀️', suggestedAt: '1d ago' },
-      ]);
+            const { data: membersData } = await supabase.from('crew_members').select('*').eq('crew_id', crewId);
+            setMembers(membersData || []);
 
-      const [crewPosts, setCrewPosts] = useState([
-        { id: 'cp1', authorId: 'demo', author: profile.name || 'Your Name', avatar: '👩', text: 'Just wrapped an incredible group shoot! The synergy was unreal today.', time: '2h ago', likes: 23, media: [] },
-        { id: 'cp2', authorId: 'm2', author: 'Luna Marquez', avatar: '👧', text: 'New location scouted for next week — an abandoned greenhouse. The light is perfect.', time: '5h ago', likes: 41, media: [] },
-        { id: 'cp3', authorId: 'm3', author: 'Zara Knight', avatar: '👩‍🦱', text: 'Behind the scenes from the rooftop session. Can\'t wait for you all to see the finals!', time: '1d ago', likes: 18, media: [] },
-      ]);
+            // Fetch member profiles
+            if (membersData && membersData.length > 0) {
+              const ids = membersData.map(m => m.user_id);
+              const { data: profiles } = await supabase.from('profiles').select('id, display_name, profile_photo_url, avatar_emoji').in('id', ids);
+              const pMap = {};
+              (profiles || []).forEach(p => { pMap[p.id] = p; });
+              setMemberProfiles(pMap);
+            }
 
-      const [notifications, setNotifications] = useState([
-        { id: 'n1', type: 'suggestion', text: 'Jason R. suggested Priya Sharma join your crew', time: '3h ago', read: false },
-        { id: 'n2', type: 'subscribe', text: 'New subscriber! Alex K. joined Inner Circle', time: '6h ago', read: true },
-      ]);
+            const { data: postsData } = await supabase.from('crew_posts').select('*').eq('crew_id', crewId).order('created_at', { ascending: false });
+            setPosts(postsData || []);
 
-      // Available models to invite (demo)
-      const availableModels = [
-        { id: 'am1', name: 'Priya Sharma', avatar: '👩🏽', rating: 4.8 },
-        { id: 'am2', name: 'Bella Rose', avatar: '👱‍♀️', rating: 4.9 },
-        { id: 'am3', name: 'Mika Chen', avatar: '👧🏻', rating: 4.7 },
-        { id: 'am4', name: 'Sofia Laurent', avatar: '👩🏼', rating: 4.6 },
-      ].filter(m => !crew.members.find(cm => cm.name === m.name) && !pendingInvites.find(pi => pi.name === m.name));
+            // Calculate post stats per member
+            const stats = {};
+            (postsData || []).forEach(p => {
+              if (!stats[p.author_id]) stats[p.author_id] = { total: 0, thisWeek: 0 };
+              stats[p.author_id].total++;
+              const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+              if (new Date(p.created_at) > weekAgo) stats[p.author_id].thisWeek++;
+            });
+            setPostStats(stats);
 
-      const filteredModels = availableModels.filter(m => m.name.toLowerCase().includes(inviteSearch.toLowerCase()));
+            const { data: invData } = await supabase.from('crew_invites').select('*').eq('crew_id', crewId).eq('status', 'pending');
+            setInvites(invData || []);
 
-      // ---- Calculations ----
-      const PLATFORM_CUT = 0.15;
-      const totalPosts = crew.members.reduce((sum, m) => sum + m.posts, 0);
-      const grossRevenue = crew.price * crew.subscribers;
-      const platformFee = grossRevenue * PLATFORM_CUT;
-      const netRevenue = grossRevenue - platformFee;
-
-      const membersWithEarnings = crew.members.map(m => {
-        const share = totalPosts > 0 ? m.posts / totalPosts : 1 / crew.members.length;
-        return { ...m, share, earnings: netRevenue * share };
-      }).sort((a, b) => b.posts - a.posts);
-
-      const maxPosts = Math.max(...membersWithEarnings.map(m => m.posts), 1);
-
-      // ---- Handlers ----
-      const handleCreateCrew = () => {
-        if (!crewName.trim()) { auth?.showToast?.('Enter a crew name', 'error'); return; }
-        if (parseFloat(crewPrice) < 4.99) { auth?.showToast?.('Minimum price is $4.99', 'error'); return; }
-        setCrew(prev => ({ ...prev, name: crewName.trim(), price: parseFloat(crewPrice), members: [{ id: 'demo', name: profile.name || 'Your Name', avatar: '👩', posts: 0, earnings: 0 }], subscribers: 0 }));
-        setShowCreateFlow(false);
-        auth?.showToast?.(`"${crewName.trim()}" created! Invite models to join.`, 'success');
-      };
-
-      const sendInvite = (model) => {
-        if (crew.members.length + pendingInvites.length >= 4) { auth?.showToast?.('Max 4 members per crew', 'error'); return; }
-        setPendingInvites(prev => [...prev, { id: 'inv-' + Date.now(), name: model.name, avatar: model.avatar, status: 'pending', sentAt: 'Just now' }]);
-        auth?.showToast?.(`Invite sent to ${model.name}!`, 'success');
-      };
-
-      const cancelInvite = (invId) => {
-        setPendingInvites(prev => prev.filter(i => i.id !== invId));
-        auth?.showToast?.('Invite cancelled', 'success');
-      };
-
-      const removeMember = (memberId) => {
-        if (memberId === crew.admin.id) { auth?.showToast?.('Cannot remove the admin', 'error'); return; }
-        setCrew(prev => ({ ...prev, members: prev.members.filter(m => m.id !== memberId) }));
-        auth?.showToast?.('Member removed. Their content has been taken down.', 'success');
-      };
-
-      const handleSuggestionResponse = (sugId, accepted) => {
-        if (accepted) {
-          const sug = clientSuggestions.find(s => s.id === sugId);
-          if (sug && crew.members.length + pendingInvites.length < 4) {
-            setPendingInvites(prev => [...prev, { id: 'inv-' + Date.now(), name: sug.suggestedModel, avatar: sug.avatar, status: 'pending', sentAt: 'Just now' }]);
-            auth?.showToast?.(`Invite sent to ${sug.suggestedModel}!`, 'success');
-          } else if (crew.members.length + pendingInvites.length >= 4) {
-            auth?.showToast?.('Crew is full (max 4 members)', 'error');
-          }
-        }
-        setClientSuggestions(prev => prev.filter(s => s.id !== sugId));
-      };
-
-      const handlePost = () => {
-        if (!newPostText.trim()) return;
-        const post = {
-          id: 'cp-' + Date.now(),
-          authorId: 'demo',
-          author: profile.name || 'Your Name',
-          avatar: '👩',
-          text: newPostText.trim(),
-          time: 'Just now',
-          likes: 0,
-          media: newPostMedia.map(m => ({ ...m })),
+            // Sub count
+            const { count } = await supabase.from('crew_subscriptions').select('id', { count: 'exact', head: true }).eq('crew_id', crewId).eq('active', true);
+            setSubCount(count || 0);
+          } catch(e) { console.error('Crew load error:', e); }
+          setLoading(false);
         };
-        setCrewPosts(prev => [post, ...prev]);
-        setCrew(prev => ({ ...prev, members: prev.members.map(m => m.id === 'demo' ? { ...m, posts: m.posts + 1 } : m) }));
-        setNewPostText('');
-        setNewPostMedia([]);
-        auth?.showToast?.('Posted to crew feed!', 'success');
-      };
+        load();
+      }, [auth.currentUser, crewId]);
 
-      const deletePost = (postId) => {
-        const post = crewPosts.find(p => p.id === postId);
-        if (post && (post.authorId === 'demo' || crew.admin.id === 'demo')) {
-          setCrewPosts(prev => prev.filter(p => p.id !== postId));
-          auth?.showToast?.('Post deleted', 'success');
+      // ----- Create new crew -----
+      const [newCrewName, setNewCrewName] = useState('');
+      const [newCrewDesc, setNewCrewDesc] = useState('');
+      const [creating, setCreating] = useState(false);
+
+      const handleCreateCrew = async () => {
+        if (!newCrewName.trim()) { auth.showToast('Enter a crew name', 'error'); return; }
+        setCreating(true);
+        try {
+          const { data: newCrew, error } = await supabase.from('crews').insert({
+            name: newCrewName.trim(),
+            description: newCrewDesc.trim(),
+            admin_id: auth.currentUser.id,
+          }).select().single();
+          if (error) throw error;
+
+          // Add creator as admin member
+          await supabase.from('crew_members').insert({
+            crew_id: newCrew.id,
+            user_id: auth.currentUser.id,
+            role: 'admin',
+          });
+
+          auth.showToast('Inner Circle created!', 'success');
+          window.location.hash = 'crew/' + newCrew.id;
+        } catch(e) {
+          console.error(e);
+          auth.showToast('Failed to create crew', 'error');
         }
+        setCreating(false);
       };
 
-      const handleMediaUpload = (e) => {
-        const files = Array.from(e.target.files);
-        files.forEach(file => {
-          const reader = new FileReader();
-          reader.onload = (ev) => {
-            setNewPostMedia(prev => [...prev, { url: ev.target.result, type: file.type.startsWith('video') ? 'video' : 'image', name: file.name }]);
-          };
-          reader.readAsDataURL(file);
-        });
-        e.target.value = '';
+      // ----- Invite model -----
+      const handleSearch = async () => {
+        if (!inviteSearch.trim()) return;
+        const { data } = await supabase.from('profiles').select('id, display_name, profile_photo_url, avatar_emoji').eq('role', 'model').ilike('display_name', '%' + inviteSearch.trim() + '%').limit(10);
+        // Filter out existing members and self
+        const memberIds = members.map(m => m.user_id);
+        const invitedIds = invites.map(i => i.invited_user_id);
+        setSearchResults((data || []).filter(p => p.id !== auth.currentUser.id && !memberIds.includes(p.id) && !invitedIds.includes(p.id)));
       };
 
-      const removeMedia = (idx) => setNewPostMedia(prev => prev.filter((_, i) => i !== idx));
+      const sendInvite = async (userId) => {
+        try {
+          const { error } = await supabase.from('crew_invites').insert({
+            crew_id: crewId,
+            invited_by: auth.currentUser.id,
+            invited_user_id: userId,
+          });
+          if (error) throw error;
+          setInvites(prev => [...prev, { crew_id: crewId, invited_by: auth.currentUser.id, invited_user_id: userId, status: 'pending' }]);
+          setSearchResults(prev => prev.filter(p => p.id !== userId));
+          auth.showToast('Invite sent!', 'success');
+        } catch(e) { auth.showToast('Failed to send invite', 'error'); }
+      };
 
-      // ---- Styles ----
-      const cardStyle = { background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1.25rem', border: '1px solid var(--border-color)', marginBottom: '1rem' };
-      const tabStyle = (tab) => ({
-        padding: '0.5rem 1rem', borderRadius: '2rem', border: activeTab === tab ? 'none' : '1px solid var(--border-color)',
-        background: activeTab === tab ? 'linear-gradient(135deg, var(--accent-pink), var(--accent-purple))' : 'transparent',
-        color: activeTab === tab ? '#fff' : 'var(--text-secondary)', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer',
-      });
+      // ----- Post to crew -----
+      const handlePost = async () => {
+        if (!newPostTitle.trim() && !newPostContent.trim()) return;
+        try {
+          const { data, error } = await supabase.from('crew_posts').insert({
+            crew_id: crewId,
+            author_id: auth.currentUser.id,
+            title: newPostTitle.trim(),
+            content: newPostContent.trim(),
+            tiers: newPostTiers,
+            visible_to_members: newPostVisible,
+          }).select().single();
+          if (error) throw error;
+          setPosts(prev => [data, ...prev]);
+          setNewPostTitle('');
+          setNewPostContent('');
+          setNewPostVisible(false);
+          // Update stats
+          setPostStats(prev => {
+            const s = { ...prev };
+            if (!s[auth.currentUser.id]) s[auth.currentUser.id] = { total: 0, thisWeek: 0 };
+            s[auth.currentUser.id].total++;
+            s[auth.currentUser.id].thisWeek++;
+            return s;
+          });
+          auth.showToast('Posted to Inner Circle!', 'success');
+        } catch(e) { auth.showToast('Failed to post', 'error'); }
+      };
 
-      // ---- CREATE FLOW ----
-      if (showCreateFlow) {
+      const deletePost = async (postId) => {
+        await supabase.from('crew_posts').delete().eq('id', postId);
+        setPosts(prev => prev.filter(p => p.id !== postId));
+        auth.showToast('Post deleted', 'info');
+      };
+
+      // ----- Remove member -----
+      const removeMember = async (userId) => {
+        await supabase.from('crew_members').delete().eq('crew_id', crewId).eq('user_id', userId);
+        setMembers(prev => prev.filter(m => m.user_id !== userId));
+        auth.showToast('Member removed', 'info');
+      };
+
+      // ----- Toggle content visibility -----
+      const toggleMyVisibility = async () => {
+        const me = members.find(m => m.user_id === auth.currentUser.id);
+        if (!me) return;
+        const newVal = !me.allow_content_visible;
+        await supabase.from('crew_members').update({ allow_content_visible: newVal }).eq('crew_id', crewId).eq('user_id', auth.currentUser.id);
+        setMembers(prev => prev.map(m => m.user_id === auth.currentUser.id ? { ...m, allow_content_visible: newVal } : m));
+        auth.showToast(newVal ? 'Other members can now see your content' : 'Content hidden from other members', 'info');
+      };
+
+      // ----- Save tier edits -----
+      const saveTiers = async () => {
+        try {
+          await supabase.from('crews').update(tierEdits).eq('id', crewId);
+          setCrew(prev => ({ ...prev, ...tierEdits }));
+          setEditingTiers(false);
+          auth.showToast('Tiers updated!', 'success');
+        } catch(e) { auth.showToast('Failed to update tiers', 'error'); }
+      };
+
+      // ----- Toggle crew enabled -----
+      const toggleEnabled = async () => {
+        const newVal = !crew.enabled;
+        await supabase.from('crews').update({ enabled: newVal }).eq('id', crewId);
+        setCrew(prev => ({ ...prev, enabled: newVal }));
+        auth.showToast(newVal ? 'Inner Circle is now live!' : 'Inner Circle paused', 'info');
+      };
+
+      if (loading) return React.createElement('div', { style: { textAlign: 'center', padding: '3rem', color: '#888' } }, 'Loading...');
+
+      // ===== CREATE NEW CREW VIEW =====
+      if (crewId === 'new') {
+        const cardStyle = { background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '1.25rem', marginBottom: '1rem' };
         return (
-          <div className="page-container" style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem 1rem' }}>
-            <button onClick={() => window.history.back()} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.9rem', marginBottom: '1.5rem' }}>← Back</button>
-            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>👯‍♀️</div>
-              <h2 style={{ fontWeight: 800, fontSize: '1.5rem', marginBottom: '0.5rem' }}>Create a Inner Circle</h2>
+          <div style={{ maxWidth: '600px', margin: '0 auto', padding: '1.5rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>👯‍♀️</div>
+              <h2 style={{ fontWeight: 800, fontSize: '1.5rem', marginBottom: '0.5rem' }}>Create an Inner Circle</h2>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Team up with other models. Share a subscription. Split the earnings.</p>
             </div>
-
             <div style={cardStyle}>
-              <div style={{ fontWeight: 700, marginBottom: '1rem' }}>Crew Details</div>
+              <div style={{ fontWeight: 700, marginBottom: '1rem' }}>Circle Details</div>
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>Crew Name</label>
-                <input value={crewName} onChange={(e) => setCrewName(e.target.value)} placeholder="e.g. Inner Circle, The Collective..."
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>Circle Name</label>
+                <input value={newCrewName} onChange={e => setNewCrewName(e.target.value)} placeholder="e.g. The A-List, Bad Girls Club..."
                   style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.9rem', boxSizing: 'border-box' }} />
               </div>
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>Monthly Subscription Price</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>$</span>
-                  <input value={crewPrice} onChange={(e) => setCrewPrice(e.target.value)} type="number" step="0.01" min="4.99"
-                    style={{ width: '120px', padding: '0.6rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.9rem' }} />
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>/month</span>
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>Min $4.99 · ModelBid takes 15% · Rest is split by post activity</div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>Description (optional)</label>
+                <textarea value={newCrewDesc} onChange={e => setNewCrewDesc(e.target.value)} placeholder="What's this circle about?"
+                  style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.9rem', boxSizing: 'border-box', minHeight: '60px', resize: 'vertical' }} />
               </div>
               <div style={{ padding: '0.75rem', borderRadius: '0.5rem', background: 'rgba(255,110,199,0.06)', border: '1px solid rgba(255,110,199,0.15)', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                <strong style={{ color: 'var(--text-primary)' }}>How earnings work:</strong> ModelBid takes 15%. The remaining 85% is split between crew members based on who posts the most content. Post more → earn more.
+                <strong style={{ color: 'var(--text-primary)' }}>How earnings work:</strong> ModelBid takes 15%. The remaining 85% is split between crew members based on who posts the most content. Post more → earn more. You can edit your 3 subscription tiers and pricing after creating.
               </div>
             </div>
-
-            <button onClick={handleCreateCrew} className="btn glow-btn" style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }}>
-              Create Crew & Start Inviting
+            <button onClick={handleCreateCrew} disabled={creating} className="btn glow-btn" style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }}>
+              {creating ? 'Creating...' : 'Create Circle & Start Inviting'}
             </button>
           </div>
         );
       }
 
-      // ---- MAIN DASHBOARD ----
+      if (!crew) return React.createElement('div', { style: { textAlign: 'center', padding: '3rem', color: '#888' } }, 'Crew not found');
+
+      const isAdmin = crew.admin_id === auth.currentUser?.id;
+      const isMember = members.some(m => m.user_id === auth.currentUser?.id);
+      if (!isMember) return React.createElement('div', { style: { textAlign: 'center', padding: '3rem', color: '#888' } }, 'You are not a member of this crew.');
+
+      const totalPosts = posts.length;
+      const PLATFORM_CUT = 0.15;
+      const myStats = postStats[auth.currentUser?.id] || { total: 0, thisWeek: 0 };
+      const myPostPct = totalPosts > 0 ? Math.round((myStats.total / totalPosts) * 100) : 0;
+      const totalRevenue = subCount * parseFloat(crew.tier1_price || 9.99);
+      const myEarnings = totalRevenue * (1 - PLATFORM_CUT) * (myPostPct / 100);
+      const cardStyle = { background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '1.25rem', marginBottom: '1rem' };
+
       return (
-        <div className="page-container" style={{ maxWidth: '700px', margin: '0 auto', padding: '1.5rem 1rem' }}>
+        <div style={{ maxWidth: '700px', margin: '0 auto', padding: '1rem' }}>
           {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                <span style={{ fontSize: '1.5rem' }}>👯‍♀️</span>
-                {editingCrewName ? (
-                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                  <input value={editNameValue} onChange={(e) => setEditNameValue(e.target.value)} style={{ padding: '0.3rem 0.5rem', borderRadius: '0.3rem', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '1.2rem', fontWeight: 800, width: '180px' }} />
-                  <button onClick={() => { setCrew(prev => ({...prev, name: editNameValue})); setEditingCrewName(false); }} style={{ padding: '0.25rem 0.5rem', borderRadius: '0.3rem', border: 'none', background: 'var(--accent-pink)', color: '#fff', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Save</button>
-                  <button onClick={() => setEditingCrewName(false)} style={{ padding: '0.25rem 0.5rem', borderRadius: '0.3rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer' }}>Cancel</button>
-                </div>
-              ) : (
-                <h2 onClick={() => { setEditingCrewName(true); setEditNameValue(crew.name); }} style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0, cursor: 'pointer' }} title="Click to edit">{crew.name} <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>✏️</span></h2>
-              )}
-              </div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                {crew.members.length} members · {crew.subscribers} subscribers · Created {crew.createdAt}
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              {notifications.filter(n => !n.read).length > 0 && (
-                <span style={{ background: 'var(--accent-pink)', color: '#fff', borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700 }}>
-                  {notifications.filter(n => !n.read).length}
-                </span>
-              )}
-              <button onClick={() => setCrewEnabled(!crewEnabled)} style={{
-                padding: '0.4rem 0.8rem', borderRadius: '2rem', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600,
-                background: crewEnabled ? 'rgba(0,255,135,0.15)' : 'rgba(255,255,255,0.05)', color: crewEnabled ? 'var(--success-green)' : 'var(--text-secondary)',
-              }}>
-                {crewEnabled ? '● Live' : '○ Off'}
-              </button>
+          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>👯‍♀️</div>
+            <h2 style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0 }}>{crew.name}</h2>
+            <p style={{ color: '#888', fontSize: '0.8rem', margin: '0.25rem 0' }}>{crew.description}</p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '0.5rem', fontSize: '0.8rem', color: '#888' }}>
+              <span>{members.length} members</span>
+              <span>{subCount} subscribers</span>
+              <span style={{ color: crew.enabled ? '#00e676' : '#ff5252' }}>{crew.enabled ? '● Live' : '● Paused'}</span>
             </div>
           </div>
 
           {/* Tabs */}
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-            <button onClick={() => setActiveTab('overview')} style={tabStyle('overview')}>📊 Overview</button>
-            <button onClick={() => setActiveTab('members')} style={tabStyle('members')}>👥 Members</button>
-            <button onClick={() => setActiveTab('feed')} style={tabStyle('feed')}>📸 Crew Feed</button>
-            <button onClick={() => setActiveTab('suggestions')} style={tabStyle('suggestions')}>
-              💡 Suggestions {clientSuggestions.length > 0 && <span style={{ marginLeft: '0.3rem', background: 'var(--accent-pink)', color: '#fff', borderRadius: '50%', padding: '0.1rem 0.4rem', fontSize: '0.65rem' }}>{clientSuggestions.length}</span>}
-            </button>
+          <div style={{ display: 'flex', gap: '4px', marginBottom: '1.25rem', overflowX: 'auto' }}>
+            {['overview', 'feed', 'members', 'tiers'].map(t => (
+              <button key={t} onClick={() => setTab(t)} style={{
+                padding: '0.5rem 1rem', borderRadius: '1rem', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, whiteSpace: 'nowrap',
+                background: tab === t ? 'linear-gradient(135deg, #ff6ec7, #9d4edd)' : 'var(--bg-card)', color: tab === t ? '#fff' : '#888',
+              }}>{t === 'overview' ? '📊 Overview' : t === 'feed' ? '📝 Feed' : t === 'members' ? '👥 Members' : '💰 Tiers'}</button>
+            ))}
           </div>
 
           {/* ===== OVERVIEW TAB ===== */}
-          {activeTab === 'overview' && (
+          {tab === 'overview' && (
             <div>
-              {/* Stats Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                <div style={cardStyle}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Subscribers</div>
-                  <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent-pink)' }}>{crew.subscribers}</div>
-                </div>
-                <div style={cardStyle}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Gross / mo</div>
-                  <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent-gold)' }}>${grossRevenue.toFixed(2)}</div>
-                </div>
-                <div style={cardStyle}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Platform Fee (15%)</div>
-                  <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-secondary)' }}>-${platformFee.toFixed(2)}</div>
-                </div>
-                <div style={cardStyle}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Net to Split</div>
-                  <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--success-green)' }}>${netRevenue.toFixed(2)}</div>
-                </div>
-              </div>
-
-              {/* Earnings Split Bar Chart */}
-              <div style={cardStyle}>
-                <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>Earnings Split by Activity</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Models who post more earn a bigger share of the revenue.</div>
-                {membersWithEarnings.map((m, i) => {
-                  const barColors = ['var(--accent-pink)', 'var(--accent-purple)', 'var(--accent-gold)', '#00ff87'];
-                  return (
-                    <div key={m.id} style={{ marginBottom: '1rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontSize: '1.1rem' }}>{m.avatar}</span>
-                          <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{m.name}</span>
-                          {m.id === crew.admin.id && <span style={{ fontSize: '0.6rem', background: 'rgba(255,215,0,0.15)', color: 'var(--accent-gold)', padding: '0.1rem 0.4rem', borderRadius: '1rem' }}>Admin</span>}
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <span style={{ fontWeight: 700, fontSize: '0.9rem', color: barColors[i % barColors.length] }}>${m.earnings.toFixed(2)}</span>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>({(m.share * 100).toFixed(0)}%)</span>
-                        </div>
-                      </div>
-                      <div style={{ position: 'relative', height: '28px', borderRadius: '6px', background: 'var(--bg-card-light)', overflow: 'hidden' }}>
-                        <div style={{
-                          height: '100%', borderRadius: '6px', background: `linear-gradient(90deg, ${barColors[i % barColors.length]}, ${barColors[i % barColors.length]}88)`,
-                          width: `${(m.posts / maxPosts) * 100}%`, transition: 'width 0.6s ease', minWidth: '30px',
-                          display: 'flex', alignItems: 'center', paddingLeft: '0.6rem',
-                        }}>
-                          <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#1a1a2e' }}>{m.posts} posts</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-                <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.75rem', borderRadius: '0.5rem', background: 'rgba(255,110,199,0.06)', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  💡 Post more content to increase your share of the earnings. The split updates in real time based on post activity this billing cycle.
-                </div>
-              </div>
-
-              {/* Subscription Tiers */}
-          <div style={cardStyle}>
-            <div style={{ fontWeight: 700, marginBottom: '0.75rem', fontSize: '0.95rem' }}>Subscription Tiers</div>
-            {tiers.map((tier, idx) => (
-              <div key={tier.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.75rem', marginBottom: '0.4rem', borderRadius: '0.5rem', background: 'var(--bg-card-light)', border: editingTier === tier.id ? '1px solid var(--accent-pink)' : '1px solid transparent' }}>
-                {editingTier === tier.id ? (
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flex: 1 }}>
-                    <input value={editTierName} onChange={(e) => setEditTierName(e.target.value)} style={{ flex: 1, padding: '0.35rem 0.5rem', borderRadius: '0.3rem', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '0.85rem' }} />
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>$</span>
-                      <input value={editTierPrice} onChange={(e) => setEditTierPrice(e.target.value)} type="number" step="0.01" style={{ width: '70px', padding: '0.35rem 0.5rem', borderRadius: '0.3rem', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '0.85rem' }} />
-                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>/mo</span>
-                    </div>
-                    <button onClick={() => { setTiers(prev => prev.map(t => t.id === tier.id ? { ...t, name: editTierName, price: parseFloat(editTierPrice) || tier.price } : t)); setEditingTier(null); }} style={{ padding: '0.3rem 0.6rem', borderRadius: '0.3rem', border: 'none', background: 'var(--accent-pink)', color: '#fff', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Save</button>
-                    <button onClick={() => setEditingTier(null)} style={{ padding: '0.3rem 0.6rem', borderRadius: '0.3rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer' }}>Cancel</button>
+              {/* Quick Stats */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                {[
+                  { label: 'Subscribers', value: subCount, color: '#ff6ec7' },
+                  { label: 'Total Posts', value: totalPosts, color: '#9d4edd' },
+                  { label: 'Your Posts', value: myStats.total, color: '#00e676' },
+                  { label: 'Your Earnings', value: '$' + myEarnings.toFixed(2), color: '#ffd700' },
+                ].map((s, i) => (
+                  <div key={i} style={{ background: `${s.color}10`, border: `1px solid ${s.color}30`, borderRadius: '12px', padding: '1rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.3rem', fontWeight: 800, color: s.color }}>{s.value}</div>
+                    <div style={{ fontSize: '0.7rem', color: '#888', marginTop: '0.25rem' }}>{s.label}</div>
                   </div>
-                ) : (
-                  <>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{tier.name}</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>${tier.price.toFixed(2)}/mo</div>
-                    </div>
-                    <button onClick={() => { setEditingTier(tier.id); setEditTierName(tier.name); setEditTierPrice(String(tier.price)); }} style={{ padding: '0.3rem 0.6rem', borderRadius: '0.3rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer' }}>Edit</button>
-                  </>
-                )}
+                ))}
               </div>
-            ))}
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>ModelBid takes a 15% platform fee from subscriptions</div>
-          </div>
+
+              {/* My Stats Card (shareable) */}
+              <div style={cardStyle}>
+                <div style={{ fontWeight: 700, marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>📊 Your Stats</span>
+                  <button onClick={() => {
+                    const text = `${profile.display_name || 'Model'} — Inner Circle Stats\n📝 Posts this week: ${myStats.thisWeek}\n📊 Content share: ${myPostPct}%\n💰 Earnings share: ${myPostPct}%\nCircle: ${crew.name}`;
+                    navigator.clipboard.writeText(text);
+                    auth.showToast('Stats copied — share with other models!', 'success');
+                  }} style={{ padding: '0.3rem 0.7rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'transparent', color: '#ff6ec7', fontSize: '0.7rem', fontWeight: 600, cursor: 'pointer' }}>📋 Share Stats</button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div style={{ background: 'rgba(0,230,118,0.08)', borderRadius: '10px', padding: '0.75rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#00e676' }}>{myStats.thisWeek}</div>
+                    <div style={{ fontSize: '0.7rem', color: '#888' }}>Posts This Week</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,110,199,0.08)', borderRadius: '10px', padding: '0.75rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ff6ec7' }}>{myPostPct}%</div>
+                    <div style={{ fontSize: '0.7rem', color: '#888' }}>Content Share</div>
+                  </div>
+                </div>
+                <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#666', textAlign: 'center' }}>The more you post, the more you earn. Your cut is proportional to your content share.</div>
+              </div>
+
+              {/* Toggle */}
+              {isAdmin && (
+                <button onClick={toggleEnabled} style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: 'none', background: crew.enabled ? 'rgba(255,82,82,0.15)' : 'linear-gradient(135deg, #ff6ec7, #9d4edd)', color: crew.enabled ? '#ff5252' : '#fff', fontWeight: 700, cursor: 'pointer', marginBottom: '1rem' }}>
+                  {crew.enabled ? '⏸ Pause Inner Circle' : '▶ Go Live'}
+                </button>
+              )}
             </div>
           )}
-          {/* ===== MEMBERS TAB ===== */}
-          {activeTab === 'members' && (
+
+          {/* ===== FEED TAB ===== */}
+          {tab === 'feed' && (
             <div>
-              {/* Current Members */}
-              <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>Current Members ({crew.members.length}/4)</div>
-              {crew.members.map(m => (
-                <div key={m.id} style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <span style={{ fontSize: '1.5rem' }}>{m.avatar}</span>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{m.name}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                        {m.posts} posts · ${membersWithEarnings.find(me => me.id === m.id)?.earnings.toFixed(2) || '0.00'} earned
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    {m.id === crew.admin.id ? (
-                      <span style={{ fontSize: '0.7rem', background: 'rgba(255,215,0,0.15)', color: 'var(--accent-gold)', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontWeight: 600 }}>Admin</span>
-                    ) : (
-                      <button onClick={() => removeMember(m.id)} style={{ padding: '0.3rem 0.6rem', borderRadius: '0.4rem', border: '1px solid rgba(255,82,82,0.3)', background: 'transparent', color: '#ff5252', fontSize: '0.75rem', cursor: 'pointer' }}>Remove</button>
-                    )}
+              {/* New Post */}
+              <div style={cardStyle}>
+                <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>📝 New Post</div>
+                <input value={newPostTitle} onChange={e => setNewPostTitle(e.target.value)} placeholder="Post title (visible to all members)"
+                  style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.85rem', marginBottom: '0.5rem', boxSizing: 'border-box' }} />
+                <textarea value={newPostContent} onChange={e => setNewPostContent(e.target.value)} placeholder="Post content (subscribers only)..."
+                  style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.85rem', minHeight: '80px', resize: 'vertical', boxSizing: 'border-box' }} />
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', marginTop: '0.5rem' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#888' }}>Tiers:</span>
+                  {['fan', 'vip', 'elite'].map(t => {
+                    const sel = newPostTiers.includes(t);
+                    const tierName = crew ? (t === 'fan' ? crew.tier1_name : t === 'vip' ? crew.tier2_name : crew.tier3_name) : t;
+                    return (
+                      <button key={t} onClick={() => {
+                        if (sel && newPostTiers.length > 1) setNewPostTiers(newPostTiers.filter(x => x !== t));
+                        else if (!sel) setNewPostTiers([...newPostTiers, t]);
+                      }} style={{
+                        padding: '0.25rem 0.6rem', borderRadius: '1rem', border: sel ? 'none' : '1px solid var(--border-color)', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 600,
+                        background: sel ? (t === 'fan' ? '#cd7f32' : t === 'vip' ? '#c0c0c0' : '#ffd700') : 'transparent',
+                        color: sel ? '#1a1a2e' : '#888',
+                      }}>{sel ? '✓ ' : ''}{tierName}</button>
+                    );
+                  })}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: '#888', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={newPostVisible} onChange={e => setNewPostVisible(e.target.checked)} />
+                    Let other members see this content
+                  </label>
+                  <button onClick={handlePost} className="btn glow-btn" style={{ fontSize: '0.8rem', padding: '0.5rem 1.25rem' }}>Publish</button>
+                </div>
+              </div>
+
+              {/* My visibility toggle */}
+              <div style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem' }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>Content Visibility</div>
+                  <div style={{ fontSize: '0.7rem', color: '#888' }}>
+                    {members.find(m => m.user_id === auth.currentUser?.id)?.allow_content_visible
+                      ? 'Other members CAN see your content'
+                      : 'Other members can only see your post titles'}
                   </div>
                 </div>
-              ))}
+                <button onClick={toggleMyVisibility} style={{ padding: '0.4rem 0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'transparent', color: '#ff6ec7', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Toggle</button>
+              </div>
 
-              {/* Pending Invites */}
-              {pendingInvites.length > 0 && (
-                <div style={{ marginTop: '1.5rem' }}>
-                  <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>Pending Invites</div>
-                  {pendingInvites.map(inv => (
-                    <div key={inv.id} style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '3px solid var(--accent-purple)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <span style={{ fontSize: '1.3rem' }}>{inv.avatar}</span>
-                        <div>
-                          <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{inv.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Sent {inv.sentAt} · ⏳ Awaiting response</div>
+              {/* Posts list */}
+              <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>Posts ({posts.length})</div>
+              {posts.length === 0 && <div style={{ color: '#666', fontSize: '0.85rem', textAlign: 'center', padding: '2rem' }}>No posts yet. Be the first to post!</div>}
+              {posts.map(post => {
+                const isAuthor = post.author_id === auth.currentUser?.id;
+                const authorProfile = memberProfiles[post.author_id] || {};
+                const authorMember = members.find(m => m.user_id === post.author_id);
+                const canSeeContent = isAuthor || post.visible_to_members || authorMember?.allow_content_visible;
+                return (
+                  <div key={post.id} style={cardStyle}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                          <span style={{ fontSize: '0.85rem' }}>{authorProfile.avatar_emoji || '👤'}</span>
+                          <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{authorProfile.display_name || 'Member'}</span>
+                          {isAuthor && <span style={{ fontSize: '0.6rem', background: 'rgba(0,230,118,0.15)', color: '#00e676', padding: '1px 6px', borderRadius: '6px', fontWeight: 600 }}>You</span>}
+                        </div>
+                        <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.3rem' }}>{post.title || 'Untitled'}</div>
+                        {canSeeContent ? (
+                          <div style={{ fontSize: '0.85rem', color: '#ccc', lineHeight: 1.5 }}>{post.content}</div>
+                        ) : (
+                          <div style={{ fontSize: '0.8rem', color: '#555', fontStyle: 'italic', padding: '0.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>🔒 Content hidden — only visible to subscribers and the author</div>
+                        )}
+                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.65rem', color: '#666' }}>{new Date(post.created_at).toLocaleDateString()}</span>
+                          {(post.tiers || []).map(t => {
+                            const tierName = t === 'fan' ? crew.tier1_name : t === 'vip' ? crew.tier2_name : crew.tier3_name;
+                            return <span key={t} style={{ fontSize: '0.6rem', padding: '1px 6px', borderRadius: '6px', background: t === 'fan' ? 'rgba(205,127,50,0.15)' : t === 'vip' ? 'rgba(192,192,192,0.15)' : 'rgba(255,215,0,0.15)', color: t === 'fan' ? '#cd7f32' : t === 'vip' ? '#c0c0c0' : '#ffd700', fontWeight: 600 }}>{tierName}</span>;
+                          })}
+                          {post.visible_to_members && <span style={{ fontSize: '0.6rem', color: '#00e676' }}>👁 Visible</span>}
                         </div>
                       </div>
-                      <button onClick={() => cancelInvite(inv.id)} style={{ padding: '0.3rem 0.6rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer' }}>Cancel</button>
+                      {(isAuthor || isAdmin) && (
+                        <button onClick={() => deletePost(post.id)} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: '0.8rem', padding: '0.25rem' }}>🗑️</button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ===== MEMBERS TAB ===== */}
+          {tab === 'members' && (
+            <div>
+              {/* Member cards with stats */}
+              {members.map(member => {
+                const mp = memberProfiles[member.user_id] || {};
+                const ms = postStats[member.user_id] || { total: 0, thisWeek: 0 };
+                const pct = totalPosts > 0 ? Math.round((ms.total / totalPosts) * 100) : 0;
+                return (
+                  <div key={member.id} style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--bg-card-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0 }}>
+                      {mp.avatar_emoji || '👤'}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{mp.display_name || 'Member'}</span>
+                        {member.role === 'admin' && <span style={{ fontSize: '0.6rem', background: 'rgba(255,215,0,0.15)', color: '#ffd700', padding: '1px 6px', borderRadius: '6px' }}>Admin</span>}
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.7rem', color: '#888', marginTop: '0.25rem' }}>
+                        <span>📝 {ms.total} posts</span>
+                        <span>📊 {pct}% share</span>
+                        <span>📅 {ms.thisWeek} this week</span>
+                      </div>
+                    </div>
+                    {isAdmin && member.user_id !== auth.currentUser?.id && (
+                      <button onClick={() => removeMember(member.user_id)} style={{ padding: '0.3rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(255,82,82,0.3)', background: 'transparent', color: '#ff5252', fontSize: '0.7rem', cursor: 'pointer' }}>Remove</button>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Pending invites */}
+              {invites.length > 0 && (
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.85rem', margin: '1rem 0 0.5rem', color: '#888' }}>Pending Invites</div>
+                  {invites.map((inv, i) => (
+                    <div key={i} style={{ ...cardStyle, padding: '0.75rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.85rem', color: '#aaa' }}>Invite sent...</span>
+                      <span style={{ fontSize: '0.65rem', background: 'rgba(255,165,0,0.15)', color: '#ffa500', padding: '2px 8px', borderRadius: '6px' }}>Pending</span>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Invite New Members */}
-              {crew.members.length + pendingInvites.length < 4 && (
-                <div style={{ marginTop: '1.5rem' }}>
+              {/* Invite new model */}
+              {isAdmin && members.length < 4 && (
+                <div style={{ ...cardStyle, marginTop: '1rem' }}>
                   <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>Invite a Model</div>
-                  <input value={inviteSearch} onChange={(e) => setInviteSearch(e.target.value)} placeholder="Search models..."
-                    style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.85rem', marginBottom: '0.75rem', boxSizing: 'border-box' }} />
-                  {filteredModels.map(m => (
-                    <div key={m.id} style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <span style={{ fontSize: '1.3rem' }}>{m.avatar}</span>
-                        <div>
-                          <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{m.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>⭐ {m.rating} rating</div>
-                        </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                    <input value={inviteSearch} onChange={e => setInviteSearch(e.target.value)} placeholder="Search by name..."
+                      onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                      style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.85rem' }} />
+                    <button onClick={handleSearch} style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: 'none', background: 'var(--accent-pink)', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem' }}>Search</button>
+                  </div>
+                  {searchResults.map(r => (
+                    <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span>{r.avatar_emoji || '👤'}</span>
+                        <span style={{ fontSize: '0.85rem' }}>{r.display_name}</span>
                       </div>
-                      <button onClick={() => sendInvite(m)} className="btn glow-btn" style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}>Invite</button>
+                      <button onClick={() => sendInvite(r.id)} style={{ padding: '0.3rem 0.7rem', borderRadius: '6px', border: 'none', background: 'linear-gradient(135deg, #ff6ec7, #9d4edd)', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '0.75rem' }}>Invite</button>
                     </div>
                   ))}
-                  {filteredModels.length === 0 && inviteSearch && (
-                    <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No models found matching "{inviteSearch}"</div>
+                  {members.length >= 4 && <div style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.5rem' }}>Max 4 members per crew</div>}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ===== TIERS TAB ===== */}
+          {tab === 'tiers' && (
+            <div>
+              <div style={{ fontSize: '0.85rem', color: '#888', marginBottom: '1rem' }}>Set the price and name for each subscription tier. Clients choose a tier when they subscribe.</div>
+              {[
+                { key: 'tier1', nameKey: 'tier1_name', priceKey: 'tier1_price', color: '#cd7f32', icon: '🥉' },
+                { key: 'tier2', nameKey: 'tier2_name', priceKey: 'tier2_price', color: '#c0c0c0', icon: '🥈' },
+                { key: 'tier3', nameKey: 'tier3_name', priceKey: 'tier3_price', color: '#ffd700', icon: '🥇' },
+              ].map(tier => (
+                <div key={tier.key} style={{ ...cardStyle, borderLeft: `3px solid ${tier.color}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '1.2rem' }}>{tier.icon}</span>
+                      {editingTiers ? (
+                        <input value={tierEdits[tier.nameKey]} onChange={e => setTierEdits(prev => ({ ...prev, [tier.nameKey]: e.target.value }))}
+                          style={{ fontWeight: 700, fontSize: '1rem', background: 'var(--bg-card-light)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', padding: '0.25rem 0.5rem', width: '120px' }} />
+                      ) : (
+                        <span style={{ fontWeight: 700, fontSize: '1rem' }}>{crew[tier.nameKey]}</span>
+                      )}
+                    </div>
+                    {editingTiers ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <span style={{ color: '#888' }}>$</span>
+                        <input value={tierEdits[tier.priceKey]} onChange={e => setTierEdits(prev => ({ ...prev, [tier.priceKey]: e.target.value }))} type="number" step="0.01" min="0.99"
+                          style={{ width: '70px', padding: '0.3rem', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.9rem' }} />
+                        <span style={{ color: '#888', fontSize: '0.8rem' }}>/mo</span>
+                      </div>
+                    ) : (
+                      <span style={{ fontWeight: 800, fontSize: '1.1rem', color: tier.color }}>${parseFloat(crew[tier.priceKey]).toFixed(2)}<span style={{ fontSize: '0.7rem', color: '#888' }}>/mo</span></span>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {isAdmin && (
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {editingTiers ? (
+                    <>
+                      <button onClick={saveTiers} className="btn glow-btn" style={{ flex: 1, padding: '0.6rem' }}>Save Changes</button>
+                      <button onClick={() => setEditingTiers(false)} style={{ flex: 1, padding: '0.6rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'transparent', color: '#888', cursor: 'pointer' }}>Cancel</button>
+                    </>
+                  ) : (
+                    <button onClick={() => setEditingTiers(true)} style={{ width: '100%', padding: '0.6rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'transparent', color: '#ff6ec7', fontWeight: 600, cursor: 'pointer' }}>✏️ Edit Tiers & Pricing</button>
                   )}
                 </div>
               )}
-
-              {crew.members.length + pendingInvites.length >= 4 && (
-                <div style={{ marginTop: '1rem', padding: '0.75rem', borderRadius: '0.5rem', background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.15)', fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                  🔒 This crew is full (4/4 members). Remove a member or cancel an invite to add someone new.
-                </div>
-              )}
             </div>
           )}
+        </div>
+      );
+    }
 
-          {/* ===== CREW FEED TAB ===== */}
-          {activeTab === 'feed' && (
-            <div>
-              {/* Post Composer */}
-              <div style={{ ...cardStyle, borderColor: 'rgba(255,110,199,0.3)' }}>
-                <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>📸 Post to Crew Feed</div>
-                <textarea value={newPostText} onChange={(e) => setNewPostText(e.target.value)} placeholder="Share something with your crew's subscribers..."
-                  style={{ width: '100%', minHeight: '100px', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.85rem', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+    // ===== INNER CIRCLE — PENDING INVITES COMPONENT =====
+    function CrewInvites() {
+      const auth = useContext(AuthContext);
+      const [pendingInvites, setPendingInvites] = useState([]);
+      const [crewNames, setCrewNames] = useState({});
 
-                {/* Media upload buttons */}
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', marginBottom: newPostMedia.length > 0 ? '0.5rem' : '0' }}>
-                  <label style={{ padding: '0.35rem 0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                    📷 Photo <input type="file" accept="image/*" multiple onChange={handleMediaUpload} style={{ display: 'none' }} />
-                  </label>
-                  <label style={{ padding: '0.35rem 0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                    🎬 Video <input type="file" accept="video/*" onChange={handleMediaUpload} style={{ display: 'none' }} />
-                  </label>
-                </div>
+      useEffect(() => {
+        if (!auth.currentUser) return;
+        const load = async () => {
+          const { data } = await supabase.from('crew_invites').select('*').eq('invited_user_id', auth.currentUser.id).eq('status', 'pending');
+          setPendingInvites(data || []);
+          // Get crew names
+          if (data && data.length > 0) {
+            const crewIds = [...new Set(data.map(i => i.crew_id))];
+            const { data: crews } = await supabase.from('crews').select('id, name').in('id', crewIds);
+            const names = {};
+            (crews || []).forEach(c => { names[c.id] = c.name; });
+            setCrewNames(names);
+          }
+        };
+        load();
+      }, [auth.currentUser]);
 
-                {/* Media previews */}
-                {newPostMedia.length > 0 && (
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
-                    {newPostMedia.map((m, i) => (
-                      <div key={i} style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                        {m.type === 'image' ? (
-                          <img src={m.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                          <div style={{ width: '100%', height: '100%', background: 'var(--bg-card-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>🎬</div>
-                        )}
-                        <button onClick={() => removeMedia(i)} style={{ position: 'absolute', top: '2px', right: '2px', background: 'rgba(0,0,0,0.7)', border: 'none', color: '#fff', borderRadius: '50%', width: '18px', height: '18px', fontSize: '0.6rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+      const respond = async (inviteId, crewId, accept) => {
+        await supabase.from('crew_invites').update({ status: accept ? 'accepted' : 'declined' }).eq('id', inviteId);
+        if (accept) {
+          await supabase.from('crew_members').insert({ crew_id: crewId, user_id: auth.currentUser.id, role: 'member' });
+          auth.showToast('You joined the Inner Circle!', 'success');
+        } else {
+          auth.showToast('Invite declined', 'info');
+        }
+        setPendingInvites(prev => prev.filter(i => i.id !== inviteId));
+      };
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-                  <button onClick={handlePost} className="btn glow-btn" style={{ fontSize: '0.8rem', padding: '0.5rem 1.25rem' }}>Publish to Crew</button>
-                </div>
+      if (pendingInvites.length === 0) return null;
+
+      return (
+        <div style={{ marginBottom: '1.5rem' }}>
+          {pendingInvites.map(inv => (
+            <div key={inv.id} style={{
+              background: 'linear-gradient(135deg, rgba(255,110,199,0.08), rgba(157,78,221,0.08))',
+              border: '1px solid rgba(255,110,199,0.25)', borderRadius: '12px', padding: '1rem', marginBottom: '0.5rem',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem'
+            }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>👯‍♀️ Inner Circle Invite</div>
+                <div style={{ fontSize: '0.8rem', color: '#aaa' }}>You've been invited to join <strong style={{ color: '#ff6ec7' }}>{crewNames[inv.crew_id] || 'a crew'}</strong></div>
               </div>
-
-              {/* Post List */}
-              <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>Crew Posts ({crewPosts.length})</div>
-              {crewPosts.map(post => (
-                <div key={post.id} style={cardStyle}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                        <span style={{ fontSize: '1.1rem' }}>{post.avatar}</span>
-                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{post.author}</span>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>· {post.time}</span>
-                      </div>
-                      <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem', lineHeight: 1.5 }}>{post.text}</div>
-                      {post.media && post.media.length > 0 && (
-                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
-                          {post.media.map((m, i) => (
-                            <div key={i} style={{ borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid var(--border-color)', maxWidth: '200px' }}>
-                              {m.type === 'image' ? (
-                                <img src={m.url} style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', display: 'block' }} />
-                              ) : (
-                                <video src={m.url} controls style={{ width: '100%', maxHeight: '200px' }} />
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>❤️ {post.likes} likes</div>
-                    </div>
-                    {(post.authorId === 'demo' || crew.admin.id === 'demo') && (
-                      <button onClick={() => deletePost(post.id)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.85rem', padding: '0.25rem', opacity: 0.5 }} title="Delete post">🗑️</button>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              {crewPosts.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No crew posts yet. Be the first to share!</div>
-              )}
-            </div>
-          )}
-
-          {/* ===== SUGGESTIONS TAB ===== */}
-          {activeTab === 'suggestions' && (
-            <div>
-              <div style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                Clients can suggest models they'd love to see in your crew. Both the suggested model and you get notified. You decide whether to send an invite.
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button onClick={() => respond(inv.id, inv.crew_id, true)} style={{ padding: '0.4rem 1rem', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg, #ff6ec7, #9d4edd)', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}>Join</button>
+                <button onClick={() => respond(inv.id, inv.crew_id, false)} style={{ padding: '0.4rem 0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'transparent', color: '#888', cursor: 'pointer', fontSize: '0.8rem' }}>Decline</button>
               </div>
-
-              {clientSuggestions.length > 0 ? (
-                clientSuggestions.map(sug => (
-                  <div key={sug.id} style={{ ...cardStyle, borderLeft: '3px solid var(--accent-purple)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ fontSize: '0.85rem', marginBottom: '0.3rem' }}>
-                          <span style={{ fontWeight: 600 }}>{sug.clientName}</span>
-                          <span style={{ color: 'var(--text-secondary)' }}> suggested </span>
-                          <span style={{ fontWeight: 600 }}>{sug.suggestedModel}</span>
-                          <span style={{ color: 'var(--text-secondary)' }}> {sug.avatar}</span>
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>🕐 {sug.suggestedAt}</div>
-                      </div>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button onClick={() => handleSuggestionResponse(sug.id, true)} style={{ padding: '0.35rem 0.75rem', borderRadius: '0.4rem', border: 'none', background: 'var(--success-green)', color: '#1a1a2e', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Send Invite</button>
-                        <button onClick={() => handleSuggestionResponse(sug.id, false)} style={{ padding: '0.35rem 0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer' }}>Dismiss</button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>💡</div>
-                  No suggestions yet. When clients suggest models for your crew, they'll appear here.
-                </div>
-              )}
             </div>
-          )}
+          ))}
         </div>
       );
     }
@@ -6932,945 +6961,210 @@
     function CircleCrewPage({ crewId }) {
       const auth = useContext(AuthContext);
       const isModel = auth?.profile?.role === 'model';
-
-      const [isSubscribed, setIsSubscribed] = useState(false);
-      const [selectedTier, setSelectedTier] = useState(null);
-      const [suggestSearch, setSuggestSearch] = useState('');
-      const [showSuggest, setShowSuggest] = useState(false);
-      const [likedPosts, setLikedPosts] = useState({});
-
-      // Check if current user is a member of this crew (demo logic)
-      // Only show manage view if the model is actually a crew member (not for clients browsing)
-      const isMember = isModel && auth?.profile?.id === 'demo' && crewId === 'crew-demo';
-      if (isMember) return <CircleCrewManage crewId={crewId} />;
-
-      // Demo crew data for client view
-      const crew = {
-        name: 'Inner Circle',
-        price: 14.99,
-        members: [
-          { id: 'm1', name: 'Aria Valentina', avatar: '👩', bio: 'High fashion & editorial' },
-          { id: 'm2', name: 'Luna Marquez', avatar: '👧', bio: 'Lifestyle & beauty' },
-          { id: 'm3', name: 'Zara Knight', avatar: '👩‍🦱', bio: 'Fitness & activewear' },
-        ],
-        tiers: [
-          { id: 't1', name: 'Fan', price: 9.99, perks: ['Access to crew feed', 'Like & comment on posts', 'Suggest models for the crew'] },
-          { id: 't2', name: 'VIP', price: 14.99, perks: ['Everything in Fan', 'Exclusive BTS content', 'Early booking access', 'Group chat with models'], popular: true },
-          { id: 't3', name: 'Elite', price: 24.99, perks: ['Everything in VIP', '10% session discounts', 'Priority DMs', 'Monthly exclusive drops'] },
-        ],
-        subscribers: 47,
-        totalPosts: 25,
-      };
-
-      const previewPosts = [
-        { id: 'pp1', author: 'Aria Valentina', avatar: '👩', text: 'Just wrapped an incredible group shoot! The synergy was unreal today.', time: '2h ago', likes: 23, locked: !isSubscribed },
-        { id: 'pp2', author: 'Luna Marquez', avatar: '👧', text: isSubscribed ? 'New location scouted for next week — an abandoned greenhouse. The light is perfect.' : 'This post is for subscribers only...', time: '5h ago', likes: 41, locked: !isSubscribed },
-        { id: 'pp3', author: 'Zara Knight', avatar: '👩‍🦱', text: isSubscribed ? 'Behind the scenes from the rooftop session. Can\'t wait for you all to see the finals!' : 'Subscribe to see this content...', time: '1d ago', likes: 18, locked: !isSubscribed },
-      ];
-
-      const suggestableModels = [
-        { id: 'sg1', name: 'Priya Sharma', avatar: '👩🏽' },
-        { id: 'sg2', name: 'Bella Rose', avatar: '👱‍♀️' },
-        { id: 'sg3', name: 'Mika Chen', avatar: '👧🏻' },
-      ].filter(m => m.name.toLowerCase().includes(suggestSearch.toLowerCase()));
-
-      const handleSubscribe = (tier) => {
-        setSelectedTier(tier);
-        setIsSubscribed(true);
-        auth?.showToast?.(`Subscribed to ${crew.name} — ${tier.name} tier for $${tier.price}/mo!`, 'success');
-      };
-
-      const handleSuggest = (model) => {
-        auth?.showToast?.(`Suggested ${model.name} for ${crew.name}! Both the crew admin and ${model.name} will be notified.`, 'success');
-        setShowSuggest(false);
-        setSuggestSearch('');
-      };
-
-      const toggleLike = (postId) => {
-        setLikedPosts(prev => ({ ...prev, [postId]: !prev[postId] }));
-      };
-
-      const cardStyle = { background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1.25rem', border: '1px solid var(--border-color)', marginBottom: '1rem' };
-
-      return (
-        <div className="page-container" style={{ maxWidth: '600px', margin: '0 auto', padding: '1.5rem 1rem' }}>
-          <button onClick={() => window.history.back()} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.9rem', marginBottom: '1rem' }}>← Back</button>
-
-          {/* Crew Header */}
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>👯‍♀️</div>
-            <h2 style={{ fontWeight: 800, fontSize: '1.5rem', marginBottom: '0.25rem' }}>{crew.name}</h2>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-              {crew.members.length} models · {crew.subscribers} subscribers · {crew.totalPosts} posts
-            </div>
-
-            {/* Members row */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-              {crew.members.map(m => (
-                <div key={m.id} style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>{m.avatar}</div>
-                  <div style={{ fontWeight: 600, fontSize: '0.8rem' }}>{m.name}</div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{m.bio}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Subscription Tiers */}
-            {!isSubscribed ? (
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap', textAlign: 'left' }}>
-                {crew.tiers.map(tier => (
-                  <div key={tier.id} style={{
-                    flex: '1 1 160px', maxWidth: '200px', padding: '1.25rem 1rem', borderRadius: '1rem',
-                    background: tier.popular ? 'linear-gradient(135deg, rgba(255,110,199,0.12), rgba(157,78,221,0.12))' : 'var(--bg-card)',
-                    border: tier.popular ? '2px solid var(--accent-pink)' : '1px solid var(--border-color)',
-                    position: 'relative',
-                  }}>
-                    {tier.popular && (
-                      <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: 'var(--accent-pink)', color: '#fff', fontSize: '0.65rem', fontWeight: 700, padding: '0.2rem 0.6rem', borderRadius: '1rem', textTransform: 'uppercase' }}>Most Popular</div>
-                    )}
-                    <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.25rem' }}>{tier.name}</div>
-                    <div style={{ fontWeight: 800, fontSize: '1.3rem', color: 'var(--accent-gold)', marginBottom: '0.75rem' }}>${tier.price}<span style={{ fontSize: '0.75rem', fontWeight: 400, color: 'var(--text-secondary)' }}>/mo</span></div>
-                    <div style={{ marginBottom: '0.75rem' }}>
-                      {tier.perks.map((perk, i) => (
-                        <div key={i} style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.3rem', display: 'flex', alignItems: 'flex-start', gap: '0.3rem' }}>
-                          <span style={{ color: 'var(--success-green)', flexShrink: 0 }}>✓</span> {perk}
-                        </div>
-                      ))}
-                    </div>
-                    <button onClick={() => handleSubscribe(tier)} className="btn glow-btn" style={{
-                      width: '100%', padding: '0.5rem', fontSize: '0.8rem',
-                      background: tier.popular ? 'linear-gradient(135deg, var(--accent-pink), var(--accent-purple))' : 'var(--bg-card-light)',
-                      color: tier.popular ? '#fff' : 'var(--text-primary)',
-                      border: tier.popular ? 'none' : '1px solid var(--border-color)',
-                    }}>Subscribe</button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.5rem', borderRadius: '2rem', background: 'rgba(0,255,135,0.1)', border: '1px solid rgba(0,255,135,0.3)' }}>
-                <span style={{ color: 'var(--success-green)', fontWeight: 600 }}>✓ Subscribed — {selectedTier?.name} tier</span>
-              </div>
-            )}
-          </div>
-
-          {/* Suggest a Model */}
-          <div style={cardStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showSuggest ? '0.75rem' : 0 }}>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>💡 Suggest a Model</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Know someone who'd be perfect for this crew?</div>
-              </div>
-              <button onClick={() => setShowSuggest(!showSuggest)} style={{ padding: '0.35rem 0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer' }}>
-                {showSuggest ? 'Close' : 'Suggest'}
-              </button>
-            </div>
-            {showSuggest && (
-              <div>
-                <input value={suggestSearch} onChange={(e) => setSuggestSearch(e.target.value)} placeholder="Search models..."
-                  style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.85rem', marginBottom: '0.5rem', boxSizing: 'border-box' }} />
-                {suggestableModels.map(m => (
-                  <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.6rem', marginBottom: '0.3rem', borderRadius: '0.4rem', background: 'var(--bg-card-light)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '1.1rem' }}>{m.avatar}</span>
-                      <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{m.name}</span>
-                    </div>
-                    <button onClick={() => handleSuggest(m)} style={{ padding: '0.3rem 0.6rem', borderRadius: '0.4rem', border: 'none', background: 'var(--accent-pink)', color: '#fff', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Suggest</button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Posts Feed */}
-          <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>Crew Feed</div>
-          {previewPosts.map(post => (
-            <div key={post.id} style={{ ...cardStyle, opacity: post.locked ? 0.6 : 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '1.1rem' }}>{post.avatar}</span>
-                <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{post.author}</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>· {post.time}</span>
-              </div>
-              <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem', lineHeight: 1.5 }}>
-                {post.locked ? (
-                  <div style={{ textAlign: 'center', padding: '1rem' }}>
-                    <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>🔒</div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Subscribe to see this post</div>
-                  </div>
-                ) : post.text}
-              </div>
-              {!post.locked && (
-                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  <button onClick={() => toggleLike(post.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: likedPosts[post.id] ? 'var(--accent-pink)' : 'var(--text-secondary)', fontSize: '0.75rem' }}>
-                    {likedPosts[post.id] ? '❤️' : '🤍'} {post.likes + (likedPosts[post.id] ? 1 : 0)} likes
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      );
-    }
-function InnerCircleManage() {
-      const auth = useContext(AuthContext);
-      const profile = auth?.profile || {};
-      const [manageTab, setManageTab] = useState('overview');
-      const [circleEnabled, setCircleEnabled] = useState(false);
-      const [saving, setSaving] = useState(false);
-      const [newPostText, setNewPostText] = useState('');
-      const [newPostTiers, setNewPostTiers] = useState(['bronze', 'silver', 'gold']);
-      const [newPostMedia, setNewPostMedia] = useState([]);
-      const [btsPosts, setBtsPosts] = useState([
-        { id: 'bts1', text: 'Just finished setting up the studio for tomorrow\'s shoot. The new lighting rig is INSANE.', time: '3h ago', tier: 'bronze', likes: 34 },
-        { id: 'bts2', text: 'New outfits just arrived! Sneak peek at the luxury lingerie collection for April sessions.', time: '1d ago', tier: 'bronze', likes: 67 },
-      ]);
-      const [tiers, setTiers] = useState([
-        { id: 'bronze', name: 'Bronze Circle', price: 9.99, color: '#cd7f32', perks: ['Behind-the-scenes feed access', 'New content drop notifications', 'Group chat access (read only)', 'Bronze badge on your profile'] },
-        { id: 'silver', name: 'Silver Circle', price: 19.99, color: '#c0c0c0', popular: true, perks: ['All Bronze perks included', '24-hour early booking window', 'Full group chat access (post & react)', '10% off all session bookings', 'Monthly exclusive content drop', 'Priority DM responses'] },
-        { id: 'gold', name: 'Gold Circle', price: 34.99, color: '#ffd700', perks: ['All Silver perks included', '48-hour early booking window', '20% off all session bookings', '1-on-1 monthly video call (15 min)', 'Vote on upcoming session themes', 'Quarterly surprise content bundle', 'Gold badge + featured in your profile'] },
-      ]);
-      const [editingTier, setEditingTier] = useState(null);
-      const [editPrice, setEditPrice] = useState('');
-      const [editName, setEditName] = useState('');
-      const [editPerkText, setEditPerkText] = useState('');
-      const [removedPerks, setRemovedPerks] = useState({});
-
-      // Demo stats
-      const stats = { totalMembers: circleEnabled ? 89 : 0, bronze: 52, silver: 28, gold: 9, monthlyRevenue: circleEnabled ? 1847.52 : 0, growthPct: 12 };
-
-      const handleToggle = () => {
-        setCircleEnabled(!circleEnabled);
-        auth?.showToast?.(circleEnabled ? 'Private Feed disabled' : 'Private Feed is now live!', circleEnabled ? 'info' : 'success');
-      };
-
-      const handleSaveTier = (tierId) => {
-        setTiers(prev => prev.map(t => t.id === tierId ? { ...t, price: parseFloat(editPrice) || t.price, name: editName.trim() || t.name } : t));
-        setEditingTier(null);
-        auth?.showToast?.('Tier updated!', 'success');
-      };
-
-      const addPerk = (tierId) => {
-        if (!editPerkText.trim()) return;
-        setTiers(prev => prev.map(t => t.id === tierId ? { ...t, perks: [...t.perks, editPerkText.trim()] } : t));
-        setEditPerkText('');
-      };
-
-      const removePerk = (tierId, perkIdx) => {
-        const perkText = tiers.find(t => t.id === tierId)?.perks[perkIdx];
-        if (!perkText) return;
-        setRemovedPerks(prev => ({ ...prev, [tierId]: [...(prev[tierId] || []), perkText] }));
-        setTiers(prev => prev.map(t => t.id === tierId ? { ...t, perks: t.perks.filter((_, i) => i !== perkIdx) } : t));
-      };
-
-      const restorePerk = (tierId, perkIdx) => {
-        const perk = removedPerks[tierId]?.[perkIdx];
-        if (!perk) return;
-        setTiers(prev => prev.map(t => t.id === tierId ? { ...t, perks: [...t.perks, perk] } : t));
-        setRemovedPerks(prev => ({ ...prev, [tierId]: prev[tierId].filter((_, i) => i !== perkIdx) }));
-      };
-
-      const handlePost = () => {
-        if (!newPostText.trim() && newPostMedia.length === 0) return;
-        setBtsPosts(prev => [{ id: 'bts-' + Date.now(), text: newPostText, time: 'Just now', tiers: [...newPostTiers], tier: newPostTiers[0], likes: 0, media: [...newPostMedia] }, ...prev]);
-        setNewPostText('');
-        setNewPostMedia([]);
-        auth?.showToast?.('Post published to your Private Feed!', 'success');
-      };
-
-      const handleMediaUpload = (e) => {
-        const files = Array.from(e.target.files);
-        files.forEach(file => {
-          const reader = new FileReader();
-          reader.onload = (ev) => {
-            setNewPostMedia(prev => [...prev, { url: ev.target.result, type: file.type.startsWith('video') ? 'video' : 'image', name: file.name }]);
-          };
-          reader.readAsDataURL(file);
-        });
-        e.target.value = '';
-      };
-
-      const removeMedia = (idx) => {
-        setNewPostMedia(prev => prev.filter((_, i) => i !== idx));
-      };
-
-      const deletePost = (postId) => {
-        setBtsPosts(prev => prev.filter(p => p.id !== postId));
-        auth?.showToast?.('Post deleted', 'info');
-      };
-
-      const tabStyle = (key) => ({
-        padding: '0.6rem 1.2rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
-        background: manageTab === key ? 'linear-gradient(135deg, var(--accent-pink), var(--accent-purple))' : 'var(--bg-card-light)',
-        color: manageTab === key ? '#fff' : 'var(--text-secondary)', transition: 'all 0.2s'
-      });
-
-      const cardStyle = {
-        background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem'
-      };
-
-      return (
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <button className="btn btn-secondary" onClick={() => window.history.back()} style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>← Back</button>
-
-          {/* Hero */}
-          <div className="inner-circle-hero">
-            <div className="ic-model-avatar">{profile.avatar_emoji || '👩'}</div>
-            <div className="ic-title">Your Private Feed</div>
-            <div className="ic-subtitle">Manage your tiers, content, and subscribers</div>
-          </div>
-
-          {/* Toggle On/Off */}
-          <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: '1rem' }}>Private Feed Status</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                {circleEnabled ? 'Your Private Feed is live — clients can subscribe now' : 'Turn this on to let clients subscribe to your Private Feed'}
-              </div>
-            </div>
-            <button onClick={handleToggle} style={{
-              padding: '0.5rem 1.5rem', borderRadius: '2rem', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem',
-              background: circleEnabled ? 'var(--success-green)' : 'var(--bg-card-light)',
-              color: circleEnabled ? '#1a1a2e' : 'var(--text-secondary)', transition: 'all 0.3s'
-            }}>
-              {circleEnabled ? '● Live' : '○ Off'}
-            </button>
-          </div>
-
-          {/* Tabs */}
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-            <button onClick={() => setManageTab('overview')} style={tabStyle('overview')}>📊 Overview</button>
-            <button onClick={() => setManageTab('tiers')} style={tabStyle('tiers')}>💎 Tiers & Pricing</button>
-            <button onClick={() => setManageTab('posts')} style={tabStyle('posts')}>📸 BTS Feed</button>
-          </div>
-
-          {/* ===== OVERVIEW TAB ===== */}
-          {manageTab === 'overview' && (
-            <div>
-              {/* Stats Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                <div style={cardStyle}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Members</div>
-                  <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-pink)' }}>{stats.totalMembers}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--success-green)' }}>↑ {stats.growthPct}% this month</div>
-                </div>
-                <div style={cardStyle}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Monthly Revenue</div>
-                  <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-gold)' }}>${stats.monthlyRevenue.toFixed(2)}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>recurring</div>
-                </div>
-                <div style={cardStyle}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>BTS Posts</div>
-                  <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-purple)' }}>{btsPosts.length}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>published</div>
-                </div>
-              </div>
-
-              {/* Members by tier */}
-              <div style={cardStyle}>
-                <div style={{ fontWeight: 700, marginBottom: '1rem' }}>Members by Tier</div>
-                {[
-                  { name: 'Bronze', count: stats.bronze, color: '#cd7f32', icon: '🥉' },
-                  { name: 'Silver', count: stats.silver, color: '#c0c0c0', icon: '🥈' },
-                  { name: 'Gold', count: stats.gold, color: '#ffd700', icon: '🥇' },
-                ].map(t => (
-                  <div key={t.name} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                    <span style={{ fontSize: '1.2rem' }}>{t.icon}</span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{t.name}</span>
-                        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{t.count} members</span>
-                      </div>
-                      <div style={{ height: '6px', borderRadius: '3px', background: 'var(--bg-card-light)' }}>
-                        <div style={{ height: '100%', borderRadius: '3px', background: t.color, width: `${(t.count / stats.totalMembers) * 100}%`, transition: 'width 0.5s' }}></div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {!circleEnabled && (
-                <div style={{ ...cardStyle, background: 'linear-gradient(135deg, rgba(255,110,199,0.08), rgba(255,215,0,0.08))', borderColor: 'rgba(255,110,199,0.3)', textAlign: 'center', padding: '2rem' }}>
-                  <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>💎</div>
-                  <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem' }}>Ready to launch?</div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>Turn on your Private Feed above to start earning recurring income from subscribers.</div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ===== TIERS TAB ===== */}
-          {manageTab === 'tiers' && (
-            <div>
-              <div style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                Set the price and perks for each tier. Clients will see these when they visit your Private Feed page.
-              </div>
-              {tiers.map(tier => (
-                <div key={tier.id} style={{ ...cardStyle, borderLeft: `3px solid ${tier.color}` }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <div>
-                      {editingTier === tier.id ? (
-                        <input value={editName} onChange={(e) => setEditName(e.target.value)} style={{ fontWeight: 700, fontSize: '1rem', background: 'var(--bg-card-light)', border: '1px solid var(--border-color)', borderRadius: '0.4rem', color: 'var(--text-primary)', padding: '0.25rem 0.5rem', width: '160px' }} />
-                      ) : (
-                        <span style={{ fontWeight: 700, fontSize: '1rem' }}>{tier.name}</span>
-                      )}
-                      {tier.popular && <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', background: 'rgba(255,110,199,0.15)', color: 'var(--accent-pink)', padding: '0.15rem 0.5rem', borderRadius: '1rem' }}>Most Popular</span>}
-                    </div>
-                    {editingTier === tier.id ? (
-                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>$</span>
-                        <input value={editPrice} onChange={(e) => setEditPrice(e.target.value)} type="number" step="0.01" min="0.99"
-                          style={{ width: '80px', padding: '0.4rem 0.5rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.9rem' }} />
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>/mo</span>
-                        <button onClick={() => handleSaveTier(tier.id)} style={{ padding: '0.35rem 0.75rem', borderRadius: '0.4rem', border: 'none', background: 'var(--success-green)', color: '#1a1a2e', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>Save</button>
-                        <button onClick={() => setEditingTier(null)} style={{ padding: '0.35rem 0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer' }}>Cancel</button>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ fontWeight: 800, fontSize: '1.2rem', color: tier.color }}>${tier.price}</span>
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>/mo</span>
-                        <button onClick={() => { setEditingTier(tier.id); setEditPrice(tier.price.toString()); setEditName(tier.name); }}
-                          style={{ padding: '0.3rem 0.6rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer' }}>Edit</button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Perks list */}
-                  <div style={{ marginBottom: '0.75rem' }}>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', fontWeight: 600 }}>Perks:</div>
-                    {tier.perks.map((perk, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.4rem 0.6rem', marginBottom: '0.3rem', borderRadius: '0.4rem', background: 'var(--bg-card-light)', fontSize: '0.8rem' }}>
-                        <span>✦ {perk}</span>
-                        <button onClick={() => removePerk(tier.id, i)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.9rem', padding: '0 0.3rem', opacity: 0.5 }} title="Remove perk">✕</button>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Add perk */}
-                  {editingTier === tier.id && (
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <input value={editPerkText} onChange={(e) => setEditPerkText(e.target.value)} placeholder="Add a new perk..."
-                        style={{ flex: 1, padding: '0.4rem 0.6rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.8rem' }}
-                        onKeyDown={(e) => e.key === 'Enter' && addPerk(tier.id)} />
-                      <button onClick={() => addPerk(tier.id)} style={{ padding: '0.4rem 0.75rem', borderRadius: '0.4rem', border: 'none', background: 'var(--accent-pink)', color: '#fff', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>+ Add</button>
-                    </div>
-                  )}
-
-                  {/* Removed Perks */}
-                  {removedPerks[tier.id] && removedPerks[tier.id].length > 0 && (
-                    <div style={{ marginTop: '0.75rem', padding: '0.75rem', borderRadius: '0.5rem', background: 'rgba(255,255,255,0.03)', border: '1px dashed var(--border-color)' }}>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', fontWeight: 600 }}>Removed Perks:</div>
-                      {removedPerks[tier.id].map((perk, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.35rem 0.6rem', marginBottom: '0.25rem', borderRadius: '0.4rem', background: 'rgba(255,255,255,0.02)', fontSize: '0.8rem', opacity: 0.5 }}>
-                          <span style={{ textDecoration: 'line-through' }}>{perk}</span>
-                          <button onClick={() => restorePerk(tier.id, i)} style={{ background: 'none', border: '1px solid var(--accent-pink)', color: 'var(--accent-pink)', cursor: 'pointer', fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '0.3rem', opacity: 1 }}>Restore</button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* ===== BTS FEED TAB ===== */}
-          {manageTab === 'posts' && (
-            <div>
-              {/* New post composer */}
-              <div style={{ ...cardStyle, borderColor: 'rgba(255,110,199,0.3)' }}>
-                <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>📸 New BTS Post</div>
-                <textarea value={newPostText} onChange={(e) => setNewPostText(e.target.value)} placeholder="Share something with your Private Feed members..."
-                  style={{ width: '100%', minHeight: '100px', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.85rem', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
-
-                {/* Media upload buttons */}
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.4rem 0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s' }}>
-                    <span style={{ fontSize: '1rem' }}>📷</span> Photo
-                    <input type="file" accept="image/*" multiple onChange={handleMediaUpload} style={{ display: 'none' }} />
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.4rem 0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s' }}>
-                    <span style={{ fontSize: '1rem' }}>🎬</span> Video
-                    <input type="file" accept="video/*" onChange={handleMediaUpload} style={{ display: 'none' }} />
-                  </label>
-                  {newPostMedia.length > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--accent-pink)' }}>{newPostMedia.length} file{newPostMedia.length > 1 ? 's' : ''} attached</span>}
-                </div>
-
-                {/* Media previews */}
-                {newPostMedia.length > 0 && (
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                    {newPostMedia.map((m, i) => (
-                      <div key={i} style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                        {m.type === 'image' ? (
-                          <img src={m.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card-light)', fontSize: '1.5rem' }}>🎬</div>
-                        )}
-                        <button onClick={() => removeMedia(i)} style={{ position: 'absolute', top: '2px', right: '2px', width: '18px', height: '18px', borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: '0.6rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Visible to:</span>
-                    {['bronze', 'silver', 'gold'].map(t => {
-                      const isSelected = newPostTiers.includes(t);
-                      return (
-                        <button key={t} onClick={() => {
-                          if (isSelected && newPostTiers.length > 1) {
-                            setNewPostTiers(newPostTiers.filter(x => x !== t));
-                          } else if (!isSelected) {
-                            setNewPostTiers([...newPostTiers, t]);
-                          }
-                        }} style={{
-                          padding: '0.3rem 0.6rem', borderRadius: '1rem', border: isSelected ? 'none' : '1px solid var(--border-color)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600,
-                          background: isSelected ? (t === 'bronze' ? '#cd7f32' : t === 'silver' ? '#c0c0c0' : '#ffd700') : 'transparent',
-                          color: isSelected ? '#1a1a2e' : 'var(--text-secondary)'
-                        }}>
-                          {isSelected ? '✓ ' : ''}{t === 'bronze' ? '🥉 Bronze' : t === 'silver' ? '🥈 Silver' : '🥇 Gold'}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <button onClick={handlePost} className="btn glow-btn" style={{ fontSize: '0.8rem', padding: '0.5rem 1.25rem' }}>
-                    Publish
-                  </button>
-                </div>
-              </div>
-
-              {/* Post list */}
-              <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>Your Posts ({btsPosts.length})</div>
-              {btsPosts.map(post => (
-                <div key={post.id} style={cardStyle}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem', lineHeight: 1.5 }}>{post.text}</div>
-                      {post.media && post.media.length > 0 && (
-                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-                          {post.media.map((m, i) => (
-                            <div key={i} style={{ width: '120px', height: '80px', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                              {m.type === 'image' ? (
-                                <img src={m.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              ) : (
-                                <video src={m.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                        <span>🕐 {post.time}</span>
-                        <span>❤️ {post.likes} likes</span>
-                        {(post.tiers || [post.tier]).map(t => (
-                          <span key={t} className={`ic-tier-badge ${t}`} style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem' }}>
-                            {t === 'bronze' ? '🥉 Bronze' : t === 'silver' ? '🥈 Silver' : '🥇 Gold'}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <button onClick={() => deletePost(post.id)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.85rem', padding: '0.25rem', opacity: 0.5 }} title="Delete post">🗑️</button>
-                  </div>
-                </div>
-              ))}
-
-              {btsPosts.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                  No posts yet. Write your first BTS post above!
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    function InnerCirclePage({ modelId }) {
-      const auth = useContext(AuthContext);
-      const isOwner = auth?.profile?.role === 'model' && (auth?.profile?.id === modelId || modelId === 'demo');
-
-      // If the model is viewing their own page, show the management dashboard
-      if (isOwner) return <InnerCircleManage />;
-
-      const [activeSection, setActiveSection] = useState('perks');
+      // Check if user is a member of this crew
       const [isMember, setIsMember] = useState(false);
-      const [selectedTier, setSelectedTier] = useState(null);
-      const [chatInput, setChatInput] = useState('');
-      const [chatMessages, setChatMessages] = useState([]);
-      const [likedPosts, setLikedPosts] = useState({});
+      const [crew, setCrew] = useState(null);
+      const [members, setMembers] = useState([]);
+      const [memberProfiles, setMemberProfiles] = useState({});
+      const [posts, setPosts] = useState([]);
+      const [isSubscribed, setIsSubscribed] = useState(false);
+      const [subscribedTier, setSubscribedTier] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [subCount, setSubCount] = useState(0);
 
-      // Demo data
-      const model = {
-        name: 'Aria Valentina',
-        emoji: '👩',
-        verified: true,
-        memberCount: 89,
-        tagline: 'Welcome to my inner circle. Exclusive content, early bookings, and direct access.',
+      useEffect(() => {
+        if (crewId === 'new') { setLoading(false); return; }
+        const load = async () => {
+          try {
+            const { data: crewData } = await supabase.from('crews').select('*').eq('id', crewId).single();
+            if (!crewData) { setLoading(false); return; }
+            setCrew(crewData);
+
+            const { data: membersData } = await supabase.from('crew_members').select('*').eq('crew_id', crewId);
+            setMembers(membersData || []);
+
+            // Check if current user is a member
+            if (auth.currentUser && membersData) {
+              const memberMatch = membersData.find(m => m.user_id === auth.currentUser.id);
+              if (memberMatch) setIsMember(true);
+            }
+
+            // Fetch profiles
+            if (membersData && membersData.length > 0) {
+              const ids = membersData.map(m => m.user_id);
+              const { data: profiles } = await supabase.from('profiles').select('id, display_name, profile_photo_url, avatar_emoji').in('id', ids);
+              const pMap = {};
+              (profiles || []).forEach(p => { pMap[p.id] = p; });
+              setMemberProfiles(pMap);
+            }
+
+            // Check subscription
+            if (auth.currentUser) {
+              const { data: sub } = await supabase.from('crew_subscriptions').select('*').eq('crew_id', crewId).eq('subscriber_id', auth.currentUser.id).eq('active', true).single();
+              if (sub) { setIsSubscribed(true); setSubscribedTier(sub.tier); }
+            }
+
+            // Posts (only if member or subscriber)
+            const { data: postsData } = await supabase.from('crew_posts').select('*').eq('crew_id', crewId).order('created_at', { ascending: false });
+            setPosts(postsData || []);
+
+            const { count } = await supabase.from('crew_subscriptions').select('id', { count: 'exact', head: true }).eq('crew_id', crewId).eq('active', true);
+            setSubCount(count || 0);
+          } catch(e) { console.error(e); }
+          setLoading(false);
+        };
+        load();
+      }, [auth.currentUser, crewId]);
+
+      if (loading) return React.createElement('div', { style: { textAlign: 'center', padding: '3rem', color: '#888' } }, 'Loading...');
+
+      // If member, show manage view
+      if (isMember) return React.createElement(CircleCrewManage, { crewId });
+      // If creating new
+      if (crewId === 'new') return React.createElement(CircleCrewManage, { crewId: 'new' });
+
+      if (!crew) return React.createElement('div', { style: { textAlign: 'center', padding: '3rem', color: '#888' } }, 'Inner Circle not found');
+
+      const handleSubscribe = async (tier) => {
+        if (!auth.currentUser) { window.location.hash = 'signup'; return; }
+        try {
+          await supabase.from('crew_subscriptions').upsert({
+            crew_id: crewId,
+            subscriber_id: auth.currentUser.id,
+            tier: tier,
+            active: true,
+          }, { onConflict: 'crew_id,subscriber_id' });
+          setIsSubscribed(true);
+          setSubscribedTier(tier);
+          setSubCount(prev => prev + 1);
+          auth.showToast('Subscribed to ' + crew.name + '!', 'success');
+        } catch(e) { auth.showToast('Failed to subscribe', 'error'); }
+      };
+
+      const tierHasAccess = (postTiers) => {
+        if (!isSubscribed || !subscribedTier) return false;
+        return (postTiers || []).includes(subscribedTier);
       };
 
       const tiers = [
-        {
-          id: 'bronze', name: 'Bronze Circle', badge: 'bronze', price: 9.99, color: '#cd7f32',
-          perks: [
-            { icon: '📸', text: 'Behind-the-scenes feed access' },
-            { icon: '🔔', text: 'New content drop notifications' },
-            { icon: '💬', text: 'Group chat access (read only)' },
-            { icon: '🏷️', text: 'Bronze badge on your profile' },
-          ]
-        },
-        {
-          id: 'silver', name: 'Silver Circle', badge: 'silver', price: 19.99, color: '#c0c0c0', popular: true,
-          perks: [
-            { icon: '📸', text: 'All Bronze perks included' },
-            { icon: '⏰', text: '24-hour early booking window' },
-            { icon: '💬', text: 'Full group chat access (post & react)' },
-            { icon: '💰', text: '10% off all session bookings' },
-            { icon: '🎁', text: 'Monthly exclusive content drop' },
-            { icon: '⚡', text: 'Priority DM responses' },
-          ]
-        },
-        {
-          id: 'gold', name: 'Gold Circle', badge: 'gold', price: 34.99, color: '#ffd700',
-          perks: [
-            { icon: '👑', text: 'All Silver perks included' },
-            { icon: '⏰', text: '48-hour early booking window' },
-            { icon: '💰', text: '20% off all session bookings' },
-            { icon: '📞', text: '1-on-1 monthly video call (15 min)' },
-            { icon: '🎨', text: 'Vote on upcoming session themes' },
-            { icon: '📦', text: 'Quarterly surprise content bundle' },
-            { icon: '🌟', text: 'Gold badge + featured in model\'s profile' },
-          ]
-        },
+        { id: 'fan', name: crew.tier1_name, price: crew.tier1_price, color: '#cd7f32', icon: '🥉' },
+        { id: 'vip', name: crew.tier2_name, price: crew.tier2_price, color: '#c0c0c0', icon: '🥈' },
+        { id: 'elite', name: crew.tier3_name, price: crew.tier3_price, color: '#ffd700', icon: '🥇' },
       ];
-
-      const btsPosts = [
-        { id: 'bts1', emoji: '🔥', caption: 'Just finished setting up the studio for tomorrow\'s shoot. The new lighting rig is INSANE. You\'re gonna love what\'s coming.', time: '3h ago', likes: 34, tier: 'bronze' },
-        { id: 'bts2', emoji: '👗', caption: 'New outfits just arrived! Sneak peek at the luxury lingerie collection I\'ll be wearing for April sessions. Which one should I debut first?', time: '1d ago', likes: 67, tier: 'bronze', poll: ['Black lace set', 'Red silk robe', 'Gold bodysuit'] },
-        { id: 'bts3', emoji: '✨', caption: 'Unedited behind-the-scenes from the penthouse shoot. Raw, real, and my favorite photos from the whole day.', time: '3d ago', likes: 89, tier: 'silver' },
-        { id: 'bts4', emoji: '🎬', caption: 'Full 12-minute BTS video walkthrough of my favorite session this month. I break down every outfit, pose, and lighting setup.', time: '1w ago', likes: 112, tier: 'gold' },
-      ];
-
-      const demoChat = [
-        { author: 'Aria Valentina', emoji: '👩', isModel: true, text: 'Hey everyone! Just dropped new content in the BTS feed. Check it out and let me know which outfit you want to see next week! 💕', time: '2h ago' },
-        { author: 'Marcus T.', emoji: '📷', isModel: false, text: 'The gold bodysuit for sure! That would look amazing with the studio lighting you showed earlier', time: '1h ago' },
-        { author: 'David R.', emoji: '🎬', isModel: false, text: 'Red silk robe gets my vote. Classic elegance.', time: '45m ago' },
-        { author: 'Aria Valentina', emoji: '👩', isModel: true, text: 'Love the energy! I\'m thinking I\'ll do gold bodysuit for Friday and red silk for the weekend shoot. Gold Circle members — I\'ll post the full unedited set from both 🔥', time: '30m ago' },
-        { author: 'James K.', emoji: '🖤', isModel: false, text: 'Any availability for next Thursday? Trying to book before it goes public', time: '15m ago' },
-        { author: 'Aria Valentina', emoji: '👩', isModel: true, text: 'Thursday 2pm is open! Silver & Gold members can book now — it goes public tomorrow at noon. Use your member discount at checkout ✨', time: '5m ago' },
-      ];
-
-      const memberPerks = [
-        { icon: '⏰', title: 'Early Booking Access', desc: 'See new availability 24-48 hours before anyone else. Never miss a slot.' },
-        { icon: '📸', title: 'Exclusive BTS Content', desc: 'Behind-the-scenes photos, videos, and stories only members can see.' },
-        { icon: '💬', title: 'Private Group Chat', desc: 'Direct access to the model and other members. Ask questions, make requests.' },
-        { icon: '💰', title: 'Member Discounts', desc: '10-20% off every session booking. The subscription pays for itself.' },
-        { icon: '🎁', title: 'Content Drops', desc: 'Monthly and quarterly exclusive content bundles delivered to your feed.' },
-        { icon: '⚡', title: 'Priority Everything', desc: 'Your DMs answered first. Your bookings processed first. VIP treatment.' },
-      ];
-
-      const upcomingDrops = [
-        { title: 'Midnight Masquerade Set', emoji: '🎭', date: 'Apr 22', tier: 'silver', photos: 18 },
-        { title: 'Studio Session Raw BTS', emoji: '🎬', date: 'Apr 25', tier: 'gold', photos: 24 },
-        { title: 'Spring Lookbook Preview', emoji: '🌸', date: 'Apr 28', tier: 'bronze', photos: 8 },
-      ];
-
-      const handleJoin = (tier) => {
-        setSelectedTier(tier);
-        setIsMember(true);
-        auth?.showToast?.(`Joined ${tier.name} for $${tier.price}/mo!`, 'success');
-      };
-
-      const sendChat = () => {
-        if (!chatInput.trim()) return;
-        setChatMessages(prev => [...prev, {
-          author: auth?.profile?.display_name || 'You',
-          emoji: auth?.profile?.avatar_emoji || '👤',
-          isModel: false,
-          text: chatInput,
-          time: 'Just now'
-        }]);
-        setChatInput('');
-      };
-
-      const tierAccess = (postTierOrTiers) => {
-        if (!isMember) return false;
-        if (!selectedTier) return false;
-        const tiersArr = Array.isArray(postTierOrTiers) ? postTierOrTiers : [postTierOrTiers];
-        return tiersArr.includes(selectedTier.id);
-      };
 
       return (
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          {/* Back */}
-          <button className="btn btn-secondary" onClick={() => window.history.back()} style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
-            ← Back
-          </button>
-
-          {/* Hero */}
-          <div className="inner-circle-hero">
-            <div className="ic-model-avatar">{model.emoji}</div>
-            <div className="ic-title">
-              {model.name}'s Private Feed
+        <div style={{ maxWidth: '700px', margin: '0 auto', padding: '1rem' }}>
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: '1.5rem', padding: '1.5rem', background: 'linear-gradient(135deg, rgba(255,110,199,0.08), rgba(157,78,221,0.08))', borderRadius: '16px', border: '1px solid rgba(255,110,199,0.2)' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>👯‍♀️</div>
+            <h2 style={{ fontWeight: 800, fontSize: '1.4rem', margin: '0 0 0.3rem' }}>{crew.name}</h2>
+            {crew.description && <p style={{ color: '#aaa', fontSize: '0.85rem', margin: '0 0 0.5rem' }}>{crew.description}</p>}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', fontSize: '0.8rem', color: '#888' }}>
+              <span>{members.length} models</span>
+              <span>{subCount} subscribers</span>
             </div>
-            <div className="ic-subtitle">{model.tagline}</div>
-            <div className="ic-member-count">
-              👥 {model.memberCount} members
-            </div>
-          </div>
-
-          {/* Info Box */}
-          <div style={{
-            background: 'linear-gradient(135deg, rgba(255,215,0,0.06), rgba(255,215,0,0.02))',
-            border: '1px solid rgba(255,215,0,0.2)',
-            borderRadius: '12px',
-            padding: '1.25rem',
-            marginBottom: '1.5rem',
-            display: 'flex',
-            gap: '1rem',
-            alignItems: 'flex-start'
-          }}>
-            <div style={{ fontSize: '1.5rem', flexShrink: 0 }}>ℹ️</div>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--accent-gold)', marginBottom: '0.3rem' }}>What is Private Feed?</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                Private Feed is a paid membership that gives you exclusive access to {model.name}'s behind-the-scenes content, early booking windows before anyone else, session discounts, private group chat with the model and other members, and surprise content drops. Pick a tier that fits your budget — each one unlocks more perks.
-              </div>
+            {/* Member avatars */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+              {members.map(m => {
+                const mp = memberProfiles[m.user_id] || {};
+                return (
+                  <div key={m.id} style={{ textAlign: 'center' }}>
+                    <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'var(--bg-card-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', border: '2px solid rgba(255,110,199,0.3)', margin: '0 auto' }}>{mp.avatar_emoji || '👤'}</div>
+                    <div style={{ fontSize: '0.65rem', color: '#aaa', marginTop: '0.25rem' }}>{mp.display_name || 'Model'}</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Tier Cards */}
-          <h3 style={{ marginBottom: '1rem', textAlign: 'center' }}>Choose Your Tier</h3>
-          <div className="ic-tiers">
+          {/* Tier cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
             {tiers.map(tier => (
-              <div key={tier.id} className={`ic-tier-card tier-${tier.id}`}>
-                {tier.popular && <div className="ic-popular-tag">Most Popular</div>}
-                <div className={`ic-tier-badge ${tier.badge}`}>{tier.name}</div>
-                <div className="ic-tier-price" style={{ color: tier.color }}>
-                  ${tier.price}<span>/mo</span>
-                </div>
-                <ul className="ic-tier-perks">
-                  {tier.perks.map((perk, i) => (
-                    <li key={i}><span>{perk.icon}</span> {perk.text}</li>
-                  ))}
-                </ul>
-                <button
-                  className={isMember && selectedTier?.id === tier.id ? 'btn btn-secondary btn-block' : 'btn glow-btn btn-block'}
-                  style={{ fontSize: '0.85rem' }}
-                  onClick={() => handleJoin(tier)}
-                >
-                  {isMember && selectedTier?.id === tier.id ? '✓ Current Plan' : `Join for $${tier.price}/mo`}
+              <div key={tier.id} style={{ background: 'var(--bg-card)', border: isSubscribed && subscribedTier === tier.id ? `2px solid ${tier.color}` : '1px solid var(--border-color)', borderRadius: '14px', padding: '1.25rem', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>{tier.icon}</div>
+                <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>{tier.name}</div>
+                <div style={{ fontWeight: 800, fontSize: '1.3rem', color: tier.color }}>${parseFloat(tier.price).toFixed(2)}<span style={{ fontSize: '0.7rem', color: '#888' }}>/mo</span></div>
+                <button onClick={() => handleSubscribe(tier.id)} disabled={isSubscribed && subscribedTier === tier.id}
+                  style={{
+                    marginTop: '0.75rem', width: '100%', padding: '0.5rem', borderRadius: '8px', border: 'none', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem',
+                    background: isSubscribed && subscribedTier === tier.id ? 'rgba(255,255,255,0.1)' : `linear-gradient(135deg, ${tier.color}, #ff6ec7)`,
+                    color: isSubscribed && subscribedTier === tier.id ? '#888' : '#fff',
+                  }}>
+                  {isSubscribed && subscribedTier === tier.id ? '✓ Current' : 'Subscribe'}
                 </button>
               </div>
             ))}
           </div>
 
-          {/* Section Tabs */}
-          <div className="ic-section-tabs" style={{ marginTop: '2rem' }}>
-            {[
-              { key: 'perks', label: '✨ Perks' },
-              { key: 'bts', label: '📸 BTS Feed' },
-              { key: 'chat', label: '💬 Group Chat' },
-              { key: 'drops', label: '🎁 Upcoming Drops' },
-            ].map(tab => (
-              <button key={tab.key} className={`ic-section-tab ${activeSection === tab.key ? 'active' : ''}`} onClick={() => setActiveSection(tab.key)}>
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Perks Section */}
-          {activeSection === 'perks' && (
-            <div>
-              <h3 style={{ marginBottom: '1rem' }}>Member Perks</h3>
-              {memberPerks.map((perk, i) => (
-                <div key={i} className="ic-perk-highlight">
-                  <div className="ic-perk-icon">{perk.icon}</div>
-                  <div className="ic-perk-info">
-                    <h4>{perk.title}</h4>
-                    <p>{perk.desc}</p>
-                  </div>
+          {/* Posts feed */}
+          <h3 style={{ marginBottom: '1rem' }}>Latest Content</h3>
+          {posts.length === 0 && <div style={{ color: '#666', fontSize: '0.85rem', textAlign: 'center', padding: '2rem' }}>No content yet — subscribe to be first!</div>}
+          {posts.map(post => {
+            const hasAccess = tierHasAccess(post.tiers);
+            const authorProfile = memberProfiles[post.author_id] || {};
+            return (
+              <div key={post.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '1.25rem', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <span>{authorProfile.avatar_emoji || '👤'}</span>
+                  <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{authorProfile.display_name || 'Model'}</span>
+                  <span style={{ fontSize: '0.65rem', color: '#666' }}>{new Date(post.created_at).toLocaleDateString()}</span>
                 </div>
-              ))}
-            </div>
-          )}
-
-          {/* BTS Feed */}
-          {activeSection === 'bts' && (
-            <div className="ic-feed-container">
-              <h3 style={{ marginBottom: '1rem' }}>Behind the Scenes</h3>
-              {btsPosts.map(post => {
-                const hasAccess = tierAccess(post.tiers || post.tier);
-                return (
-                  <div key={post.id} className={`post-card ${!hasAccess && !isMember ? '' : ''}`} style={{ marginBottom: '1rem' }}>
-                    <div className="post-header">
-                      <div className="post-avatar">{model.emoji}</div>
-                      <div className="post-user-info">
-                        <div className="post-username">{model.name} <div className="verified-badge" style={{ width: '16px', height: '16px', fontSize: '0.6rem' }}>✓</div></div>
-                        <div className="post-meta">
-                          {post.time}
-                          {(post.tiers || [post.tier]).map(t => (
-                            <span key={t} className={`ic-tier-badge ${t}`} style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem' }}>
-                              {t === 'bronze' ? '🥉 Bronze' : t === 'silver' ? '🥈 Silver' : '🥇 Gold'}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {hasAccess || (post.tiers || [post.tier]).includes('bronze') ? (
-                      <div>
-                        <div className="post-text">{post.caption}</div>
-                        <div className="post-image" style={{ aspectRatio: '16/9' }}>{post.emoji}</div>
-                        {post.poll && (
-                          <div style={{ padding: '0.75rem 1.25rem' }}>
-                            {post.poll.map((opt, i) => (
-                              <div key={i} style={{
-                                padding: '0.6rem 1rem', marginBottom: '0.5rem', borderRadius: '0.5rem',
-                                background: 'var(--bg-card-light)', border: '1px solid var(--border-color)',
-                                cursor: 'pointer', fontSize: '0.85rem', transition: 'border-color 0.3s'
-                              }}
-                              onMouseOver={(e) => e.target.style.borderColor = 'var(--accent-pink)'}
-                              onMouseOut={(e) => e.target.style.borderColor = 'var(--border-color)'}
-                              >
-                                {opt}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        <div className="post-actions-bar">
-                          <button className={`post-action ${likedPosts[post.id] ? 'liked' : ''}`} onClick={() => setLikedPosts(p => ({...p, [post.id]: !p[post.id]}))}>
-                            <span className="post-action-icon">{likedPosts[post.id] ? '❤️' : '🤍'}</span>
-                            {post.likes + (likedPosts[post.id] ? 1 : 0)}
-                          </button>
-                          <button className="post-action"><span className="post-action-icon">💬</span> Reply</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="ic-locked-overlay" style={{ margin: '0 1.25rem 1rem', height: '200px', background: 'var(--bg-card-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <div style={{ fontSize: '3rem', opacity: 0.1 }}>{post.emoji}</div>
-                      </div>
-                    )}
+                <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>{post.title}</div>
+                {hasAccess ? (
+                  <div style={{ fontSize: '0.85rem', color: '#ccc', lineHeight: 1.5 }}>{post.content}</div>
+                ) : (
+                  <div style={{ padding: '1.5rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>🔒</div>
+                    <div style={{ fontSize: '0.8rem', color: '#666' }}>{isSubscribed ? 'Upgrade your tier to unlock this content' : 'Subscribe to unlock this content'}</div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Group Chat */}
-          {activeSection === 'chat' && (
-            <div>
-              <h3 style={{ marginBottom: '1rem' }}>Group Chat</h3>
-              {isMember && selectedTier?.id !== 'bronze' ? (
-                <div className="ic-chat-container">
-                  <div className="ic-chat-header">
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>💬 {model.name}'s Circle Chat</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{model.memberCount} members • {Math.floor(model.memberCount * 0.3)} online</div>
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--success-green)' }}>● Live</div>
-                  </div>
-                  <div className="ic-chat-messages">
-                    {demoChat.map((msg, i) => (
-                      <div key={i} className="ic-chat-msg">
-                        <div className={`ic-chat-msg-avatar ${msg.isModel ? 'model-msg' : ''}`}>{msg.emoji}</div>
-                        <div className="ic-chat-msg-body">
-                          <div className={`ic-chat-msg-author ${msg.isModel ? 'is-model' : ''}`}>
-                            {msg.author} {msg.isModel && <span style={{ fontSize: '0.65rem', color: 'var(--accent-gold)' }}>★ Model</span>}
-                          </div>
-                          <div className="ic-chat-msg-text">{msg.text}</div>
-                          <div className="ic-chat-msg-time">{msg.time}</div>
-                        </div>
-                      </div>
-                    ))}
-                    {chatMessages.map((msg, i) => (
-                      <div key={`new-${i}`} className="ic-chat-msg">
-                        <div className="ic-chat-msg-avatar">{msg.emoji}</div>
-                        <div className="ic-chat-msg-body">
-                          <div className="ic-chat-msg-author">{msg.author}</div>
-                          <div className="ic-chat-msg-text">{msg.text}</div>
-                          <div className="ic-chat-msg-time">{msg.time}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="ic-chat-input">
-                    <input
-                      placeholder="Message the circle..."
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && sendChat()}
-                    />
-                    <button className="btn glow-btn" style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }} onClick={sendChat}>Send</button>
-                  </div>
-                </div>
-              ) : (
-                <div className="ic-locked-overlay" style={{
-                  height: '350px', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: '1px solid var(--border-color)'
-                }}>
-                  <div style={{ textAlign: 'center', position: 'relative', zIndex: 2 }}>
-                    <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem', opacity: 0.3 }}>💬</div>
-                  </div>
-                </div>
-              )}
-              {(!isMember || selectedTier?.id === 'bronze') && (
-                <div style={{ textAlign: 'center', marginTop: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                  {selectedTier?.id === 'bronze' ? 'Upgrade to Silver or Gold to post in the group chat' : 'Join Silver or Gold tier to access the group chat'}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Upcoming Drops */}
-          {activeSection === 'drops' && (
-            <div>
-              <h3 style={{ marginBottom: '1rem' }}>Upcoming Content Drops</h3>
-              {upcomingDrops.map((drop, i) => (
-                <div key={i} className="ic-perk-highlight">
-                  <div className="ic-perk-icon" style={{ fontSize: '2rem' }}>{drop.emoji}</div>
-                  <div className="ic-perk-info" style={{ flex: 1 }}>
-                    <h4>{drop.title}</h4>
-                    <p>{drop.photos} photos • Drops {drop.date}</p>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <span className={`ic-tier-badge ${drop.tier}`}>
-                      {drop.tier === 'bronze' ? '🥉 Bronze+' : drop.tier === 'silver' ? '🥈 Silver+' : '🥇 Gold'}
-                    </span>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                      {Math.ceil((new Date(`2026-${drop.date.split(' ')[0] === 'Apr' ? '04' : '05'}-${drop.date.split(' ')[1]}`) - new Date()) / (1000 * 60 * 60 * 24))} days
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              <div style={{ marginTop: '1.5rem', padding: '1.5rem', background: 'var(--bg-card)', borderRadius: '0.75rem', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-                <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📊</div>
-                <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>Drop History</div>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                  Aria has delivered 23 content drops in the last 3 months • 100% on-time delivery
-                </div>
+                )}
               </div>
-            </div>
-          )}
-
-          {/* Bottom CTA */}
-          {!isMember && (
-            <div style={{
-              marginTop: '2rem', padding: '2rem', textAlign: 'center',
-              background: 'linear-gradient(135deg, rgba(255,110,199,0.1), rgba(255,215,0,0.1))',
-              borderRadius: '1rem', border: '1px solid rgba(255,110,199,0.2)'
-            }}>
-              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>💎</div>
-              <h3 style={{ marginBottom: '0.5rem' }}>Join {model.name}'s Private Feed</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-                Get exclusive content, early bookings, member discounts, and direct access. Starting at just $9.99/mo.
-              </p>
-              <button className="btn glow-btn" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                Choose Your Tier ↑
-              </button>
-            </div>
-          )}
+            );
+          })}
         </div>
       );
     }
+
+    // ===== PRIVATE FEED (INDIVIDUAL MODEL) — kept as wrapper =====
+
+    // InnerCirclePage — redirects to crew management or shows join prompt
+    function InnerCirclePage({ modelId }) {
+      const auth = useContext(AuthContext);
+      const [myCrews, setMyCrews] = useState([]);
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => {
+        if (!auth.currentUser) { setLoading(false); return; }
+        const load = async () => {
+          const { data } = await supabase.from("crew_members").select("crew_id").eq("user_id", auth.currentUser.id);
+          setMyCrews((data || []).map(d => d.crew_id));
+          setLoading(false);
+        };
+        load();
+      }, [auth.currentUser]);
+
+      if (loading) return React.createElement("div", { style: { textAlign: "center", padding: "3rem", color: "#888" } }, "Loading...");
+
+      // If model has a crew, go to it
+      if (myCrews.length > 0) {
+        window.location.hash = "crew/" + myCrews[0];
+        return null;
+      }
+
+      // Otherwise show create prompt
+      return (
+        <div style={{ maxWidth: "500px", margin: "0 auto", padding: "2rem", textAlign: "center" }}>
+          <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>👯‍♀️</div>
+          <h2 style={{ fontWeight: 800, marginBottom: "0.5rem" }}>Start an Inner Circle</h2>
+          <p style={{ color: "#888", marginBottom: "1.5rem" }}>Team up with other models, share a subscription feed, and split earnings based on who posts the most.</p>
+          <button onClick={() => window.location.hash = "crew/new"} className="btn glow-btn" style={{ padding: "0.75rem 2rem", fontSize: "1rem" }}>
+            Create Inner Circle
+          </button>
+        </div>
+      );
+    }
+
+
 
     function TopClientsPage() {
       const auth = useContext(AuthContext);
@@ -10254,7 +9548,14 @@ REMEMBER:
 
       const profile = auth.profile;
       const sessions = profile.sessions_completed || 0;
-      const hasInnerCircle = false; // will check DB later
+      const [hasInnerCircle, setHasInnerCircle] = useState(false);
+      useEffect(() => {
+        if (auth.currentUser) {
+          supabase.from('crew_members').select('id').eq('user_id', auth.currentUser.id).limit(1).then(({ data }) => {
+            if (data && data.length > 0) setHasInnerCircle(true);
+          });
+        }
+      }, [auth.currentUser]);
       const hasCampaign = false; // will check DB later
 
       // Build nudge list based on what she hasn't unlocked yet — progression order
@@ -12208,6 +11509,43 @@ REMEMBER:
       );
     }
 
+    // Dashboard crew cards — loads real crew data
+    function DashboardCrewCards({ userId }) {
+      const [crews, setCrews] = useState([]);
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => {
+        if (!userId) { setLoading(false); return; }
+        const load = async () => {
+          const { data: memberships } = await supabase.from('crew_members').select('crew_id').eq('user_id', userId);
+          if (memberships && memberships.length > 0) {
+            const ids = memberships.map(m => m.crew_id);
+            const { data: crewData } = await supabase.from('crews').select('*').in('id', ids);
+            setCrews(crewData || []);
+          }
+          setLoading(false);
+        };
+        load();
+      }, [userId]);
+
+      if (loading) return React.createElement('div', { style: { fontSize: '0.8rem', color: '#666', padding: '0.5rem' } }, 'Loading crews...');
+      if (crews.length === 0) return React.createElement('div', { style: { fontSize: '0.8rem', color: '#666', padding: '0.5rem', textAlign: 'center' } }, 'No Inner Circles yet. Create one to start earning with other models!');
+
+      return React.createElement('div', null, crews.map(c =>
+        React.createElement('div', {
+          key: c.id,
+          onClick: () => { window.location.hash = 'crew/' + c.id; },
+          style: { background: 'rgba(255,255,255,0.03)', borderRadius: '10px', padding: '1rem', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }
+        },
+          React.createElement('div', null,
+            React.createElement('div', { style: { fontWeight: 700, fontSize: '0.9rem' } }, c.name),
+            React.createElement('div', { style: { fontSize: '0.78rem', color: '#888' } }, (c.enabled ? '● Live' : '● Paused'))
+          ),
+          React.createElement('div', { style: { fontSize: '0.75rem', color: '#ff6ec7', fontWeight: 600 } }, 'View →')
+        )
+      ));
+    }
+
     function DashboardPage() {
       const auth = useContext(AuthContext);
       const [bookings, setBookings] = useState([]);
@@ -12541,6 +11879,9 @@ REMEMBER:
                 )}
               </div>
 
+              {/* Crew Invites */}
+              <CrewInvites />
+
               {/* Action Items */}
               {actionItems.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.25rem' }}>
@@ -12824,17 +12165,8 @@ REMEMBER:
               {openSections.circles && (
                 <div style={{ border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none',
                   borderRadius: '0 0 12px 12px', padding: '0.75rem' }}>
-                  <div onClick={() => window.location.hash = 'crew/crew-demo'} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '10px', padding: '1rem', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>Inner Circle</div>
-                      <div style={{ fontSize: '0.78rem', color: '#888' }}>3 members · 47 subscribers · $14.99/mo</div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontWeight: 700, fontSize: '1rem', color: '#ffd700' }}>$287.45</div>
-                      <div style={{ fontSize: '0.68rem', color: '#888' }}>earnings</div>
-                    </div>
-                  </div>
-                  <button onClick={() => window.location.hash = 'crew/new'} style={{ background: 'none', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '8px', padding: '0.5rem', color: '#888', fontSize: '0.78rem', cursor: 'pointer', width: '100%' }}>+ Create New Crew</button>
+                  <DashboardCrewCards userId={auth?.currentUser?.id} />
+                  <button onClick={() => window.location.hash = 'crew/new'} style={{ background: 'none', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '8px', padding: '0.5rem', color: '#888', fontSize: '0.78rem', cursor: 'pointer', width: '100%' }}>+ Create New Circle</button>
                 </div>
               )}
             </div>
@@ -17364,7 +16696,7 @@ RULES
                   <a className="nav-dropdown-item" onClick={() => window.location.hash = 'westackr'}>
                     <span className="dd-icon">⚡</span> WeStackr
                   </a>
-                  <a className="nav-dropdown-item" onClick={() => window.location.hash = 'crew/crew-demo'}>
+                  <a className="nav-dropdown-item" onClick={() => window.location.hash = 'circle/' + (auth?.currentUser?.id || '')}>
                     <span className="dd-icon">👯‍♀️</span> Inner Circles
                   </a>
                   <a className="nav-dropdown-item" onClick={() => window.location.hash = 'team'}>
@@ -17472,7 +16804,7 @@ RULES
               <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'westackr'; }}>
                 <span className="mm-icon">⚡</span> WeStackr
               </div>
-              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'crew/crew-demo'; }}>
+              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'circle/' + (auth?.currentUser?.id || ''); }}>
                 <span className="mm-icon">👯‍♀️</span> Inner Circles
               </div>
               <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'team'; }}>
