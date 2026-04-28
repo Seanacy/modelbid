@@ -14561,8 +14561,12 @@ REMEMBER:
                   <label>Rate per Session</label>
                   <input
                     type="number"
-                    value={data.rate || 0}
-                    onChange={(e) => setData({ ...data, rate: parseInt(e.target.value) })}
+                    placeholder="0"
+                    value={data.rate === 0 || data.rate === null || data.rate === undefined ? '' : data.rate}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setData({ ...data, rate: val === '' ? 0 : parseInt(val) || 0 });
+                    }}
                   />
                 </div>
 
