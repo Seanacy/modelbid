@@ -7117,7 +7117,7 @@ function InnerCircleManage() {
       const [circleEnabled, setCircleEnabled] = useState(false);
       const [saving, setSaving] = useState(false);
       const [newPostText, setNewPostText] = useState('');
-      const [newPostTier, setNewPostTier] = useState('bronze');
+      const [newPostTiers, setNewPostTiers] = useState(['bronze', 'silver', 'gold']);
       const [newPostMedia, setNewPostMedia] = useState([]);
       const [btsPosts, setBtsPosts] = useState([
         { id: 'bts1', text: 'Just finished setting up the studio for tomorrow\'s shoot. The new lighting rig is INSANE.', time: '3h ago', tier: 'bronze', likes: 34 },
@@ -7170,7 +7170,7 @@ function InnerCircleManage() {
 
       const handlePost = () => {
         if (!newPostText.trim() && newPostMedia.length === 0) return;
-        setBtsPosts(prev => [{ id: 'bts-' + Date.now(), text: newPostText, time: 'Just now', tier: newPostTier, likes: 0, media: [...newPostMedia] }, ...prev]);
+        setBtsPosts(prev => [{ id: 'bts-' + Date.now(), text: newPostText, time: 'Just now', tiers: [...newPostTiers], tier: newPostTiers[0], likes: 0, media: [...newPostMedia] }, ...prev]);
         setNewPostText('');
         setNewPostMedia([]);
         auth?.showToast?.('Post published to your Private Feed!', 'success');
@@ -7412,15 +7412,24 @@ function InnerCircleManage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Visible to:</span>
-                    {['bronze', 'silver', 'gold'].map(t => (
-                      <button key={t} onClick={() => setNewPostTier(t)} style={{
-                        padding: '0.3rem 0.6rem', borderRadius: '1rem', border: newPostTier === t ? 'none' : '1px solid var(--border-color)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600,
-                        background: newPostTier === t ? (t === 'bronze' ? '#cd7f32' : t === 'silver' ? '#c0c0c0' : '#ffd700') : 'transparent',
-                        color: newPostTier === t ? '#1a1a2e' : 'var(--text-secondary)'
-                      }}>
-                        {t === 'bronze' ? '🥉 Bronze+' : t === 'silver' ? '🥈 Silver+' : '🥇 Gold only'}
-                      </button>
-                    ))}
+                    {['bronze', 'silver', 'gold'].map(t => {
+                      const isSelected = newPostTiers.includes(t);
+                      return (
+                        <button key={t} onClick={() => {
+                          if (isSelected && newPostTiers.length > 1) {
+                            setNewPostTiers(newPostTiers.filter(x => x !== t));
+                          } else if (!isSelected) {
+                            setNewPostTiers([...newPostTiers, t]);
+                          }
+                        }} style={{
+                          padding: '0.3rem 0.6rem', borderRadius: '1rem', border: isSelected ? 'none' : '1px solid var(--border-color)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600,
+                          background: isSelected ? (t === 'bronze' ? '#cd7f32' : t === 'silver' ? '#c0c0c0' : '#ffd700') : 'transparent',
+                          color: isSelected ? '#1a1a2e' : 'var(--text-secondary)'
+                        }}>
+                          {isSelected ? '✓ ' : ''}{t === 'bronze' ? '🥉 Bronze' : t === 'silver' ? '🥈 Silver' : '🥇 Gold'}
+                        </button>
+                      );
+                    })}
                   </div>
                   <button onClick={handlePost} className="btn glow-btn" style={{ fontSize: '0.8rem', padding: '0.5rem 1.25rem' }}>
                     Publish
@@ -7451,9 +7460,11 @@ function InnerCircleManage() {
                       <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                         <span>🕐 {post.time}</span>
                         <span>❤️ {post.likes} likes</span>
-                        <span className={`ic-tier-badge ${post.tier}`} style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem' }}>
-                          {post.tier === 'bronze' ? '🥉 Bronze+' : post.tier === 'silver' ? '🥈 Silver+' : '🥇 Gold'}
-                        </span>
+                        {(post.tiers || [post.tier]).map(t => (
+                          <span key={t} className={`ic-tier-badge ${t}`} style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem' }}>
+                            {t === 'bronze' ? '🥉 Bronze' : t === 'silver' ? '🥈 Silver' : '🥇 Gold'}
+                          </span>
+                        ))}
                       </div>
                     </div>
                     <button onClick={() => deletePost(post.id)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.85rem', padding: '0.25rem', opacity: 0.5 }} title="Delete post">🗑️</button>
@@ -7579,11 +7590,11 @@ function InnerCircleManage() {
         setChatInput('');
       };
 
-      const tierAccess = (postTier) => {
+      const tierAccess = (postTierOrTiers) => {
         if (!isMember) return false;
         if (!selectedTier) return false;
-        const order = ['bronze', 'silver', 'gold'];
-        return order.indexOf(selectedTier.id) >= order.indexOf(postTier);
+        const tiersArr = Array.isArray(postTierOrTiers) ? postTierOrTiers : [postTierOrTiers];
+        return tiersArr.includes(selectedTier.id);
       };
 
       return (
@@ -7686,7 +7697,7 @@ function InnerCircleManage() {
             <div className="ic-feed-container">
               <h3 style={{ marginBottom: '1rem' }}>Behind the Scenes</h3>
               {btsPosts.map(post => {
-                const hasAccess = tierAccess(post.tier);
+                const hasAccess = tierAccess(post.tiers || post.tier);
                 return (
                   <div key={post.id} className={`post-card ${!hasAccess && !isMember ? '' : ''}`} style={{ marginBottom: '1rem' }}>
                     <div className="post-header">
@@ -7695,14 +7706,16 @@ function InnerCircleManage() {
                         <div className="post-username">{model.name} <div className="verified-badge" style={{ width: '16px', height: '16px', fontSize: '0.6rem' }}>✓</div></div>
                         <div className="post-meta">
                           {post.time}
-                          <span className={`ic-tier-badge ${post.tier}`} style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem' }}>
-                            {post.tier === 'bronze' ? '🥉 Bronze+' : post.tier === 'silver' ? '🥈 Silver+' : '🥇 Gold'}
-                          </span>
+                          {(post.tiers || [post.tier]).map(t => (
+                            <span key={t} className={`ic-tier-badge ${t}`} style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem' }}>
+                              {t === 'bronze' ? '🥉 Bronze' : t === 'silver' ? '🥈 Silver' : '🥇 Gold'}
+                            </span>
+                          ))}
                         </div>
                       </div>
                     </div>
 
-                    {hasAccess || post.tier === 'bronze' ? (
+                    {hasAccess || (post.tiers || [post.tier]).includes('bronze') ? (
                       <div>
                         <div className="post-text">{post.caption}</div>
                         <div className="post-image" style={{ aspectRatio: '16/9' }}>{post.emoji}</div>
