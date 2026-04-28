@@ -4355,15 +4355,9 @@
 
           if (error) throw error;
 
-          // Check if promo access has expired
-          if (data && data.promo_expires_at && new Date(data.promo_expires_at) < new Date()) {
-            await supabase.from('profiles').update({
-              cherry_picker_active: false,
-              subscription_waived: false,
-            }).eq('id', userId);
-            data.cherry_picker_active = false;
-            data.subscription_waived = false;
-          }
+          // Promo expiration is now handled inside isSubscriptionActive() — no need to
+          // wipe subscription_waived on every profile load, which was causing the gate flash.
+          // The gate function checks promo_expires_at directly.
 
           setProfile(data);
         } catch (error) {
@@ -16931,9 +16925,18 @@ RULES
     // ===== SUBSCRIPTION GATE =====
     function isSubscriptionActive(profile) {
       if (!profile) return false;
+      // Still loading real profile — don't block, let them through
+      if (profile._fallback) return true;
+      // Explicit waiver (admin toggle, promo code, social link)
       if (profile.subscription_waived === true) return true;
+      // Paying subscriber
       if (profile.subscription_tier === 'premium') return true;
+      // Social link verified and not expired
       if (profile.promo_verified === true) return true;
+      // Has a promo code that hasn't expired yet — active even if subscription_waived got lost
+      if (profile.promo_code_used && (!profile.promo_expires_at || new Date(profile.promo_expires_at) > new Date())) return true;
+      // Clients don't need a subscription to use the app
+      if (profile.role === 'client') return true;
       return false;
     }
 
@@ -17033,16 +17036,14 @@ RULES
         const subActive = isSubscriptionActive(auth.profile);
 
         // Pages that require subscription (Feed, Messages, Dashboard, Contracts, etc.)
-        // If profile is still a fallback (real data hasn't loaded yet), show a loading spinner
-        // instead of the gate — prevents the flash of "Activate Your Account" before real profile arrives
+        // isSubscriptionActive handles fallback profiles, promo codes, social links, etc.
         const requiresSub = (component) => {
           if (!auth.currentUser) return <LoginPage />;
-          if (auth.profile?._fallback) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}><div className="loading-spinner"></div></div>;
           if (!subActive) return <SubscriptionGatePage />;
           return component;
         };
 
-        if (page === 'home') return !auth.currentUser ? <HomePage /> : (auth.profile?._fallback ? <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}><div className="loading-spinner"></div></div> : (subActive ? <FeedPage /> : <BrowseModelsPage />));
+        if (page === 'home') return !auth.currentUser ? <HomePage /> : (subActive ? <FeedPage /> : <BrowseModelsPage />);
         if (page === 'feed') return requiresSub(<FeedPage />);
         if (page === 'wall') return <TopClientsPage />;
         if (page === 'reputation') return <ReputationPage />;
