@@ -15115,25 +15115,25 @@ REMEMBER:
                   <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
                     Have a promo code?
                   </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <input
                       type="text"
                       placeholder="Enter promo code"
                       value={promoCodeInput}
                       onChange={(e) => setPromoCodeInput(e.target.value.toUpperCase())}
                       style={{
-                        flex: 1, padding: '10px 12px', borderRadius: '10px',
+                        width: '100%', padding: '10px 12px', borderRadius: '10px',
                         border: '1px solid var(--border-color)', background: 'var(--bg-card)',
                         color: 'var(--text-primary)', fontSize: '0.85rem', textTransform: 'uppercase',
-                        letterSpacing: '1px', fontWeight: 700
+                        letterSpacing: '1px', fontWeight: 700, boxSizing: 'border-box'
                       }}
                     />
                     <button onClick={handleRedeemPromo} disabled={redeemingPromo || !promoCodeInput.trim()}
                       style={{
-                        padding: '10px 20px', borderRadius: '10px', border: 'none',
+                        width: '100%', padding: '10px 20px', borderRadius: '10px', border: 'none',
                         background: redeemingPromo || !promoCodeInput.trim() ? '#555' : 'linear-gradient(135deg, #ffd700, #ff6ec7)',
                         color: '#fff', fontWeight: 700, fontSize: '0.82rem',
-                        cursor: redeemingPromo || !promoCodeInput.trim() ? 'not-allowed' : 'pointer', flexShrink: 0
+                        cursor: redeemingPromo || !promoCodeInput.trim() ? 'not-allowed' : 'pointer'
                       }}>
                       {redeemingPromo ? 'Applying...' : 'Apply'}
                     </button>
