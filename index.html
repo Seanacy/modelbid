@@ -6302,73 +6302,17 @@
       const [client, setClient] = useState(null);
       const [feedback, setFeedback] = useState([]);
       const [loading, setLoading] = useState(true);
-      const [useDemo, setUseDemo] = useState(false);
+      const [notFound, setNotFound] = useState(false);
       const [activeTab, setActiveTab] = useState('photos');
-
-      // Demo client data
-      const demoClient = {
-        id: 'demo-client',
-        display_name: 'Marcus Thompson',
-        avatar_emoji: '📷',
-        role: 'client',
-        bio: 'Professional photographer and creative director based in Atlanta. I specialize in editorial, boudoir, and fashion photography. I treat every session as a collaboration — your comfort and vision matter. Check out my portfolio and feel free to reach out!',
-        location: 'Atlanta, GA',
-        member_since: '2023',
-        sessions_completed: 28,
-        rating: 4.8,
-        review_count: 22,
-        trust_score: 92,
-        verified: true,
-        response_time: '< 2 hours',
-        repeat_rate: '78%',
-        favorites: [
-          { id: 'f1', name: 'Aria V.', emoji: '👩', rate: 250 },
-          { id: 'f2', name: 'Jade M.', emoji: '💃', rate: 180 },
-          { id: 'f3', name: 'Sophie L.', emoji: '🌸', rate: 200 },
-          { id: 'f4', name: 'Raven K.', emoji: '🦋', rate: 300 },
-        ],
-        photos: [
-          { emoji: '📸', label: 'Boudoir Editorial', model: 'with Aria V.', date: 'Mar 2026' },
-          { emoji: '🎭', label: 'Masquerade Series', model: 'with Jade M.', date: 'Feb 2026' },
-          { emoji: '✨', label: 'Golden Hour Glam', model: 'with Sophie L.', date: 'Jan 2026' },
-          { emoji: '🌹', label: 'Valentine Special', model: 'with Aria V.', date: 'Feb 2026' },
-          { emoji: '💎', label: 'Luxury Lingerie', model: 'with Raven K.', date: 'Dec 2025' },
-          { emoji: '🎀', label: 'Pin-Up Retro', model: 'with Jade M.', date: 'Nov 2025' },
-          { emoji: '🔥', label: 'Firelight Series', model: 'with Sophie L.', date: 'Oct 2025' },
-          { emoji: '🌙', label: 'Moonlit Glamour', model: 'with Raven K.', date: 'Sep 2025' },
-        ],
-        sessions: [
-          { model: 'Aria V.', emoji: '👩', date: 'Mar 15, 2026', status: 'completed' },
-          { model: 'Jade M.', emoji: '💃', date: 'Apr 22, 2026', status: 'upcoming' },
-          { model: 'Sophie L.', emoji: '🌸', date: 'Feb 10, 2026', status: 'completed' },
-          { model: 'Raven K.', emoji: '🦋', date: 'Dec 5, 2025', status: 'completed' },
-        ]
-      };
-
-      const demoFeedback = [
-        { id: 1, model_name: 'Aria V.', model_emoji: '👩', rating: 5, text: 'Marcus is one of the best clients I\'ve worked with. Super respectful, clear about his vision, and the photos always turn out amazing. Highly recommend to any model.', date: '2 weeks ago', tags: ['Respectful', 'Professional', 'Great Communicator'] },
-        { id: 2, model_name: 'Jade M.', model_emoji: '💃', rating: 5, text: 'Always on time, pays promptly, and makes the session feel comfortable and fun. His photography skills are next level. Will definitely book again.', date: '1 month ago', tags: ['Punctual', 'Fair Pay', 'Skilled'] },
-        { id: 3, model_name: 'Sophie L.', model_emoji: '🌸', rating: 4, text: 'Great experience overall. Marcus was professional and respectful throughout. The only note would be sessions sometimes run a bit long, but the quality of work makes up for it.', date: '2 months ago', tags: ['Professional', 'Respectful'] },
-        { id: 4, model_name: 'Raven K.', model_emoji: '🦋', rating: 5, text: 'I\'ve done 3 sessions with Marcus now and every one has been incredible. He really listens to what you want and brings creative ideas. 10/10 client.', date: '3 months ago', tags: ['Creative', 'Repeat Client', 'Respectful'] },
-      ];
 
       useEffect(() => {
         const timeout = setTimeout(() => {
           setLoading(false);
-          if (!client) { setClient(demoClient); setFeedback(demoFeedback); setUseDemo(true); }
-        }, 3000);
+          if (!client) setNotFound(true);
+        }, 5000);
 
         const fetchData = async () => {
           try {
-            if (clientId === 'demo-client') {
-              setClient(demoClient);
-              setFeedback(demoFeedback);
-              setUseDemo(true);
-              setLoading(false);
-              clearTimeout(timeout);
-              return;
-            }
-
             const { data: clientData, error: clientError } = await supabase
               .from('profiles')
               .select('*')
@@ -6389,9 +6333,7 @@
             }
           } catch (error) {
             console.error('Fetch error:', error);
-            setClient(demoClient);
-            setFeedback(demoFeedback);
-            setUseDemo(true);
+            setNotFound(true);
           } finally {
             setLoading(false);
             clearTimeout(timeout);
@@ -6406,8 +6348,19 @@
         return <div className="text-center" style={{ padding: '2rem' }}>Loading profile...</div>;
       }
 
-      if (!client) {
-        return <div>Client not found</div>;
+      if (!client || notFound) {
+        return (
+          <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
+            <h2 style={{ marginBottom: '0.5rem' }}>Client Not Found</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+              This client doesn't exist or may have been removed.
+            </p>
+            <button className="btn btn-secondary" onClick={() => window.history.back()}>
+              ← Go Back
+            </button>
+          </div>
+        );
       }
 
       const trustScore = client.trust_score || 0;
