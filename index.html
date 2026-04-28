@@ -5722,147 +5722,161 @@
             ))}
           </div>
 
-          {/* Body: Left + Right columns */}
-          <div className="profile-body">
-            {/* Left Column */}
-            <div>
-              {/* About */}
-              <div className="profile-section">
-                <div className="profile-section-title"><span>👋</span> About</div>
-                <div className="profile-about-text">{model.bio || 'No bio available.'}</div>
-              </div>
+          {/* ===== PROFILE SECTIONS — single column, ordered for impact ===== */}
 
-              {/* 360° Outfit Viewer — shows on all profiles, prominent placement */}
-              <div className="profile-section">
-                <div className="profile-section-title"><span>🔄</span> 360° Outfit Viewer</div>
-                <div className="viewer360-promo">
-                  <div className="viewer360-promo-icon">🔄</div>
-                  <div className="viewer360-promo-text">
-                    <h4>See every angle before you book</h4>
-                    <p>Drag or swipe to rotate outfits in 360°. Models upload 8 photos per look from every angle — so you know exactly what you're getting.</p>
-                  </div>
-                  <div className="viewer360-promo-new">New</div>
-                </div>
-                <OutfitViewer360 outfits={model.outfits360 || demo360Outfits} />
-              </div>
+          {/* 1. About */}
+          <div className="profile-section">
+            <div className="profile-section-title"><span>👋</span> About</div>
+            <div className="profile-about-text">{model.bio || 'No bio available.'}</div>
+          </div>
 
-              {/* Portfolio Gallery */}
-              <div className="profile-section">
-                <div className="profile-section-title"><span>📸</span> Portfolio</div>
-                <div className="profile-gallery">
-                  {galleryItems.map((item, i) => (
-                    <div key={i} className="gallery-item" onClick={() => setSelectedGalleryItem(i)}>
-                      {item.emoji}
-                      <div className="gallery-item-overlay">{item.label}</div>
-                    </div>
-                  ))}
+          {/* 2. Portfolio Gallery */}
+          <div className="profile-section">
+            <div className="profile-section-title"><span>📸</span> Portfolio</div>
+            <div className="profile-gallery">
+              {galleryItems.map((item, i) => (
+                <div key={i} className="gallery-item" onClick={() => setSelectedGalleryItem(i)}>
+                  {item.emoji}
+                  <div className="gallery-item-overlay">{item.label}</div>
                 </div>
-                <div style={{ textAlign: 'center', marginTop: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                  Tap any photo to enlarge • Models upload their own portfolio images
-                </div>
-              </div>
+              ))}
+            </div>
+            <div style={{ textAlign: 'center', marginTop: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+              Tap any photo to enlarge • Models upload their own portfolio images
+            </div>
+          </div>
 
-              {/* Reviews */}
-              <div className="profile-section">
-                <div className="profile-section-title"><span>⭐</span> Reviews ({reviews.length})</div>
-                {reviews.length > 0 ? reviews.map((review, i) => (
-                  <div key={review.id || i} className="review-card">
-                    <div className="review-header">
-                      <div className="review-author">{review.reviewer_name || review.reviewer_id?.display_name || 'Anonymous'}</div>
-                      <div className="review-date">{review.date || new Date(review.created_at).toLocaleDateString()}</div>
-                    </div>
-                    <div className="review-stars">{'★'.repeat(review.rating || 5)}{'☆'.repeat(5 - (review.rating || 5))}</div>
-                    <div className="review-text">{review.text || review.content}</div>
-                  </div>
-                )) : (
-                  <div style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No reviews yet. Be the first to book a session!</div>
-                )}
+          {/* 3. Inner Circle — the main pitch */}
+          <div className="profile-section" data-tour="inner-circle" style={{
+            background: 'linear-gradient(135deg, #1a0a2e, #0d0015)',
+            border: '1px solid rgba(196,77,255,0.25)', borderRadius: '1rem',
+            padding: 'clamp(1.25rem, 3vw, 1.75rem)', marginBottom: '1.25rem',
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2.5px', color: '#c44dff', marginBottom: '0.4rem' }}>Exclusive</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.4rem', background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Inner Circle</div>
+              <div style={{ fontSize: '0.82rem', color: '#999', marginBottom: '1rem', lineHeight: 1.5 }}>Multiple models. One private feed. Exclusive content from {model.display_name?.split(' ')[0] || 'this model'} and her crew.</div>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                <span style={{ padding: '4px 12px', borderRadius: '999px', background: 'rgba(196,77,255,0.12)', fontSize: '0.72rem', color: '#c44dff', fontWeight: 600 }}>Fan Tier</span>
+                <span style={{ padding: '4px 12px', borderRadius: '999px', background: 'rgba(255,110,199,0.12)', fontSize: '0.72rem', color: '#ff6ec7', fontWeight: 600 }}>VIP Tier</span>
+                <span style={{ padding: '4px 12px', borderRadius: '999px', background: 'rgba(255,215,0,0.12)', fontSize: '0.72rem', color: '#ffd700', fontWeight: 600 }}>Elite Tier</span>
+              </div>
+              {auth.currentUser && (modelId === auth.currentUser.id || modelId === 'demo') ? (
+                <button onClick={() => window.location.hash = 'circle/' + (auth.currentUser?.id || '')} style={{
+                  width: '100%', padding: '12px 0', borderRadius: '999px', border: 'none',
+                  background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', color: '#fff',
+                  fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer',
+                }}>Manage Your Circle →</button>
+              ) : (
+                <button onClick={() => window.location.hash = 'crew/' + (model.id || 'demo')} style={{
+                  width: '100%', padding: '12px 0', borderRadius: '999px', border: 'none',
+                  background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', color: '#fff',
+                  fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer',
+                }}>View Inner Circle →</button>
+              )}
+            </div>
+          </div>
+
+          {/* 4. Ready to Book */}
+          <div className="profile-section" data-tour="booking" style={{ background: 'linear-gradient(135deg, rgba(255,110,199,0.1), rgba(157,78,221,0.1))', borderColor: 'rgba(255,110,199,0.3)' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>✨</div>
+              <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>Ready to book?</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                Secure your session with {model.display_name?.split(' ')[0] || 'this model'} today
+              </div>
+              <button className="btn glow-btn btn-block" onClick={() => setShowBookingModal(true)}>
+                Book Now — ${model.rate || 0}
+              </button>
+            </div>
+          </div>
+
+          {/* 5. Private Feed */}
+          <div className="profile-section" data-tour="private-feed" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,110,199,0.08))', borderColor: 'rgba(255,215,0,0.25)' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>💎</div>
+              <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>Private Feed</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
+                Exclusive BTS content, early bookings, member discounts & group chat
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--accent-gold)', marginBottom: '0.75rem' }}>
+                👥 89 members • From $9.99/mo
+              </div>
+              <button className="btn glow-btn btn-block" style={{ background: 'linear-gradient(135deg, var(--accent-gold), #ffaa00)', fontSize: '0.85rem' }}
+                onClick={() => window.location.hash = `circle/${model.id || 'demo'}`}>
+                Join Private Feed →
+              </button>
+            </div>
+          </div>
+
+          {/* 6. 360° Outfit Viewer */}
+          <div className="profile-section">
+            <div className="profile-section-title"><span>🔄</span> 360° Outfit Viewer</div>
+            <div className="viewer360-promo">
+              <div className="viewer360-promo-icon">🔄</div>
+              <div className="viewer360-promo-text">
+                <h4>See every angle before you book</h4>
+                <p>Drag or swipe to rotate outfits in 360°. Models upload 8 photos per look from every angle — so you know exactly what you're getting.</p>
+              </div>
+              <div className="viewer360-promo-new">New</div>
+            </div>
+            <OutfitViewer360 outfits={model.outfits360 || demo360Outfits} />
+          </div>
+
+          {/* 7. Details + Availability side by side on desktop, stacked on mobile */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+            <div className="profile-section">
+              <div className="profile-section-title"><span>📋</span> Details</div>
+              <div className="profile-detail-row">
+                <span className="profile-detail-label">Rate</span>
+                <span className="profile-detail-value" style={{ color: 'var(--accent-gold)' }}>${model.rate || 0}/session</span>
+              </div>
+              <div className="profile-detail-row">
+                <span className="profile-detail-label">Location</span>
+                <span className="profile-detail-value">{model.location || 'Not specified'}</span>
+              </div>
+              <div className="profile-detail-row">
+                <span className="profile-detail-label">Member since</span>
+                <span className="profile-detail-value">{model.member_since || '2024'}</span>
+              </div>
+              <div className="profile-detail-row">
+                <span className="profile-detail-label">Response time</span>
+                <span className="profile-detail-value" style={{ color: 'var(--success-green)' }}>{model.response_time || '< 24h'}</span>
+              </div>
+              <div className="profile-detail-row">
+                <span className="profile-detail-label">Verified</span>
+                <span className="profile-detail-value">{model.verified ? '✅ Yes' : '❌ No'}</span>
               </div>
             </div>
 
-            {/* Right Column / Sidebar */}
-            <div>
-              {/* Details */}
-              <div className="profile-section">
-                <div className="profile-section-title"><span>📋</span> Details</div>
-                <div className="profile-detail-row">
-                  <span className="profile-detail-label">Rate</span>
-                  <span className="profile-detail-value" style={{ color: 'var(--accent-gold)' }}>${model.rate || 0}/session</span>
-                </div>
-                <div className="profile-detail-row">
-                  <span className="profile-detail-label">Location</span>
-                  <span className="profile-detail-value">{model.location || 'Not specified'}</span>
-                </div>
-                <div className="profile-detail-row">
-                  <span className="profile-detail-label">Member since</span>
-                  <span className="profile-detail-value">{model.member_since || '2024'}</span>
-                </div>
-                <div className="profile-detail-row">
-                  <span className="profile-detail-label">Response time</span>
-                  <span className="profile-detail-value" style={{ color: 'var(--success-green)' }}>{model.response_time || '< 24h'}</span>
-                </div>
-                <div className="profile-detail-row">
-                  <span className="profile-detail-label">Verified</span>
-                  <span className="profile-detail-value">{model.verified ? '✅ Yes' : '❌ No'}</span>
-                </div>
-              </div>
-
-              {/* Availability */}
-              <div className="profile-section" data-tour="availability">
-                <div className="profile-section-title"><span>📅</span> Availability</div>
-                <div className="profile-availability">
-                  {dayKeys.map((key, i) => (
-                    <div key={key} className={`availability-day ${availability[key] ? 'available' : 'unavailable'}`}>
-                      <span className="availability-day-name">{dayNames[i]}</span>
-                      {availability[key] ? '✓' : '—'}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Step 4: Book — primary CTA comes first in sidebar */}
-              <div className="profile-section" data-tour="booking" style={{ background: 'linear-gradient(135deg, rgba(255,110,199,0.1), rgba(157,78,221,0.1))', borderColor: 'rgba(255,110,199,0.3)' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>✨</div>
-                  <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>Ready to book?</div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-                    Secure your session with {model.display_name?.split(' ')[0] || 'this model'} today
+            <div className="profile-section" data-tour="availability">
+              <div className="profile-section-title"><span>📅</span> Availability</div>
+              <div className="profile-availability">
+                {dayKeys.map((key, i) => (
+                  <div key={key} className={`availability-day ${availability[key] ? 'available' : 'unavailable'}`}>
+                    <span className="availability-day-name">{dayNames[i]}</span>
+                    {availability[key] ? '✓' : '—'}
                   </div>
-                  <button className="btn glow-btn btn-block" onClick={() => setShowBookingModal(true)}>
-                    Book Now — ${model.rate || 0}
-                  </button>
-                </div>
+                ))}
               </div>
-
-              {/* Step 6: Deepen — Private Feed (after booking) */}
-              <div className="profile-section" data-tour="private-feed" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,110,199,0.08))', borderColor: 'rgba(255,215,0,0.25)' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>💎</div>
-                  <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>Private Feed</div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
-                    Exclusive BTS content, early bookings, member discounts & group chat
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--accent-gold)', marginBottom: '0.75rem' }}>
-                    👥 89 members • From $9.99/mo
-                  </div>
-                  <button className="btn glow-btn btn-block" style={{ background: 'linear-gradient(135deg, var(--accent-gold), #ffaa00)', fontSize: '0.85rem' }}
-                    onClick={() => window.location.hash = `circle/${model.id || 'demo'}`}>
-                    Join Private Feed →
-                  </button>
-                </div>
-              </div>
-
-              {/* Inner Circle */}
-              <div className="profile-section" data-tour="inner-circle" style={{ background: 'linear-gradient(135deg, rgba(255,110,199,0.08), rgba(147,51,234,0.08))', borderColor: 'rgba(255,110,199,0.25)', padding: '1.25rem', borderRadius: '1rem', border: '1px solid rgba(255,110,199,0.25)', marginBottom: '1.25rem' }}>
-                <div style={{ textAlign: 'center', marginBottom: '0.75rem' }}>
-                  <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>👯‍♀️</div>
-                  <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>Inner Circle</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Multiple Models. One PRIVATE Feed 😏</div>
-                </div>
-                <button onClick={() => window.location.hash = 'circle/' + (auth?.currentUser?.id || '')} style={{ width: '100%', marginTop: '0.5rem', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid rgba(255,110,199,0.3)', background: 'transparent', color: 'var(--accent-pink)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>Manage Inner Circle →</button>
-              </div>
-
             </div>
+          </div>
+
+          {/* 8. Reviews */}
+          <div className="profile-section">
+            <div className="profile-section-title"><span>⭐</span> Reviews ({reviews.length})</div>
+            {reviews.length > 0 ? reviews.map((review, i) => (
+              <div key={review.id || i} className="review-card">
+                <div className="review-header">
+                  <div className="review-author">{review.reviewer_name || review.reviewer_id?.display_name || 'Anonymous'}</div>
+                  <div className="review-date">{review.date || new Date(review.created_at).toLocaleDateString()}</div>
+                </div>
+                <div className="review-stars">{'★'.repeat(review.rating || 5)}{'☆'.repeat(5 - (review.rating || 5))}</div>
+                <div className="review-text">{review.text || review.content}</div>
+              </div>
+            )) : (
+              <div style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No reviews yet. Be the first to book a session!</div>
+            )}
           </div>
 
           {/* Gallery Lightbox */}
