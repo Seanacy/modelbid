@@ -5818,16 +5818,29 @@
             </div>
           )}
 
-          {/* Profile Photo — large, centered */}
-          <div style={{ textAlign: 'center', marginBottom: '0.75rem' }}>
+          {/* Cover Photo on top */}
+          <div style={{
+            width: '100%', height: '180px', borderRadius: '1rem', overflow: 'hidden',
+            background: model.cover_photo_url ? 'none' : 'linear-gradient(135deg, #1a0a2e 0%, #16213e 30%, #0f3460 60%, #1a0a2e 100%)',
+            marginBottom: '0', position: 'relative',
+          }}>
+            {model.cover_photo_url && (
+              <img src={model.cover_photo_url} alt="Cover"
+                style={{ width: '100%', height: '100%', objectFit: 'cover',
+                  objectPosition: `${model.cover_photo_pos_x ?? 50}% ${model.cover_photo_pos_y ?? 50}%` }} />
+            )}
+          </div>
+
+          {/* Profile photo overlapping bottom-left of cover + name/location to the right */}
+          <div style={{ position: 'relative', marginTop: '-28px', marginBottom: '0.75rem', display: 'flex', alignItems: 'flex-end', gap: '1rem', paddingLeft: '1rem', paddingRight: '1rem' }}>
+            {/* Profile Photo — overlaps cover by ~1/10 of its height */}
             <div style={{
-              width: '220px', height: '280px', borderRadius: '1rem', overflow: 'hidden',
-              margin: '0 auto',
+              width: '140px', height: '180px', borderRadius: '1rem', overflow: 'hidden',
               background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-pink))',
-              border: '3px solid rgba(196,77,255,0.3)',
+              border: '3px solid var(--bg-dark)',
               boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '4rem',
+              fontSize: '3.5rem', flexShrink: 0,
             }}>
               {model.profile_photo_url ? (
                 <img src={model.profile_photo_url} alt={model.display_name}
@@ -5837,33 +5850,23 @@
                 model.avatar_emoji || '👤'
               )}
             </div>
-            {/* Name + Location below photo */}
-            <h1 style={{
-              fontSize: '1.6rem', fontWeight: 800, marginTop: '0.75rem', marginBottom: '0.25rem',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-            }}>
-              {model.display_name}
-              {model.verified && <span style={{
-                background: '#22c55e', color: '#fff', borderRadius: '50%',
-                width: '22px', height: '22px', display: 'inline-flex', alignItems: 'center',
-                justifyContent: 'center', fontSize: '0.75rem', flexShrink: 0,
-              }}>✓</span>}
-            </h1>
-            {model.tagline && <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.88rem', fontStyle: 'italic', marginBottom: '0.25rem' }}>"{model.tagline}"</div>}
-            {model.location && <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>📍 {model.location}</div>}
-          </div>
-
-          {/* Cover Photo — wide banner below (only if they have one) */}
-          {model.cover_photo_url && (
-            <div style={{
-              width: '100%', height: '160px', borderRadius: '1rem', overflow: 'hidden',
-              marginBottom: '0', position: 'relative',
-            }}>
-              <img src={model.cover_photo_url} alt="Cover"
-                style={{ width: '100%', height: '100%', objectFit: 'cover',
-                  objectPosition: `${model.cover_photo_pos_x ?? 50}% ${model.cover_photo_pos_y ?? 50}%` }} />
+            {/* Name + Location to the right of profile photo */}
+            <div style={{ flex: 1, minWidth: 0, paddingBottom: '0.25rem' }}>
+              <h1 style={{
+                fontSize: '1.4rem', fontWeight: 800, marginBottom: '0.2rem',
+                display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap',
+              }}>
+                {model.display_name}
+                {model.verified && <span style={{
+                  background: '#22c55e', color: '#fff', borderRadius: '50%',
+                  width: '20px', height: '20px', display: 'inline-flex', alignItems: 'center',
+                  justifyContent: 'center', fontSize: '0.7rem', flexShrink: 0,
+                }}>✓</span>}
+              </h1>
+              {model.tagline && <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.82rem', fontStyle: 'italic', marginBottom: '0.2rem' }}>"{model.tagline}"</div>}
+              {model.location && <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem' }}>📍 {model.location}</div>}
             </div>
-          )}
+          </div>
 
           {/* Stats Bar */}
           <div className="profile-stats-bar">
