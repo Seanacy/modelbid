@@ -5819,9 +5819,21 @@
           )}
 
           {/* Cover / Hero */}
-          <div className="profile-cover">
+          <div className="profile-cover" style={model.cover_photo_url ? {
+            backgroundImage: `url(${model.cover_photo_url})`,
+            backgroundSize: 'cover',
+            backgroundPosition: `${model.cover_photo_pos_x ?? 50}% ${model.cover_photo_pos_y ?? 50}%`,
+          } : {}}>
             <div className="profile-cover-content">
-              <div className="profile-avatar">{model.avatar_emoji || '👤'}</div>
+              <div className="profile-avatar" style={{ overflow: 'hidden' }}>
+                {model.profile_photo_url ? (
+                  <img src={model.profile_photo_url} alt={model.display_name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover',
+                      objectPosition: `${model.profile_photo_pos_x ?? 50}% ${model.profile_photo_pos_y ?? 50}%` }} />
+                ) : (
+                  model.avatar_emoji || '👤'
+                )}
+              </div>
               <div className="profile-cover-info">
                 <h1>
                   {model.display_name}
@@ -14410,10 +14422,69 @@ REMEMBER:
           <div className="card">
             <h2 style={{ marginBottom: '1.5rem' }}>Edit Profile</h2>
 
-            {/* MODEL PHOTO UPLOADS */}
-            {isModel && (
-              <div style={{ marginBottom: '1.5rem' }}>
-                {/* Profile Photo — small square */}
+            {/* MODEL PHOTO UPLOADS WITH DRAG-TO-REPOSITION */}
+            {isModel && (() => {
+              // Drag-to-reposition state
+              const [repositioning, setRepositioning] = React.useState(null); // 'profile' or 'cover' or null
+              const [dragStart, setDragStart] = React.useState(null);
+              const [tempPos, setTempPos] = React.useState(null);
+
+              const profilePosX = data.profile_photo_pos_x ?? 50;
+              const profilePosY = data.profile_photo_pos_y ?? 50;
+              const coverPosX = data.cover_photo_pos_x ?? 50;
+              const coverPosY = data.cover_photo_pos_y ?? 50;
+
+              const handleDragStart = (e, type) => {
+                e.preventDefault();
+                const touch = e.touches ? e.touches[0] : e;
+                const currentX = type === 'profile' ? profilePosX : coverPosX;
+                const currentY = type === 'profile' ? profilePosY : coverPosY;
+                setDragStart({ x: touch.clientX, y: touch.clientY, startPosX: currentX, startPosY: currentY });
+                setRepositioning(type);
+                setTempPos({ x: currentX, y: currentY });
+              };
+
+              const handleDragMove = (e) => {
+                if (!dragStart || !repositioning) return;
+                e.preventDefault();
+                const touch = e.touches ? e.touches[0] : e;
+                const dx = touch.clientX - dragStart.x;
+                const dy = touch.clientY - dragStart.y;
+                // Sensitivity: ~0.3% per pixel of drag
+                const newX = Math.max(0, Math.min(100, dragStart.startPosX - dx * 0.3));
+                const newY = Math.max(0, Math.min(100, dragStart.startPosY - dy * 0.3));
+                setTempPos({ x: newX, y: newY });
+              };
+
+              const handleDragEnd = () => {
+                if (!repositioning || !tempPos) { setDragStart(null); return; }
+                // Apply temp position to data
+                if (repositioning === 'profile') {
+                  setData(prev => ({ ...prev, profile_photo_pos_x: Math.round(tempPos.x), profile_photo_pos_y: Math.round(tempPos.y) }));
+                } else {
+                  setData(prev => ({ ...prev, cover_photo_pos_x: Math.round(tempPos.x), cover_photo_pos_y: Math.round(tempPos.y) }));
+                }
+                setDragStart(null);
+                setRepositioning(null);
+                setTempPos(null);
+              };
+
+              const cancelReposition = () => {
+                setDragStart(null);
+                setRepositioning(null);
+                setTempPos(null);
+              };
+
+              const activeProfPosX = (repositioning === 'profile' && tempPos) ? tempPos.x : profilePosX;
+              const activeProfPosY = (repositioning === 'profile' && tempPos) ? tempPos.y : profilePosY;
+              const activeCoverPosX = (repositioning === 'cover' && tempPos) ? tempPos.x : coverPosX;
+              const activeCoverPosY = (repositioning === 'cover' && tempPos) ? tempPos.y : coverPosY;
+
+              return (
+              <div style={{ marginBottom: '1.5rem' }}
+                onMouseMove={handleDragMove} onMouseUp={handleDragEnd} onMouseLeave={handleDragEnd}
+                onTouchMove={handleDragMove} onTouchEnd={handleDragEnd}>
+                {/* Profile Photo — with reposition */}
                 <div style={{ marginBottom: '1.2rem' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>Profile Photo</label>
                   <p style={{ color: '#888', fontSize: '0.78rem', marginBottom: '10px', marginTop: '-4px' }}>
@@ -14422,16 +14493,25 @@ REMEMBER:
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <div style={{
                       width: '90px', height: '90px', borderRadius: '50%', overflow: 'hidden',
-                      border: '2px solid var(--border-color)', background: 'var(--bg-card)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                    }}>
+                      border: repositioning === 'profile' ? '2px solid #ff6ec7' : '2px solid var(--border-color)',
+                      background: 'var(--bg-card)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      cursor: (repositioning === 'profile') ? 'grabbing' : 'default',
+                      touchAction: 'none', userSelect: 'none',
+                    }}
+                      onMouseDown={(e) => repositioning === 'profile' && handleDragStart(e, 'profile')}
+                      onTouchStart={(e) => repositioning === 'profile' && handleDragStart(e, 'profile')}
+                    >
                       {data.profile_photo_url ? (
-                        <img src={data.profile_photo_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={data.profile_photo_url} alt="Profile" draggable={false}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover',
+                            objectPosition: `${activeProfPosX}% ${activeProfPosY}%`,
+                            pointerEvents: 'none' }} />
                       ) : (
                         <span style={{ fontSize: '2.2rem' }}>{data.avatar_emoji || '📷'}</span>
                       )}
                     </div>
-                    <div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <label style={{
                         display: 'inline-block', padding: '8px 18px', borderRadius: '10px',
                         background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', color: '#fff',
@@ -14443,12 +14523,42 @@ REMEMBER:
                           onChange={(e) => handlePhotoUpload(e.target.files[0], 'profile')}
                           disabled={uploadingProfile} />
                       </label>
-                      <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '6px' }}>JPG, PNG — max 5MB. Ideal size: 500×500px</div>
+                      {data.profile_photo_url && repositioning !== 'profile' && (
+                        <button type="button" onClick={() => { setRepositioning('profile'); }}
+                          style={{ padding: '6px 14px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600,
+                            background: 'rgba(0,217,255,0.1)', border: '1px solid rgba(0,217,255,0.3)',
+                            color: '#00d9ff', cursor: 'pointer' }}>
+                          ↕ Reposition
+                        </button>
+                      )}
+                      {repositioning === 'profile' && (
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button type="button" onClick={handleDragEnd}
+                            style={{ padding: '6px 12px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 700,
+                              background: '#22c55e', border: 'none', color: '#fff', cursor: 'pointer' }}>
+                            ✓ Done
+                          </button>
+                          <button type="button" onClick={cancelReposition}
+                            style={{ padding: '6px 12px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 600,
+                              background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+                              color: '#fff', cursor: 'pointer' }}>
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+                      <div style={{ fontSize: '0.7rem', color: '#666' }}>JPG, PNG — max 5MB</div>
                     </div>
                   </div>
+                  {repositioning === 'profile' && (
+                    <div style={{ marginTop: '8px', padding: '8px 12px', borderRadius: '8px',
+                      background: 'rgba(255,110,199,0.08)', border: '1px solid rgba(255,110,199,0.2)',
+                      fontSize: '0.75rem', color: '#ff6ec7', textAlign: 'center' }}>
+                      Drag the photo to reposition it, then tap Done
+                    </div>
+                  )}
                 </div>
 
-                {/* Cover Photo — wide horizontal */}
+                {/* Cover Photo — with reposition */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>Cover Photo</label>
                   <p style={{ color: '#888', fontSize: '0.78rem', marginBottom: '10px', marginTop: '-4px' }}>
@@ -14456,12 +14566,22 @@ REMEMBER:
                   </p>
                   <div style={{
                     width: '100%', height: '160px', borderRadius: '12px', overflow: 'hidden',
-                    border: '2px dashed var(--border-color)', background: 'var(--bg-card)',
+                    border: repositioning === 'cover' ? '2px solid #ff6ec7' : '2px dashed var(--border-color)',
+                    background: 'var(--bg-card)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    position: 'relative', cursor: 'pointer', marginBottom: '8px'
-                  }} onClick={() => document.getElementById('cover-upload').click()}>
+                    position: 'relative', marginBottom: '8px',
+                    cursor: repositioning === 'cover' ? 'grabbing' : 'pointer',
+                    touchAction: 'none', userSelect: 'none',
+                  }}
+                    onClick={() => { if (!repositioning) document.getElementById('cover-upload').click(); }}
+                    onMouseDown={(e) => repositioning === 'cover' && handleDragStart(e, 'cover')}
+                    onTouchStart={(e) => repositioning === 'cover' && handleDragStart(e, 'cover')}
+                  >
                     {data.cover_photo_url ? (
-                      <img src={data.cover_photo_url} alt="Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={data.cover_photo_url} alt="Cover" draggable={false}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover',
+                          objectPosition: `${activeCoverPosX}% ${activeCoverPosY}%`,
+                          pointerEvents: 'none' }} />
                     ) : (
                       <div style={{ textAlign: 'center', color: '#666' }}>
                         <div style={{ fontSize: '2rem', marginBottom: '4px' }}>🖼️</div>
@@ -14479,10 +14599,43 @@ REMEMBER:
                   <input id="cover-upload" type="file" accept="image/*" style={{ display: 'none' }}
                     onChange={(e) => handlePhotoUpload(e.target.files[0], 'cover')}
                     disabled={uploadingCover} />
-                  <div style={{ fontSize: '0.7rem', color: '#666' }}>JPG, PNG — max 5MB. Ideal size: 1200×400px</div>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
+                    {data.cover_photo_url && repositioning !== 'cover' && (
+                      <button type="button" onClick={() => { setRepositioning('cover'); }}
+                        style={{ padding: '6px 14px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600,
+                          background: 'rgba(0,217,255,0.1)', border: '1px solid rgba(0,217,255,0.3)',
+                          color: '#00d9ff', cursor: 'pointer' }}>
+                        ↕ Reposition
+                      </button>
+                    )}
+                    {repositioning === 'cover' && (
+                      <>
+                        <button type="button" onClick={handleDragEnd}
+                          style={{ padding: '6px 12px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 700,
+                            background: '#22c55e', border: 'none', color: '#fff', cursor: 'pointer' }}>
+                          ✓ Done
+                        </button>
+                        <button type="button" onClick={cancelReposition}
+                          style={{ padding: '6px 12px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 600,
+                            background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+                            color: '#fff', cursor: 'pointer' }}>
+                          Cancel
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  {repositioning === 'cover' && (
+                    <div style={{ padding: '8px 12px', borderRadius: '8px',
+                      background: 'rgba(255,110,199,0.08)', border: '1px solid rgba(255,110,199,0.2)',
+                      fontSize: '0.75rem', color: '#ff6ec7', textAlign: 'center' }}>
+                      Drag the photo to reposition it, then tap Done
+                    </div>
+                  )}
+                  <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '4px' }}>JPG, PNG — max 5MB. Ideal size: 1200×400px</div>
                 </div>
               </div>
-            )}
+              );
+            })()}
 
             <div className="form-group">
               <label>Name</label>
