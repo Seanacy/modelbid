@@ -4585,6 +4585,9 @@
         setToast({ message, type });
       };
 
+      // Merge fields into auth.profile without a DB write (useful when the caller already wrote to DB)
+      const patchProfile = (updates) => setProfile(prev => prev ? { ...prev, ...updates } : updates);
+
       const contextValue = {
         currentUser,
         profile,
@@ -4594,6 +4597,7 @@
         signInWithGoogle,
         logout,
         updateProfile,
+        patchProfile,
         sendMessage,
         createConversation,
         createBooking,
@@ -13585,13 +13589,13 @@ REMEMBER:
         try {
           // Update profile role
           await supabase.from('profiles').update({ role }).eq('id', auth.currentUser.id);
-          // Update local profile state
-          auth.profile && (auth.profile.role = role);
+          // Update auth profile state properly via patchProfile
+          auth.patchProfile({ role });
           // Also update display_name from Google metadata if it's still default
           const googleName = auth.currentUser.user_metadata?.full_name || auth.currentUser.user_metadata?.name;
           if (googleName && (!auth.profile?.display_name || auth.profile.display_name === 'New User')) {
             await supabase.from('profiles').update({ display_name: googleName }).eq('id', auth.currentUser.id);
-            if (auth.profile) auth.profile.display_name = googleName;
+            auth.patchProfile({ display_name: googleName });
           }
           sessionStorage.setItem('scrollToWaive', 'true');
           window.location.hash = 'edit-profile';
@@ -13890,7 +13894,7 @@ REMEMBER:
     }
 
     function EditProfilePage() {
-      const { currentUser, profile, updateProfile } = useContext(AuthContext);
+      const { currentUser, profile, updateProfile, patchProfile } = useContext(AuthContext);
       const [data, setData] = useState(profile || {});
       const [loading, setLoading] = useState(false);
       const [uploadingProfile, setUploadingProfile] = useState(false);
@@ -14075,8 +14079,9 @@ REMEMBER:
             times_used: promo.times_used + 1,
           }).eq('id', promo.id);
 
-          // Update local state
+          // Update local state AND auth profile so subscription gate sees the change immediately
           setData(prev => ({ ...prev, promo_code_used: promo.code, cherry_picker_active: true, subscription_waived: true }));
+          patchProfile({ promo_code_used: promo.code, cherry_picker_active: true, subscription_waived: true });
           setPromoRedeemStatus('success');
           setPromoCodeInput('');
           auth.showToast('Promo code applied! Subscription waived.', 'success');
@@ -14163,6 +14168,7 @@ REMEMBER:
             }).eq('id', currentUser.id);
             setVerifyStatus('verified');
             setData(prev => ({ ...prev, promo_verified: true, subscription_waived: true, promo_social_url: promoSocialUrl.trim() }));
+            patchProfile({ promo_verified: true, subscription_waived: true, promo_social_url: promoSocialUrl.trim() });
           } else {
             // Could not find the link
             await supabase.from('profiles').update({
