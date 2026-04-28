@@ -7063,24 +7063,35 @@
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: '#888', cursor: 'pointer' }}>
                     <input type="checkbox" checked={newPostVisible} onChange={e => setNewPostVisible(e.target.checked)} />
-                    Let other members see this content
+                    Make this post visible to other crew members
                   </label>
                   <button onClick={handlePost} className="btn glow-btn" style={{ fontSize: '0.8rem', padding: '0.5rem 1.25rem' }}>Publish</button>
                 </div>
               </div>
 
               {/* My visibility toggle */}
-              <div style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem' }}>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>Content Visibility</div>
-                  <div style={{ fontSize: '0.7rem', color: '#888' }}>
-                    {members.find(m => m.user_id === auth.currentUser?.id)?.allow_content_visible
-                      ? 'Other members CAN see your content'
-                      : 'Other members can only see your post titles'}
+              {(() => {
+                const isVisible = members.find(m => m.user_id === auth.currentUser?.id)?.allow_content_visible;
+                return (
+                  <div style={{ ...cardStyle, padding: '0.85rem 1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>
+                        {isVisible ? '👁️ Your Content is Visible' : '🔒 Your Content is Hidden'}
+                      </div>
+                      <button onClick={toggleMyVisibility} style={{
+                        padding: '0.4rem 0.9rem', borderRadius: '8px', border: 'none', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer',
+                        background: isVisible ? 'rgba(255,82,82,0.15)' : 'rgba(0,230,118,0.15)',
+                        color: isVisible ? '#ff5252' : '#00e676'
+                      }}>{isVisible ? 'Hide Content' : 'Show Content'}</button>
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#999', lineHeight: 1.5 }}>
+                      {isVisible
+                        ? 'Other crew members CAN see the full content of your posts.'
+                        : 'Other crew members can only see your post titles — not the full content. Tap "Show Content" to let them see everything.'}
+                    </div>
                   </div>
-                </div>
-                <button onClick={toggleMyVisibility} style={{ padding: '0.4rem 0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'transparent', color: '#ff6ec7', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Toggle</button>
-              </div>
+                );
+              })()}
 
               {/* Posts list */}
               <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>Posts ({posts.length})</div>
