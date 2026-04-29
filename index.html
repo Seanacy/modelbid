@@ -6673,6 +6673,9 @@
       const [searchResults, setSearchResults] = useState([]);
       const [editingTiers, setEditingTiers] = useState(false);
       const [tierEdits, setTierEdits] = useState({});
+      const [editingName, setEditingName] = useState(false);
+      const [nameEdit, setNameEdit] = useState('');
+      const [descEdit, setDescEdit] = useState('');
       const [memberProfiles, setMemberProfiles] = useState({});
       const [postStats, setPostStats] = useState({});
       const [subCount, setSubCount] = useState(0);
@@ -6876,6 +6879,17 @@
         } catch(e) { auth.showToast('Failed to update tiers', 'error'); }
       };
 
+      // ----- Save name/description edits -----
+      const saveNameEdit = async () => {
+        if (!nameEdit.trim()) { auth.showToast('Circle name cannot be empty', 'error'); return; }
+        try {
+          await supabase.from('crews').update({ name: nameEdit.trim(), description: descEdit.trim() }).eq('id', crewId);
+          setCrew(prev => ({ ...prev, name: nameEdit.trim(), description: descEdit.trim() }));
+          setEditingName(false);
+          auth.showToast('Circle name updated!', 'success');
+        } catch(e) { auth.showToast('Failed to update name', 'error'); }
+      };
+
       // ----- Toggle crew enabled -----
       const toggleEnabled = async () => {
         const newVal = !crew.enabled;
@@ -6938,8 +6952,27 @@
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
             <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>👯‍♀️</div>
-            <h2 style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0 }}>{crew.name}</h2>
-            <p style={{ color: '#888', fontSize: '0.8rem', margin: '0.25rem 0' }}>{crew.description}</p>
+            {editingName ? (
+              <div style={{ maxWidth: '400px', margin: '0 auto' }}>
+                <input value={nameEdit} onChange={e => setNameEdit(e.target.value)} placeholder="Circle name"
+                  style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '0.5rem', border: '1px solid rgba(255,110,199,0.4)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 700, textAlign: 'center', boxSizing: 'border-box', marginBottom: '0.5rem' }} />
+                <textarea value={descEdit} onChange={e => setDescEdit(e.target.value)} placeholder="Description (optional)"
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card-light)', color: 'var(--text-primary)', fontSize: '0.8rem', textAlign: 'center', boxSizing: 'border-box', minHeight: '50px', resize: 'vertical', marginBottom: '0.5rem' }} />
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                  <button onClick={saveNameEdit} className="btn glow-btn" style={{ padding: '0.4rem 1.25rem', fontSize: '0.8rem' }}>Save</button>
+                  <button onClick={() => setEditingName(false)} style={{ padding: '0.4rem 1.25rem', fontSize: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'transparent', color: '#888', cursor: 'pointer' }}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                  <h2 style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0 }}>{crew.name}</h2>
+                  {isAdmin && <button onClick={() => { setNameEdit(crew.name); setDescEdit(crew.description || ''); setEditingName(true); }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem', color: '#888', padding: '0.2rem' }} title="Edit circle name">✏️</button>}
+                </div>
+                <p style={{ color: '#888', fontSize: '0.8rem', margin: '0.25rem 0' }}>{crew.description}</p>
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '0.5rem', fontSize: '0.8rem', color: '#888' }}>
               <span>{members.length} members</span>
               <span>{subCount} subscribers</span>
@@ -17024,7 +17057,7 @@ RULES
       }
 
       const renderPage = () => {
-        const [page, ...params] = currentPage.split('/');
+        const [page, ...params] = currentPage.split('?')[0].split('/');
         const subActive = isSubscriptionActive(auth.profile);
 
         // Pages that require subscription (Feed, Messages, Dashboard, Contracts, etc.)
