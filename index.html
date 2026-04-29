@@ -34,6 +34,9 @@
   <!-- Stripe.js -->
   <script src="https://js.stripe.com/v3/"></script>
 
+  <!-- Tesseract.js OCR -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
   <style>
     /* ===== CSS CUSTOM PROPERTIES & GLOBAL STYLES ===== */
     :root {
@@ -14418,11 +14421,34 @@ REMEMBER:
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       };
 
+      // OCR scan: read text from an image file and check for ModelBid link
+      const scanScreenshotForLink = async (file) => {
+        try {
+          const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+            logger: m => { if (m.status === 'recognizing text') setScreenshotStatus(`scanning (${Math.round(m.progress * 100)}%)`); }
+          });
+          const cleaned = text.toLowerCase().replace(/\s+/g, '');
+          // Check for vanity URL, profile UUID link, or domain reference
+          const username = profile?.username;
+          const checks = [
+            `modelbid.tech/${username}`,
+            `modelbid.tech/#profile/${currentUser.id}`,
+            `profile/${currentUser.id}`,
+            username ? `modelbid.tech/${username}` : null,
+          ].filter(Boolean);
+          const found = checks.some(c => cleaned.includes(c.toLowerCase().replace(/\s+/g, '')));
+          return { found, text };
+        } catch (err) {
+          console.error('OCR error:', err);
+          return { found: false, text: '' };
+        }
+      };
+
       // Submit screenshot for verification
       const handleScreenshotSubmit = async () => {
         if (!screenshotFile) return;
         setUploadingScreenshot(true);
-        setScreenshotStatus('uploading');
+        setScreenshotStatus('scanning...');
         try {
           // Hash the file
           const hash = await hashImageFile(screenshotFile);
@@ -14435,7 +14461,11 @@ REMEMBER:
             return;
           }
 
+          // Run OCR scan on the image
+          const { found: linkFound, text: ocrText } = await scanScreenshotForLink(screenshotFile);
+
           // Upload to Supabase storage
+          setScreenshotStatus('uploading...');
           const ext = screenshotFile.name.split('.').pop();
           const fileName = `screenshots/${currentUser.id}/${Date.now()}.${ext}`;
           const { error: uploadErr } = await supabase.storage
@@ -14443,24 +14473,52 @@ REMEMBER:
           if (uploadErr) throw uploadErr;
           const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
 
-          // Insert verification record
-          const { error: insertErr } = await supabase.from('screenshot_verifications').insert({
-            user_id: currentUser.id,
-            screenshot_url: urlData.publicUrl,
-            image_hash: hash,
-            social_url: promoSocialUrl.trim() || null,
-          });
-          if (insertErr) throw insertErr;
-
           // Update stored hashes (keep last 3, purge at 4)
           const newHashes = [...storedHashes, hash].slice(-3);
           await supabase.from('profiles').update({ screenshot_hashes: newHashes }).eq('id', currentUser.id);
           patchProfile({ screenshot_hashes: newHashes });
 
-          setScreenshotStatus('submitted');
+          if (linkFound) {
+            // Auto-approve: OCR found the link
+            const { error: insertErr } = await supabase.from('screenshot_verifications').insert({
+              user_id: currentUser.id,
+              screenshot_url: urlData.publicUrl,
+              image_hash: hash,
+              social_url: promoSocialUrl.trim() || null,
+              status: 'approved',
+              reviewed_at: new Date().toISOString(),
+              admin_notes: 'Auto-approved by image scan',
+            });
+            if (insertErr) throw insertErr;
+
+            // Waive subscription
+            await supabase.from('profiles').update({
+              promo_verified: true,
+              subscription_waived: true,
+              promo_social_url: promoSocialUrl.trim() || 'screenshot-verified',
+              promo_verified_at: new Date().toISOString(),
+              promo_last_checked: new Date().toISOString(),
+            }).eq('id', currentUser.id);
+            patchProfile({ promo_verified: true, subscription_waived: true });
+
+            setScreenshotStatus('auto_verified');
+            setVerifyStatus('verified');
+          } else {
+            // Send to admin for manual review
+            const { error: insertErr } = await supabase.from('screenshot_verifications').insert({
+              user_id: currentUser.id,
+              screenshot_url: urlData.publicUrl,
+              image_hash: hash,
+              social_url: promoSocialUrl.trim() || null,
+            });
+            if (insertErr) throw insertErr;
+
+            setScreenshotStatus('submitted');
+            setPendingScreenshot({ status: 'pending', submitted_at: new Date().toISOString() });
+          }
+
           setScreenshotFile(null);
           setScreenshotPreview(null);
-          setPendingScreenshot({ status: 'pending', submitted_at: new Date().toISOString() });
         } catch (err) {
           console.error('Screenshot upload error:', err);
           setScreenshotStatus('error');
@@ -15292,14 +15350,19 @@ REMEMBER:
                         {screenshotFile && (
                           <button onClick={handleScreenshotSubmit} disabled={uploadingScreenshot}
                             style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: uploadingScreenshot ? '#555' : 'linear-gradient(135deg, #aa6ff7, #c44dff)', color: '#fff', fontWeight: 700, fontSize: '0.8rem', cursor: uploadingScreenshot ? 'wait' : 'pointer' }}>
-                            {uploadingScreenshot ? 'Uploading...' : 'Submit for Review'}
+                            {uploadingScreenshot ? (screenshotStatus?.startsWith('scanning') ? '🔍 ' + screenshotStatus : screenshotStatus === 'uploading...' ? 'Uploading...' : 'Processing...') : 'Verify Screenshot'}
                           </button>
                         )}
                       </div>
 
+                      {screenshotStatus === 'auto_verified' && (
+                        <div style={{ marginTop: '8px', padding: '10px 12px', borderRadius: '8px', background: 'rgba(0,200,83,0.12)', border: '1px solid rgba(0,200,83,0.3)', fontSize: '0.82rem', color: '#00c853' }}>
+                          <strong>✓ Verified!</strong> We found your ModelBid link in the screenshot. Your subscription fee is waived!
+                        </div>
+                      )}
                       {screenshotStatus === 'submitted' && (
-                        <div style={{ marginTop: '8px', padding: '8px 12px', borderRadius: '8px', background: 'rgba(0,200,83,0.08)', border: '1px solid rgba(0,200,83,0.2)', fontSize: '0.78rem', color: '#00c853' }}>
-                          ✓ Screenshot submitted! We'll review it shortly.
+                        <div style={{ marginTop: '8px', padding: '8px 12px', borderRadius: '8px', background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.2)', fontSize: '0.78rem', color: '#ffd700' }}>
+                          ⏳ We couldn't automatically read the link from your screenshot, but it's been submitted for manual review. We'll verify it shortly.
                         </div>
                       )}
                       {screenshotStatus === 'duplicate' && (
