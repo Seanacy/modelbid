@@ -5641,8 +5641,10 @@
       );
     }
 
-    function ProfilePage({ modelId }) {
+    function ProfilePage({ modelId: rawModelId }) {
       const auth = useContext(AuthContext);
+      // Handle 'me' or empty modelId — resolve to current user
+      const modelId = (!rawModelId || rawModelId === 'me') ? auth.currentUser?.id : rawModelId;
       const [model, setModel] = useState(null);
       const [reviews, setReviews] = useState([]);
       const [loading, setLoading] = useState(true);
@@ -17106,6 +17108,7 @@ RULES
         if (page === 'crew') return requiresSub(<CircleCrewPage crewId={null} />);
         if (page === 'browse') return <BrowseModelsPage />;
         if (page === 'profile' && params[0]) return <ProfilePage modelId={params[0]} />;
+        if (page === 'profile') return auth.currentUser ? <ProfilePage modelId={auth.currentUser.id} /> : <LoginPage />;
         if (page === 'client' && params[0]) return <ClientProfilePage clientId={params[0]} />;
         if (page === 'formodels') return auth.profile?.role === 'client' ? <FeedPage /> : <ForModelsPage />;
         if (page === 'westackr') return <WeStackrPage />;
