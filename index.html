@@ -8,6 +8,21 @@
   <meta name="theme-color" content="#0a0a1a">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
+  <!-- Vanity URL redirect: convert /username path to #username hash route -->
+  <script>
+    (function() {
+      var path = window.location.pathname;
+      // If path is something like /username (not /join, /app, or root)
+      if (path && path !== '/' && path !== '/index.html' && path !== '/join' && path !== '/join.html' && path !== '/app') {
+        var username = path.replace(/^\//, '').replace(/\/$/, '');
+        if (username && /^[a-z0-9_]{3,30}$/.test(username)) {
+          // Redirect to hash-based route and replace history entry
+          window.location.replace('/#' + username);
+        }
+      }
+    })();
+  </script>
+
   <!-- React & Babel from CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -5643,10 +5658,11 @@
       );
     }
 
-    function ProfilePage({ modelId: rawModelId }) {
+    function ProfilePage({ modelId: rawModelId, isUsername }) {
       const auth = useContext(AuthContext);
       // Handle 'me' or empty modelId — resolve to current user
-      const modelId = (!rawModelId || rawModelId === 'me') ? auth.currentUser?.id : rawModelId;
+      const [resolvedId, setResolvedId] = useState((!rawModelId || rawModelId === 'me') ? auth.currentUser?.id : (isUsername ? null : rawModelId));
+      const modelId = resolvedId;
       const [model, setModel] = useState(null);
       const [reviews, setReviews] = useState([]);
       const [loading, setLoading] = useState(true);
@@ -5654,6 +5670,19 @@
       const [showPaywallModal, setShowPaywallModal] = useState(false);
       const [selectedGalleryItem, setSelectedGalleryItem] = useState(null);
       const [notFound, setNotFound] = useState(false);
+
+      // Username lookup: resolve username to user ID
+      useEffect(() => {
+        if (!isUsername || !rawModelId) return;
+        (async () => {
+          try {
+            const { data: prof, error } = await supabase
+              .from('profiles').select('id').eq('username', rawModelId.toLowerCase()).single();
+            if (error || !prof) { setNotFound(true); setLoading(false); return; }
+            setResolvedId(prof.id);
+          } catch (e) { setNotFound(true); setLoading(false); }
+        })();
+      }, [rawModelId, isUsername]);
       const [bookingData, setBookingData] = useState({
         date: '',
         duration: 1,
@@ -14129,6 +14158,10 @@ REMEMBER:
       const [idPhotoPreview, setIdPhotoPreview] = useState(null);
       const [selfiePreview, setSelfiePreview] = useState(null);
       const [idSubmitting, setIdSubmitting] = useState(false);
+      const [usernameInput, setUsernameInput] = useState(profile?.username || '');
+      const [usernameSaving, setUsernameSaving] = useState(false);
+      const [usernameError, setUsernameError] = useState(null);
+      const [usernameSuccess, setUsernameSuccess] = useState(false);
       const waiveSectionRef = React.useRef(null);
       const verifySectionRef = React.useRef(null);
 
@@ -14207,6 +14240,25 @@ REMEMBER:
         return <div>Loading...</div>;
       }
 
+      const saveUsername = async () => {
+        const cleaned = usernameInput.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+        if (cleaned.length < 3) { setUsernameError('Username must be at least 3 characters'); return; }
+        if (cleaned.length > 30) { setUsernameError('Username must be 30 characters or less'); return; }
+        setUsernameSaving(true); setUsernameError(null); setUsernameSuccess(false);
+        try {
+          // Check if taken
+          const { data: existing } = await supabase.from('profiles').select('id').eq('username', cleaned).single();
+          if (existing && existing.id !== currentUser.id) { setUsernameError('That username is already taken'); setUsernameSaving(false); return; }
+          const { error } = await supabase.from('profiles').update({ username: cleaned }).eq('id', currentUser.id);
+          if (error) throw error;
+          setUsernameInput(cleaned);
+          setUsernameSuccess(true);
+          patchProfile({ username: cleaned });
+          setTimeout(() => setUsernameSuccess(false), 3000);
+        } catch (err) { setUsernameError(err.message); }
+        setUsernameSaving(false);
+      };
+
       const handleSave = async () => {
         const linkPattern = /https?:\/\/\S+|www\.\S+|\S+\.(com|net|org|io|co|me|info|biz|xyz|app|dev|link|ly|to)\b/gi;
         if (data.bio && linkPattern.test(data.bio)) {
@@ -14253,7 +14305,8 @@ REMEMBER:
         isProfilePic ? setUploadingProfile(false) : setUploadingCover(false);
       };
 
-      const myPromoLink = `modelbid.tech/#profile/${currentUser.id}`;
+      const myPromoLink = profile?.username ? `modelbid.tech/${profile.username}` : `modelbid.tech/#profile/${currentUser.id}`;
+      const myForumLink = profile?.username ? `modelbid.tech/${profile.username}` : null;
 
       const handleRedeemPromo = async () => {
         if (!promoCodeInput.trim()) return;
@@ -14646,6 +14699,32 @@ REMEMBER:
             </div>
 
             <div className="form-group">
+              <label>Username (vanity URL)</label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', flex: 1, background: 'rgba(0,0,0,0.2)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                  <span style={{ padding: '10px 0 10px 12px', color: '#888', fontSize: '0.85rem', flexShrink: 0 }}>modelbid.tech/</span>
+                  <input
+                    type="text"
+                    value={usernameInput}
+                    onChange={(e) => { setUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')); setUsernameError(null); setUsernameSuccess(false); }}
+                    placeholder="yourname"
+                    maxLength={30}
+                    style={{ border: 'none', background: 'transparent', padding: '10px 12px 10px 0', flex: 1, color: 'var(--text-primary)', fontSize: '0.9rem', outline: 'none' }}
+                  />
+                </div>
+                <button onClick={saveUsername} disabled={usernameSaving || !usernameInput.trim()}
+                  style={{ padding: '10px 16px', borderRadius: '10px', border: 'none', background: usernameSuccess ? 'rgba(0,200,100,0.2)' : 'var(--accent-pink)', color: '#fff', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', flexShrink: 0, opacity: usernameSaving ? 0.5 : 1 }}>
+                  {usernameSaving ? '...' : usernameSuccess ? '✓' : 'Save'}
+                </button>
+              </div>
+              {usernameError && <div style={{ fontSize: '0.75rem', color: '#ff4444', marginTop: '4px' }}>{usernameError}</div>}
+              {usernameSuccess && <div style={{ fontSize: '0.75rem', color: '#00c864', marginTop: '4px' }}>Username saved! Your link: modelbid.tech/{usernameInput}</div>}
+              <div style={{ fontSize: '0.72rem', color: '#666', marginTop: '4px', lineHeight: 1.4 }}>
+                Letters, numbers, and underscores only. 3-30 characters. This creates a short link you can share anywhere — even on sites that block full URLs.
+              </div>
+            </div>
+
+            <div className="form-group">
               <label>Email</label>
               <input
                 type="email"
@@ -14853,10 +14932,36 @@ REMEMBER:
                     </div>
                   </div>
 
-                  {/* Option B: Embedded hyperlink */}
+                  {/* Option B: Forum-safe link (no https://) */}
+                  <div style={{ marginBottom: '10px' }}>
+                    <div style={{ fontSize: '0.72rem', color: '#888', marginBottom: '5px', fontWeight: 600 }}>
+                      Option B — Forum-safe link (bypasses link blockers)
+                    </div>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.3)',
+                      borderRadius: '10px', padding: '10px 12px', border: '1px solid rgba(138,43,226,0.15)'
+                    }}>
+                      <code style={{ flex: 1, fontSize: '0.8rem', color: '#aa6ff7', wordBreak: 'break-all' }}>
+                        {profile?.username ? `modelbid.tech/${profile.username}` : `modelbid.tech/#profile/${currentUser.id}`}
+                      </code>
+                      <button onClick={() => { const link = profile?.username ? `modelbid.tech/${profile.username}` : `modelbid.tech/#profile/${currentUser.id}`; navigator.clipboard.writeText(link); alert('Forum link copied!'); }}
+                        style={{
+                          padding: '5px 14px', borderRadius: '8px', border: '1px solid rgba(138,43,226,0.3)',
+                          background: 'rgba(138,43,226,0.1)', color: '#aa6ff7', fontWeight: 700,
+                          fontSize: '0.75rem', cursor: 'pointer', flexShrink: 0
+                        }}>Copy</button>
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: '#666', marginTop: '6px', lineHeight: 1.5 }}>
+                      {profile?.username
+                        ? 'No "https://" — most forums and bios won\'t flag this as a link. People just type it into their browser.'
+                        : 'Set a username above ↑ to get a short, clean link like modelbid.tech/yourname that bypasses link blockers on forums.'}
+                    </div>
+                  </div>
+
+                  {/* Option C: Embedded hyperlink */}
                   <div>
                     <div style={{ fontSize: '0.72rem', color: '#888', marginBottom: '5px', fontWeight: 600 }}>
-                      Option B — Embedded link (for Linktree, websites, blogs)
+                      Option C — Embedded link (for Linktree, websites, blogs)
                     </div>
                     <div style={{
                       display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.3)',
@@ -14873,7 +14978,7 @@ REMEMBER:
                         }}>Copy</button>
                     </div>
                     <div style={{ fontSize: '0.68rem', color: '#666', marginTop: '6px', lineHeight: 1.5 }}>
-                      This creates a clickable "ModelBid" text link. Use this on personal websites, Linktree, blogs, or anywhere that supports HTML. Most social bios (Instagram, Twitter, TikTok) don't support embedded links — use Option A for those.
+                      Clickable "ModelBid" text link for personal websites, Linktree, blogs, or anywhere that supports HTML.
                     </div>
                   </div>
                 </div>
@@ -17173,6 +17278,11 @@ RULES
         if (page === 'messages' && params[0]) return requiresSub(<MessagesPage conversationId={params[0]} />);
         if (page === 'messages') return requiresSub(<MessagesPage conversationId={null} />);
         if (page === 'edit-profile') return auth.currentUser ? <EditProfilePage /> : <LoginPage />;
+        if (page === 'u' && params[0]) return <ProfilePage modelId={params[0]} isUsername={true} />;
+        // Vanity URL fallback: if page doesn't match any route, check if it's a username
+        if (page && !['home','feed','wall','reputation','circle','crew','browse','profile','client','formodels','westackr','contracts','login','signup','choose-role','model-demo','cherry-picker','team','bidboard','dashboard','messages','edit-profile','admin'].includes(page)) {
+          return <ProfilePage modelId={page} isUsername={true} />;
+        }
         return !auth.currentUser ? <HomePage /> : <BrowseModelsPage />;
       };
 
