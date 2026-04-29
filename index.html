@@ -6972,8 +6972,8 @@
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
                   <h2 style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0 }}>{crew.name}</h2>
-                  {isAdmin && <button onClick={() => { setNameEdit(crew.name); setDescEdit(crew.description || ''); setEditingName(true); }}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem', color: '#888', padding: '0.2rem' }} title="Edit circle name">✏️</button>}
+                  <button onClick={() => { setNameEdit(crew.name); setDescEdit(crew.description || ''); setEditingName(true); }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem', color: '#888', padding: '0.2rem' }} title="Edit circle name">✏️</button>
                 </div>
                 <p style={{ color: '#888', fontSize: '0.8rem', margin: '0.25rem 0' }}>{crew.description}</p>
               </div>
