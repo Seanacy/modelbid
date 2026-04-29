@@ -5831,7 +5831,8 @@
           )}
 
           {/* ===== INNER CIRCLE — first thing on the page ===== */}
-          {crewData && crewData.members.length > 0 && (
+          {/* Hide from public if paused — only the owner sees it when paused */}
+          {crewData && crewData.members.length > 0 && (crewData.crew.enabled || (isOwnProfile && !viewAsPublic)) && (
           <div style={{
             marginBottom: '1rem', borderRadius: '16px', overflow: 'hidden',
             background: 'linear-gradient(135deg, #1a0a2e, #0d0015)',
