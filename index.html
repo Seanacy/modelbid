@@ -5664,7 +5664,8 @@
     function ProfilePage({ modelId: rawModelId, isUsername }) {
       const auth = useContext(AuthContext);
       // Handle 'me' or empty modelId — resolve to current user
-      const [resolvedId, setResolvedId] = useState((!rawModelId || rawModelId === 'me') ? auth.currentUser?.id : (isUsername ? null : rawModelId));
+      const directId = (!rawModelId || rawModelId === 'me') ? auth.currentUser?.id : (isUsername ? null : rawModelId);
+      const [resolvedId, setResolvedId] = useState(directId);
       const modelId = resolvedId;
       const [model, setModel] = useState(null);
       const [reviews, setReviews] = useState([]);
@@ -5674,9 +5675,16 @@
       const [selectedGalleryItem, setSelectedGalleryItem] = useState(null);
       const [notFound, setNotFound] = useState(false);
 
+      // Sync resolvedId when directId changes (handles prop updates on re-render)
+      useEffect(() => {
+        if (directId) setResolvedId(directId);
+      }, [directId]);
+
       // Username lookup: resolve username to user ID
       useEffect(() => {
         if (!isUsername || !rawModelId) return;
+        setNotFound(false);
+        setLoading(true);
         (async () => {
           try {
             const { data: prof, error } = await supabase
