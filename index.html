@@ -15188,38 +15188,39 @@ REMEMBER:
                     Step 1: Copy your unique link
                   </div>
 
-                  {/* Option A: Raw URL */}
+                  {/* Option A: Full clickable URL */}
                   <div style={{ marginBottom: '10px' }}>
                     <div style={{ fontSize: '0.72rem', color: '#888', marginBottom: '5px', fontWeight: 600 }}>
-                      Option A — Raw link (for social bios)
+                      Option A — Full link (for social bios, Linktree, anywhere clickable)
                     </div>
                     <div style={{
                       display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.3)',
                       borderRadius: '10px', padding: '10px 12px', border: '1px solid rgba(255,215,0,0.15)'
                     }}>
-                      <code style={{ flex: 1, fontSize: '0.8rem', color: '#ffd700', wordBreak: 'break-all' }}>{myPromoLink}</code>
-                      <button onClick={() => { navigator.clipboard.writeText(myPromoLink); alert('Link copied!'); }}
+                      <code style={{ flex: 1, fontSize: '0.8rem', color: '#ffd700', wordBreak: 'break-all' }}>{`https://${myPromoLink}`}</code>
+                      <button onClick={() => { navigator.clipboard.writeText(`https://${myPromoLink}`); alert('Link copied!'); }}
                         style={{
                           padding: '5px 14px', borderRadius: '8px', border: '1px solid rgba(255,215,0,0.3)',
                           background: 'rgba(255,215,0,0.1)', color: '#ffd700', fontWeight: 700,
                           fontSize: '0.75rem', cursor: 'pointer', flexShrink: 0
                         }}>Copy</button>
                     </div>
+                    <div style={{ fontSize: '0.68rem', color: '#666', marginTop: '6px', lineHeight: 1.5 }}>
+                      Use this on Instagram, Twitter, TikTok, Linktree — anywhere that allows links.
+                    </div>
                   </div>
 
                   {/* Option B: Forum-safe link (no https://) */}
                   <div style={{ marginBottom: '10px' }}>
                     <div style={{ fontSize: '0.72rem', color: '#888', marginBottom: '5px', fontWeight: 600 }}>
-                      Option B — Forum-safe link (bypasses link blockers)
+                      Option B — Forum-safe (bypasses link blockers)
                     </div>
                     <div style={{
                       display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.3)',
                       borderRadius: '10px', padding: '10px 12px', border: '1px solid rgba(138,43,226,0.15)'
                     }}>
-                      <code style={{ flex: 1, fontSize: '0.8rem', color: '#aa6ff7', wordBreak: 'break-all' }}>
-                        {profile?.username ? `modelbid.tech/${profile.username}` : `modelbid.tech/#profile/${currentUser.id}`}
-                      </code>
-                      <button onClick={() => { const link = profile?.username ? `modelbid.tech/${profile.username}` : `modelbid.tech/#profile/${currentUser.id}`; navigator.clipboard.writeText(link); alert('Forum link copied!'); }}
+                      <code style={{ flex: 1, fontSize: '0.8rem', color: '#aa6ff7', wordBreak: 'break-all' }}>{myPromoLink}</code>
+                      <button onClick={() => { navigator.clipboard.writeText(myPromoLink); alert('Forum link copied!'); }}
                         style={{
                           padding: '5px 14px', borderRadius: '8px', border: '1px solid rgba(138,43,226,0.3)',
                           background: 'rgba(138,43,226,0.1)', color: '#aa6ff7', fontWeight: 700,
@@ -15228,15 +15229,15 @@ REMEMBER:
                     </div>
                     <div style={{ fontSize: '0.68rem', color: '#666', marginTop: '6px', lineHeight: 1.5 }}>
                       {profile?.username
-                        ? 'No "https://" — most forums and bios won\'t flag this as a link. People just type it into their browser.'
-                        : 'Set a username above ↑ to get a short, clean link like modelbid.tech/yourname that bypasses link blockers on forums.'}
+                        ? 'No "https://" — forums won\'t flag this as a link. People just type it into their browser.'
+                        : 'Set a username above ↑ to get a short link like modelbid.tech/yourname that bypasses link blockers.'}
                     </div>
                   </div>
 
                   {/* Option C: Embedded hyperlink */}
                   <div>
                     <div style={{ fontSize: '0.72rem', color: '#888', marginBottom: '5px', fontWeight: 600 }}>
-                      Option C — Embedded link (for Linktree, websites, blogs)
+                      Option C — HTML embed (for websites & blogs)
                     </div>
                     <div style={{
                       display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.3)',
@@ -15253,7 +15254,7 @@ REMEMBER:
                         }}>Copy</button>
                     </div>
                     <div style={{ fontSize: '0.68rem', color: '#666', marginTop: '6px', lineHeight: 1.5 }}>
-                      Clickable "ModelBid" text link for personal websites, Linktree, blogs, or anywhere that supports HTML.
+                      Clickable "ModelBid" text for personal websites or blogs that support HTML.
                     </div>
                   </div>
                 </div>
