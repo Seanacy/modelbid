@@ -13291,7 +13291,7 @@ REMEMBER:
                           🔗 Share Link
                         </button>
                         <button className="ws-msg-btn" onClick={() => {
-                          if (!isUpgraded) { alert('Upgrade to a paid tier to message campaign creators!'); return; }
+                          if (!isUpgraded) { auth.showToast('Upgrade to a paid tier to message campaign creators!', 'info'); return; }
                           alert('Opening conversation with ' + c.creator.name);
                         }}>
                           💬 Message
@@ -17077,7 +17077,7 @@ RULES
                 const product = isModel ? 'model_premium' : 'client_access';
                 await redirectToCheckout(product);
               } catch (err) {
-                alert(err.message);
+                console.error('Checkout error:', err);
               }
             }} style={{
               display: 'block', width: '100%', padding: '0.8rem',
