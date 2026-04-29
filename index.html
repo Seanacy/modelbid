@@ -34,8 +34,7 @@
   <!-- Stripe.js -->
   <script src="https://js.stripe.com/v3/"></script>
 
-  <!-- Tesseract.js OCR -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <!-- Tesseract.js OCR (loaded on demand) -->
 
   <style>
     /* ===== CSS CUSTOM PROPERTIES & GLOBAL STYLES ===== */
@@ -14429,10 +14428,21 @@ REMEMBER:
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       };
 
+      // Lazy-load Tesseract.js
+      const loadTesseract = () => new Promise((resolve, reject) => {
+        if (window.Tesseract) { resolve(window.Tesseract); return; }
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+        script.onload = () => resolve(window.Tesseract);
+        script.onerror = () => reject(new Error('Failed to load OCR engine'));
+        document.head.appendChild(script);
+      });
+
       // OCR scan: read text from an image file and check for ModelBid link
       const scanScreenshotForLink = async (file) => {
         try {
-          const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+          const Tess = await loadTesseract();
+          const { data: { text } } = await Tess.recognize(file, 'eng', {
             logger: m => { if (m.status === 'recognizing text') setScreenshotStatus(`scanning (${Math.round(m.progress * 100)}%)`); }
           });
           const cleaned = text.toLowerCase().replace(/\s+/g, '');
