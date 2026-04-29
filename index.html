@@ -5697,9 +5697,17 @@
       const isOwnProfile = auth.currentUser && modelId === auth.currentUser.id;
 
       useEffect(() => {
+        // Don't fetch if modelId hasn't resolved yet
+        if (!modelId) return;
+
+        // Reset state when modelId changes (prevents stale notFound from previous render)
+        setNotFound(false);
+        setLoading(true);
+        setModel(null);
+
         const timeout = setTimeout(() => {
           setLoading(false);
-          if (!model) setNotFound(true);
+          setNotFound(true);
         }, 5000);
 
         const fetchData = async () => {
@@ -5743,7 +5751,8 @@
         return () => clearTimeout(timeout);
       }, [modelId]);
 
-      if (loading) {
+      // Still waiting for modelId to resolve (e.g. auth loading)
+      if (!modelId || loading) {
         return <div className="text-center" style={{ padding: '2rem' }}>Loading profile...</div>;
       }
 
