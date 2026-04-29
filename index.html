@@ -4385,6 +4385,7 @@
       const [currentUser, setCurrentUser] = useState(null);
       const [profile, setProfile] = useState(null);
       const [loading, setLoading] = useState(true);
+      const [profileLoading, setProfileLoading] = useState(false);
       const [toast, setToast] = useState(null);
 
       // Initialize auth state on mount
@@ -4497,6 +4498,7 @@
       }, []);
 
       const fetchProfile = async (userId) => {
+        setProfileLoading(true);
         try {
           const timeoutPromise = new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
@@ -4535,6 +4537,8 @@
               if (data) setProfile(data);
             } catch (e) { /* silent retry */ }
           }, 2000);
+        } finally {
+          setProfileLoading(false);
         }
       };
 
@@ -4756,6 +4760,7 @@
         currentUser,
         profile,
         loading,
+        profileLoading,
         signup,
         login,
         signInWithGoogle,
@@ -7440,7 +7445,8 @@
       }, [auth.currentUser, crewId]);
 
       // Models must be verified to use Inner Circle / Private Feed
-      if (isModel && !isVerified) {
+      // But don't flash the gate while profile is still loading
+      if (isModel && !isVerified && !auth.profileLoading) {
         return (
           <div style={{ maxWidth: "500px", margin: "0 auto", padding: "2rem", textAlign: "center" }}>
             <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🔒</div>
@@ -7590,7 +7596,8 @@
       if (loading) return React.createElement("div", { style: { textAlign: "center", padding: "3rem", color: "#888" } }, "Loading...");
 
       // Models must be verified to use Inner Circle / Private Feed
-      if (isModel && !isVerified) {
+      // But don't flash the gate while profile is still loading
+      if (isModel && !isVerified && !auth.profileLoading) {
         return (
           <div style={{ maxWidth: "500px", margin: "0 auto", padding: "2rem", textAlign: "center" }}>
             <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🔒</div>
@@ -16938,9 +16945,14 @@ RULES
 
       // CACHE CHECK: if we've confirmed active this session, stay active.
       // This prevents ANY flash — once active, always active until logout.
+      // Check cache FIRST, even before profile loads fully — this is the #1 flash killer
       const cacheKey = profile.id ? `sub_active_${profile.id}` : null;
       if (cacheKey) {
         try { if (sessionStorage.getItem(cacheKey) === '1') return true; } catch(e) {}
+      }
+      // Also check localStorage for cross-session persistence (survives tab close)
+      if (cacheKey) {
+        try { if (localStorage.getItem(cacheKey) === '1') return true; } catch(e) {}
       }
 
       // Still loading real profile — don't block
@@ -16961,6 +16973,12 @@ RULES
       // Cache the result so it can't flash on subsequent renders
       if (active && cacheKey) {
         try { sessionStorage.setItem(cacheKey, '1'); } catch(e) {}
+        try { localStorage.setItem(cacheKey, '1'); } catch(e) {}
+      }
+      // If NOT active, clear any stale cache (e.g. admin revoked access)
+      if (!active && cacheKey) {
+        try { sessionStorage.removeItem(cacheKey); } catch(e) {}
+        try { localStorage.removeItem(cacheKey); } catch(e) {}
       }
       return active;
     }
@@ -17064,6 +17082,12 @@ RULES
         // isSubscriptionActive handles fallback profiles, promo codes, social links, etc.
         const requiresSub = (component) => {
           if (!auth.currentUser) return <LoginPage />;
+          // Don't flash the gate page while profile is still loading from Supabase
+          if (auth.profileLoading && !subActive) return (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+              <div className="loading-spinner"></div>
+            </div>
+          );
           if (!subActive) return <SubscriptionGatePage />;
           return component;
         };
