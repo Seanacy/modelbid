@@ -4339,7 +4339,9 @@
     const STRIPE_PUBLIC_KEY = 'pk_live_51TNi65Pk83t0B9h1dtusB7JoyzaxNOgw6rqy2i5pv3PgagLEMTyiRWodBLDH7Ivand6zzAQ4MHtriQge3ureNBeC00bKv4rCCu';
 
     // Helper: redirect to Stripe Checkout via Edge Function
-    const redirectToCheckout = async (product) => {
+    // For fixed-price products: redirectToCheckout('model_premium')
+    // For dynamic-price products: redirectToCheckout('store_item', { amount: 29.99, item_name: 'T-Shirt', item_id: '123' })
+    const redirectToCheckout = async (product, extras = {}) => {
       const { data: { session: authSession } } = await supabase.auth.getSession();
       if (!authSession?.access_token) {
         throw new Error('You must be logged in');
@@ -4354,7 +4356,7 @@
             'Authorization': `Bearer ${authSession.access_token}`,
             'apikey': SUPABASE_ANON_KEY,
           },
-          body: JSON.stringify({ product }),
+          body: JSON.stringify({ product, ...extras }),
         }
       );
 
@@ -5787,6 +5789,18 @@
           );
           if (success) {
             setShowBookingModal(false);
+            // Redirect to Stripe for deposit payment
+            const rate = parseFloat(model.rate || 0);
+            const depositAmount = rate * bookingData.duration;
+            if (depositAmount > 0) {
+              try {
+                await redirectToCheckout('booking_deposit', {
+                  amount: depositAmount,
+                  item_name: 'Booking with ' + (model.display_name || 'Model') + ' — ' + bookingData.duration + 'hr',
+                  model_id: model.id,
+                });
+              } catch(e) { auth.showToast('Booking saved! Payment: ' + e.message, 'error'); }
+            }
           }
         }
       };
@@ -7486,19 +7500,19 @@
 
       const handleSubscribe = async (tier) => {
         if (!auth.currentUser) { window.location.hash = 'signup'; return; }
+        // Find the price for this tier
+        const tierPrices = { fan: crew.tier1_price, vip: crew.tier2_price, elite: crew.tier3_price };
+        const tierNames = { fan: crew.tier1_name, vip: crew.tier2_name, elite: crew.tier3_name };
+        const price = parseFloat(tierPrices[tier] || 9.99);
+        const tierName = tierNames[tier] || tier;
         try {
-          await supabase.from('crew_subscriptions').upsert({
+          await redirectToCheckout('crew_subscription', {
+            amount: price,
+            item_name: crew.name + ' — ' + tierName + ' Tier',
             crew_id: crewId,
-            subscriber_id: auth.currentUser.id,
             tier: tier,
-            active: true,
-            referred_by: refParam || null,
-          }, { onConflict: 'crew_id,subscriber_id' });
-          setIsSubscribed(true);
-          setSubscribedTier(tier);
-          setSubCount(prev => prev + 1);
-          auth.showToast('Subscribed to ' + crew.name + '!', 'success');
-        } catch(e) { auth.showToast('Failed to subscribe', 'error'); }
+          });
+        } catch(e) { auth.showToast(e.message, 'error'); }
       };
 
       const tierHasAccess = (postTiers) => {
@@ -13213,9 +13227,17 @@ REMEMBER:
                                           {available === 0 ? 'Sold out' : ''}
                                         </span>
                                       </div>
-                                      <button onClick={() => {
+                                      <button onClick={async () => {
                                         if (available === 0) return;
-                                        alert('Stripe checkout coming soon! You\'ll be charged $' + Number(item.price).toFixed(2) + ' + fees for "' + item.name + '".');
+                                        if (!auth.currentUser) { window.location.hash = 'signup'; return; }
+                                        try {
+                                          await redirectToCheckout('store_item', {
+                                            amount: Number(item.price),
+                                            item_name: item.name,
+                                            item_id: item.id,
+                                            campaign_id: c.id,
+                                          });
+                                        } catch(e) { auth.showToast(e.message, 'error'); }
                                       }}
                                         style={{
                                           width: '100%', marginTop: '6px', padding: '5px 0', borderRadius: '6px', border: 'none',
@@ -13251,7 +13273,18 @@ REMEMBER:
                     {/* Action Buttons */}
                     {!c.funded && (
                       <div className="ws-card-actions" style={{ marginTop: '14px' }}>
-                        <button className="ws-pledge-btn" onClick={() => alert('Pledge flow coming with Stripe integration! You\'ll be able to choose your pledge amount.')}>
+                        <button className="ws-pledge-btn" onClick={async () => {
+                          if (!auth.currentUser) { window.location.hash = 'signup'; return; }
+                          const pledgeAmount = prompt('How much would you like to pledge? (USD)', '25');
+                          if (!pledgeAmount || isNaN(Number(pledgeAmount)) || Number(pledgeAmount) <= 0) return;
+                          try {
+                            await redirectToCheckout('campaign_backing', {
+                              amount: Number(pledgeAmount),
+                              item_name: 'Back: ' + (c.title || 'Campaign'),
+                              campaign_id: c.id,
+                            });
+                          } catch(e) { auth.showToast(e.message, 'error'); }
+                        }}>
                           💰 Back This Shoot
                         </button>
                         <button className="ws-share-btn" onClick={() => { navigator.clipboard.writeText('https://modelbid.tech/#westackr/' + c.id); alert('Campaign link copied! Share it anywhere.'); }}>
@@ -13274,7 +13307,13 @@ REMEMBER:
                           <strong>Messages Locked</strong>
                           <span>You can browse & back campaigns for free. Upgrade to read and send messages about this campaign.</span>
                         </div>
-                        <button className="ws-msg-gate-btn" onClick={() => alert('Upgrade tiers coming soon with Stripe!')}>Upgrade</button>
+                        <button className="ws-msg-gate-btn" onClick={async () => {
+                          if (!auth.currentUser) { window.location.hash = 'signup'; return; }
+                          try {
+                            const product = auth.profile?.role === 'model' ? 'model_premium' : 'client_access';
+                            await redirectToCheckout(product);
+                          } catch(e) { auth.showToast(e.message, 'error'); }
+                        }}>Upgrade</button>
                       </div>
                     )}
                   </div>
