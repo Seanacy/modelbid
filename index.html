@@ -10230,6 +10230,11 @@ REMEMBER:
       const [trafficData, setTrafficData] = useState(null);
       const [loadingTraffic, setLoadingTraffic] = useState(false);
       const [trafficRange, setTrafficRange] = useState('today');
+      // Referrer watchlist & alerts state
+      const [watchlist, setWatchlist] = useState([]);
+      const [watchlistInput, setWatchlistInput] = useState('');
+      const [referrerAlerts, setReferrerAlerts] = useState([]);
+      const [unseenAlertCount, setUnseenAlertCount] = useState(0);
 
       // Direct REST helper to avoid Supabase JS auth lock issues
       const adminFetch = async (table, { method = 'GET', filters = '', body = null, select = '*' } = {}) => {
@@ -10540,6 +10545,71 @@ REMEMBER:
         setLoadingTraffic(false);
       };
 
+      // Fetch referrer watchlist
+      const fetchWatchlist = async () => {
+        try {
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/referrer_watchlist?select=*&order=added_at.desc`, {
+            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+          });
+          const data = await res.json();
+          setWatchlist(Array.isArray(data) ? data : []);
+        } catch(e) { console.error('Watchlist fetch error:', e); }
+      };
+
+      // Add domain to watchlist
+      const addToWatchlist = async () => {
+        const domain = watchlistInput.trim().toLowerCase().replace(/^(https?:\/\/)?(www\.)?/, '').replace(/\/.*$/, '');
+        if (!domain) return;
+        try {
+          await fetch(`${SUPABASE_URL}/rest/v1/referrer_watchlist`, {
+            method: 'POST',
+            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ domain })
+          });
+          setWatchlistInput('');
+          showAdminToast('Added ' + domain + ' to watchlist');
+          fetchWatchlist();
+        } catch(e) { showAdminToast('Failed to add: ' + e.message); }
+      };
+
+      // Remove domain from watchlist
+      const removeFromWatchlist = async (id) => {
+        try {
+          await fetch(`${SUPABASE_URL}/rest/v1/referrer_watchlist?id=eq.${id}`, {
+            method: 'DELETE',
+            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+          });
+          showAdminToast('Removed from watchlist');
+          fetchWatchlist();
+        } catch(e) { showAdminToast('Remove failed: ' + e.message); }
+      };
+
+      // Fetch referrer alerts
+      const fetchReferrerAlerts = async () => {
+        try {
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/referrer_alerts?select=*&order=created_at.desc&limit=50`, {
+            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+          });
+          const data = await res.json();
+          const alerts = Array.isArray(data) ? data : [];
+          setReferrerAlerts(alerts);
+          setUnseenAlertCount(alerts.filter(a => !a.seen).length);
+        } catch(e) { console.error('Alerts fetch error:', e); }
+      };
+
+      // Mark all alerts as seen
+      const markAlertsSeen = async () => {
+        try {
+          await fetch(`${SUPABASE_URL}/rest/v1/referrer_alerts?seen=eq.false`, {
+            method: 'PATCH',
+            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ seen: true })
+          });
+          setUnseenAlertCount(0);
+          setReferrerAlerts(prev => prev.map(a => ({ ...a, seen: true })));
+        } catch(e) { console.error('Mark seen error:', e); }
+      };
+
       // Fetch screenshot verifications
       const fetchScreenshotVerifications = async () => {
         setLoadingScreenshots(true);
@@ -10593,13 +10663,27 @@ REMEMBER:
         } catch(e) { showAdminToast('Reject failed: ' + e.message); }
       };
 
+      // Fetch unseen alert count on admin load (for badge)
+      useEffect(() => {
+        if (!adminAuthed) return;
+        (async () => {
+          try {
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/referrer_alerts?seen=eq.false&select=id`, {
+              headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Accept': 'application/json' }
+            });
+            const data = await res.json();
+            setUnseenAlertCount(Array.isArray(data) ? data.length : 0);
+          } catch(e) {}
+        })();
+      }, [adminAuthed]);
+
       useEffect(() => {
         if (!adminAuthed) return;
         if (tab === 'users' && users.length === 0) fetchUsers();
         if (tab === 'auth') fetchAuthUsers();
         if (tab === 'verify') fetchVerifications();
         if (tab === 'screenshots') fetchScreenshotVerifications();
-        if (tab === 'traffic') fetchTraffic();
+        if (tab === 'traffic') { fetchTraffic(); fetchWatchlist(); fetchReferrerAlerts(); }
         if (tab === 'bookings' && allBookings.length === 0) fetchBookings();
         if (tab === 'posts' && allPosts.length === 0) fetchPosts();
       }, [tab, adminAuthed]);
@@ -10789,7 +10873,7 @@ REMEMBER:
               <button onClick={() => setTab('auth')} style={tabStyle('auth')}>Auth Users</button>
               <button onClick={() => { setTab('verify'); fetchVerifications(); }} style={tabStyle('verify')}>Verifications</button>
               <button onClick={() => { setTab('screenshots'); fetchScreenshotVerifications(); }} style={tabStyle('screenshots')}>Screenshots</button>
-              <button onClick={() => { setTab('traffic'); fetchTraffic(); }} style={tabStyle('traffic')}>Traffic</button>
+              <button onClick={() => { setTab('traffic'); fetchTraffic(); fetchWatchlist(); fetchReferrerAlerts(); }} style={{...tabStyle('traffic'), position:'relative'}}>Traffic{unseenAlertCount > 0 && <span style={{position:'absolute',top:'-4px',right:'-4px',background:'#e74c3c',color:'#fff',borderRadius:'50%',width:'18px',height:'18px',fontSize:'0.65rem',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:'bold'}}>{unseenAlertCount}</span>}</button>
               <button onClick={() => setTab('bookings')} style={tabStyle('bookings')}>Bookings</button>
               <button onClick={() => setTab('posts')} style={tabStyle('posts')}>Posts</button>
             </div>
@@ -11370,6 +11454,53 @@ REMEMBER:
                   </div>
                 </div>
               )}
+
+              {/* REFERRER WATCHLIST & ALERTS */}
+              <div style={{ marginTop: '1.5rem' }}>
+                <div style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid var(--border-color)', marginBottom: '1rem' }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, marginBottom: '0.75rem' }}>Referrer Watchlist</div>
+                  <div style={{ fontSize: '0.72rem', color: '#888', marginBottom: '0.75rem' }}>Get notified when traffic arrives from these sites</div>
+                  <div style={{ display: 'flex', gap: '6px', marginBottom: '0.75rem' }}>
+                    <input value={watchlistInput} onChange={e => setWatchlistInput(e.target.value)} placeholder="e.g. megapersonals.eu" onKeyDown={e => e.key === 'Enter' && addToWatchlist()}
+                      style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: '0.82rem', outline: 'none' }} />
+                    <button onClick={addToWatchlist} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#ffd700', color: '#000', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>Add</button>
+                  </div>
+                  {watchlist.length === 0 ? (
+                    <div style={{ fontSize: '0.78rem', color: '#666' }}>No domains being watched yet</div>
+                  ) : (
+                    watchlist.map(w => (
+                      <div key={w.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        <span style={{ color: '#ddd', fontSize: '0.82rem', fontWeight: 600 }}>{w.domain}</span>
+                        <button onClick={() => removeFromWatchlist(w.id)} style={{ padding: '3px 10px', borderRadius: 6, border: '1px solid rgba(231,76,60,0.3)', background: 'rgba(231,76,60,0.1)', color: '#e74c3c', fontSize: '0.7rem', cursor: 'pointer' }}>Remove</button>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700 }}>Referrer Alerts {unseenAlertCount > 0 && <span style={{ background: '#e74c3c', color: '#fff', borderRadius: 12, padding: '2px 8px', fontSize: '0.65rem', fontWeight: 700, marginLeft: 6 }}>{unseenAlertCount} new</span>}</div>
+                    {unseenAlertCount > 0 && <button onClick={markAlertsSeen} style={{ padding: '4px 12px', borderRadius: 6, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#aaa', fontSize: '0.72rem', cursor: 'pointer' }}>Mark all read</button>}
+                  </div>
+                  {referrerAlerts.length === 0 ? (
+                    <div style={{ fontSize: '0.78rem', color: '#666' }}>No alerts yet. Add domains above to start tracking.</div>
+                  ) : (
+                    referrerAlerts.slice(0, 20).map(a => (
+                      <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', opacity: a.seen ? 0.6 : 1 }}>
+                        <div>
+                          <div style={{ fontSize: '0.82rem', color: a.seen ? '#888' : '#ffd700', fontWeight: a.seen ? 400 : 700 }}>
+                            {!a.seen && <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#e74c3c', marginRight: 6 }} />}
+                            Visit from <span style={{ color: '#ff6ec7' }}>{a.domain}</span>
+                          </div>
+                          <div style={{ fontSize: '0.7rem', color: '#666', marginTop: 2 }}>
+                            Page: {a.page || 'home'} · {new Date(a.created_at).toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -17766,6 +17897,27 @@ RULES
           user_id: auth.currentUser?.id || null,
           referrer: document.referrer || null,
         }).then(() => {});
+
+        // Check if referrer matches a watched domain → create alert
+        const ref = document.referrer;
+        if (ref) {
+          try {
+            const refDomain = new URL(ref).hostname.replace(/^www\./, '').toLowerCase();
+            supabase.from('referrer_watchlist').select('domain').then(({ data: watchlist }) => {
+              if (!watchlist) return;
+              const match = watchlist.find(w => refDomain.includes(w.domain.toLowerCase()));
+              if (match) {
+                supabase.from('referrer_alerts').insert({
+                  domain: match.domain,
+                  page: pageName,
+                  visitor_id: visitorId,
+                  user_id: auth.currentUser?.id || null,
+                  referrer_url: ref,
+                }).then(() => {});
+              }
+            });
+          } catch (e) {}
+        }
       }, [currentPage]);
 
       if (auth.loading) {
