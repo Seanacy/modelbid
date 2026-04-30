@@ -5679,18 +5679,29 @@
         if (directId) setResolvedId(directId);
       }, [directId]);
 
-      // Username lookup: resolve username to user ID
+      // Username lookup: resolve username to user ID, then fetch profile directly
       useEffect(() => {
         if (!isUsername || !rawModelId) return;
         setNotFound(false);
         setLoading(true);
+        setModel(null);
         (async () => {
           try {
             const { data: prof, error } = await supabase
               .from('profiles').select('id').eq('username', rawModelId.toLowerCase()).single();
             if (error || !prof) { setNotFound(true); setLoading(false); return; }
             setResolvedId(prof.id);
-          } catch (e) { setNotFound(true); setLoading(false); }
+            // Also fetch the profile data directly to avoid race conditions
+            const { data: modelData, error: modelError } = await supabase
+              .from('profiles').select('*').eq('id', prof.id).single();
+            if (modelError) throw modelError;
+            setModel(modelData);
+            setLoading(false);
+            // Fetch reviews
+            const { data: reviewsData } = await supabase.from('reviews')
+              .select('*, reviewer_id(*)').eq('model_id', prof.id).order('created_at', { ascending: false });
+            if (reviewsData) setReviews(reviewsData);
+          } catch (e) { console.error('Username lookup error:', e); setNotFound(true); setLoading(false); }
         })();
       }, [rawModelId, isUsername]);
       const [bookingData, setBookingData] = useState({
