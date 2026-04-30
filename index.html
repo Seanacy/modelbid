@@ -5331,6 +5331,117 @@
       );
     }
 
+    // ===== FEATURED INNER CIRCLES PAGE =====
+    function FeaturedCirclesPage() {
+      const auth = useContext(AuthContext);
+      const [featured, setFeatured] = useState([]);
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => {
+        (async () => {
+          try {
+            // Get featured circle entries
+            const { data: featuredList, error } = await supabase
+              .from('featured_circles').select('*').order('display_order', { ascending: true });
+            if (error || !featuredList || featuredList.length === 0) {
+              setFeatured([]);
+              setLoading(false);
+              return;
+            }
+            // Get model profiles for each featured circle
+            const modelIds = featuredList.map(f => f.model_id);
+            const { data: profiles } = await supabase
+              .from('profiles').select('id, display_name, profile_photo_url, avatar_emoji, username, bio')
+              .in('id', modelIds);
+            // Get crews for each model to get pricing
+            const { data: memberships } = await supabase
+              .from('crew_members').select('user_id, crew_id, role')
+              .in('user_id', modelIds).eq('role', 'admin');
+            let crewMap = {};
+            if (memberships && memberships.length > 0) {
+              const crewIds = [...new Set(memberships.map(m => m.crew_id))];
+              const { data: crews } = await supabase
+                .from('crews').select('id, name, tier1_price, tier1_name, admin_id')
+                .in('id', crewIds);
+              if (crews) {
+                crews.forEach(c => { crewMap[c.admin_id] = c; });
+              }
+            }
+            // Merge data
+            const merged = featuredList.map(f => {
+              const profile = (profiles || []).find(p => p.id === f.model_id) || {};
+              const crew = crewMap[f.model_id] || null;
+              return { ...f, profile, crew };
+            }).filter(f => f.profile.id); // only show if profile exists
+            setFeatured(merged);
+          } catch (e) { console.error('Featured circles error:', e); }
+          setLoading(false);
+        })();
+      }, []);
+
+      return (
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: '1rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <h1 style={{ fontSize: '1.8rem', fontWeight: 800, background: 'linear-gradient(135deg, #ffd700, #ff6ec7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.5rem' }}>Inner Circles</h1>
+            <p style={{ color: '#888', fontSize: '0.9rem', maxWidth: 500, margin: '0 auto' }}>Exclusive content from top models. Subscribe to get behind-the-scenes access, private posts, and direct interaction.</p>
+          </div>
+
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '3rem', color: '#888' }}>Loading...</div>
+          ) : featured.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '3rem' }}>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔒</div>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: '#fff', marginBottom: '0.75rem' }}>Coming Soon</h2>
+              <p style={{ color: '#888', fontSize: '0.9rem', maxWidth: 400, margin: '0 auto 1.5rem' }}>Featured Inner Circles are on the way. Models are setting up exclusive content right now.</p>
+              {auth.currentUser && auth.profile?.role === 'model' ? (
+                <div style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,110,199,0.1))', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 12, padding: '1.25rem', maxWidth: 420, margin: '0 auto' }}>
+                  <div style={{ fontSize: '0.85rem', color: '#ffd700', fontWeight: 700, marginBottom: '0.5rem' }}>Want to be featured?</div>
+                  <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '0.75rem' }}>Create your Inner Circle, set your tiers, and start posting exclusive content. The admin will feature top circles here.</div>
+                  <button onClick={() => window.location.hash = 'crew'} style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #ffd700, #ff6ec7)', color: '#000', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}>Create Your Circle</button>
+                </div>
+              ) : !auth.currentUser ? (
+                <div>
+                  <p style={{ color: '#666', fontSize: '0.82rem', marginBottom: '1rem' }}>Sign up to be the first to know when circles go live.</p>
+                  <button onClick={() => window.location.hash = 'signup'} style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #ffd700, #ff6ec7)', color: '#000', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer' }}>Sign Up</button>
+                </div>
+              ) : (
+                <p style={{ color: '#666', fontSize: '0.82rem' }}>Check back soon — new circles are being added regularly.</p>
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
+              {featured.map(f => (
+                <div key={f.id} onClick={() => window.location.hash = f.profile.username ? f.profile.username : 'circle/' + f.model_id}
+                  style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border-color)', overflow: 'hidden', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(255,215,0,0.15)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}>
+                  {/* Model photo */}
+                  <div style={{ height: 220, background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                    {f.profile.profile_photo_url ? (
+                      <img src={f.profile.profile_photo_url} alt={f.profile.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <span style={{ fontSize: '4rem' }}>{f.profile.avatar_emoji || '👤'}</span>
+                    )}
+                  </div>
+                  {/* Info */}
+                  <div style={{ padding: '1rem' }}>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff', marginBottom: '0.25rem' }}>{f.profile.display_name || 'Model'}</div>
+                    {f.profile.username && <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.5rem' }}>@{f.profile.username}</div>}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.82rem', color: '#ff6ec7', fontWeight: 700 }}>
+                        {f.crew ? `$${parseFloat(f.crew.tier1_price || 9.99).toFixed(2)}/mo` : 'View Profile'}
+                      </span>
+                      <span style={{ fontSize: '0.72rem', background: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,110,199,0.15))', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 20, padding: '3px 10px', color: '#ffd700', fontWeight: 600 }}>Inner Circle</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     function BrowseModelsPage() {
       const auth = useContext(AuthContext);
       const [models, setModels] = useState([]);
@@ -10235,6 +10346,11 @@ REMEMBER:
       const [watchlistInput, setWatchlistInput] = useState('');
       const [referrerAlerts, setReferrerAlerts] = useState([]);
       const [unseenAlertCount, setUnseenAlertCount] = useState(0);
+      // Featured circles admin state
+      const [featuredCircles, setFeaturedCircles] = useState([]);
+      const [featuredSearchTerm, setFeaturedSearchTerm] = useState('');
+      const [featuredSearchResults, setFeaturedSearchResults] = useState([]);
+      const [searchingFeatured, setSearchingFeatured] = useState(false);
 
       // Direct REST helper to avoid Supabase JS auth lock issues
       const adminFetch = async (table, { method = 'GET', filters = '', body = null, select = '*' } = {}) => {
@@ -10610,6 +10726,74 @@ REMEMBER:
         } catch(e) { console.error('Mark seen error:', e); }
       };
 
+      // Fetch featured circles (admin)
+      const fetchFeaturedCircles = async () => {
+        try {
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/featured_circles?select=*&order=display_order.asc`, {
+            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Accept': 'application/json' }
+          });
+          const data = await res.json();
+          const list = Array.isArray(data) ? data : [];
+          // Enrich with profile data
+          if (list.length > 0) {
+            const ids = list.map(f => f.model_id);
+            const profRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=in.(${ids.join(',')})&select=id,display_name,profile_photo_url,avatar_emoji,username`, {
+              headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Accept': 'application/json' }
+            });
+            const profiles = await profRes.json();
+            const enriched = list.map(f => ({
+              ...f,
+              profile: (profiles || []).find(p => p.id === f.model_id) || {}
+            }));
+            setFeaturedCircles(enriched);
+          } else {
+            setFeaturedCircles([]);
+          }
+        } catch(e) { console.error('Featured circles fetch error:', e); }
+      };
+
+      // Search models to feature
+      const searchModelsToFeature = async () => {
+        if (!featuredSearchTerm.trim()) return;
+        setSearchingFeatured(true);
+        try {
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?or=(display_name.ilike.*${featuredSearchTerm.trim()}*,username.ilike.*${featuredSearchTerm.trim()}*)&role=eq.model&select=id,display_name,profile_photo_url,avatar_emoji,username&limit=10`, {
+            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Accept': 'application/json' }
+          });
+          const data = await res.json();
+          setFeaturedSearchResults(Array.isArray(data) ? data : []);
+        } catch(e) { console.error('Search error:', e); }
+        setSearchingFeatured(false);
+      };
+
+      // Add model to featured
+      const addFeaturedCircle = async (modelId) => {
+        try {
+          const order = featuredCircles.length;
+          await fetch(`${SUPABASE_URL}/rest/v1/featured_circles`, {
+            method: 'POST',
+            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ model_id: modelId, display_order: order })
+          });
+          showAdminToast('Model added to featured circles');
+          setFeaturedSearchResults([]);
+          setFeaturedSearchTerm('');
+          fetchFeaturedCircles();
+        } catch(e) { showAdminToast('Failed: ' + e.message); }
+      };
+
+      // Remove model from featured
+      const removeFeaturedCircle = async (id) => {
+        try {
+          await fetch(`${SUPABASE_URL}/rest/v1/featured_circles?id=eq.${id}`, {
+            method: 'DELETE',
+            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+          });
+          showAdminToast('Removed from featured');
+          fetchFeaturedCircles();
+        } catch(e) { showAdminToast('Remove failed: ' + e.message); }
+      };
+
       // Fetch screenshot verifications
       const fetchScreenshotVerifications = async () => {
         setLoadingScreenshots(true);
@@ -10874,6 +11058,7 @@ REMEMBER:
               <button onClick={() => { setTab('verify'); fetchVerifications(); }} style={tabStyle('verify')}>Verifications</button>
               <button onClick={() => { setTab('screenshots'); fetchScreenshotVerifications(); }} style={tabStyle('screenshots')}>Screenshots</button>
               <button onClick={() => { setTab('traffic'); fetchTraffic(); fetchWatchlist(); fetchReferrerAlerts(); }} style={{...tabStyle('traffic'), position:'relative'}}>Traffic{unseenAlertCount > 0 && <span style={{position:'absolute',top:'-4px',right:'-4px',background:'#e74c3c',color:'#fff',borderRadius:'50%',width:'18px',height:'18px',fontSize:'0.65rem',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:'bold'}}>{unseenAlertCount}</span>}</button>
+              <button onClick={() => { setTab('featured'); fetchFeaturedCircles(); }} style={tabStyle('featured')}>Featured</button>
               <button onClick={() => setTab('bookings')} style={tabStyle('bookings')}>Bookings</button>
               <button onClick={() => setTab('posts')} style={tabStyle('posts')}>Posts</button>
             </div>
@@ -11500,6 +11685,80 @@ REMEMBER:
                     ))
                   )}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* FEATURED CIRCLES TAB */}
+          {tab === 'featured' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 style={{ margin: 0 }}>Featured Inner Circles</h3>
+                <button onClick={fetchFeaturedCircles} style={{ padding: '0.5rem 1rem', borderRadius: 8, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#aaa', cursor: 'pointer', fontSize: '0.8rem' }}>↻ Refresh</button>
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#888', marginBottom: '1rem' }}>Search for a model by name or username to add them to the featured circles page.</div>
+
+              {/* Search to add */}
+              <div style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid var(--border-color)', marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, marginBottom: '0.5rem' }}>Add Model to Featured</div>
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '0.5rem' }}>
+                  <input value={featuredSearchTerm} onChange={e => setFeaturedSearchTerm(e.target.value)} placeholder="Search by name or username..." onKeyDown={e => e.key === 'Enter' && searchModelsToFeature()}
+                    style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: '0.82rem', outline: 'none' }} />
+                  <button onClick={searchModelsToFeature} disabled={searchingFeatured} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#ffd700', color: '#000', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', opacity: searchingFeatured ? 0.5 : 1 }}>{searchingFeatured ? '...' : 'Search'}</button>
+                </div>
+                {featuredSearchResults.length > 0 && (
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '0.5rem' }}>
+                    {featuredSearchResults.map(model => {
+                      const alreadyFeatured = featuredCircles.some(f => f.model_id === model.id);
+                      return (
+                        <div key={model.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {model.profile_photo_url ? (
+                              <img src={model.profile_photo_url} style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
+                            ) : (
+                              <span style={{ fontSize: '1.2rem' }}>{model.avatar_emoji || '👤'}</span>
+                            )}
+                            <div>
+                              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff' }}>{model.display_name || 'Unnamed'}</div>
+                              {model.username && <div style={{ fontSize: '0.7rem', color: '#888' }}>@{model.username}</div>}
+                            </div>
+                          </div>
+                          {alreadyFeatured ? (
+                            <span style={{ fontSize: '0.72rem', color: '#888' }}>Already featured</span>
+                          ) : (
+                            <button onClick={() => addFeaturedCircle(model.id)} style={{ padding: '4px 12px', borderRadius: 6, border: 'none', background: 'linear-gradient(135deg, #ffd700, #ff6ec7)', color: '#000', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}>Feature</button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Current featured list */}
+              <div style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, marginBottom: '0.75rem' }}>Currently Featured ({featuredCircles.length})</div>
+                {featuredCircles.length === 0 ? (
+                  <div style={{ fontSize: '0.78rem', color: '#666', textAlign: 'center', padding: '1.5rem' }}>No circles featured yet. Search above to add models.</div>
+                ) : (
+                  featuredCircles.map((f, i) => (
+                    <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '0.72rem', color: '#666', fontWeight: 700, width: 20 }}>#{i + 1}</span>
+                        {f.profile?.profile_photo_url ? (
+                          <img src={f.profile.profile_photo_url} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }} />
+                        ) : (
+                          <span style={{ fontSize: '1.4rem' }}>{f.profile?.avatar_emoji || '👤'}</span>
+                        )}
+                        <div>
+                          <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff' }}>{f.profile?.display_name || 'Unknown'}</div>
+                          {f.profile?.username && <div style={{ fontSize: '0.7rem', color: '#888' }}>@{f.profile.username}</div>}
+                        </div>
+                      </div>
+                      <button onClick={() => removeFeaturedCircle(f.id)} style={{ padding: '4px 12px', borderRadius: 6, border: '1px solid rgba(231,76,60,0.3)', background: 'rgba(231,76,60,0.1)', color: '#e74c3c', fontSize: '0.72rem', cursor: 'pointer' }}>Remove</button>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -17959,6 +18218,7 @@ RULES
         if (page === 'circle' && params[0]) return requiresSub(<InnerCirclePage modelId={params[0]} />);
         if (page === 'crew' && params[0]) return requiresSub(<CircleCrewPage crewId={params[0]} />);
         if (page === 'crew') return requiresSub(<CircleCrewPage crewId={null} />);
+        if (page === 'circles') return <FeaturedCirclesPage />;
         if (page === 'browse') return <BrowseModelsPage />;
         if (page === 'profile' && params[0]) return <ProfilePage modelId={params[0]} />;
         if (page === 'profile') return auth.currentUser ? <ProfilePage modelId={auth.currentUser.id} /> : <LoginPage />;
@@ -17980,7 +18240,7 @@ RULES
         if (page === 'edit-profile') return auth.currentUser ? <EditProfilePage /> : <LoginPage />;
         if (page === 'u' && params[0]) return <ProfilePage modelId={params[0]} isUsername={true} />;
         // Vanity URL fallback: if page doesn't match any route, check if it's a username
-        if (page && !['home','feed','wall','reputation','circle','crew','browse','profile','client','formodels','westackr','contracts','login','signup','choose-role','model-demo','cherry-picker','team','bidboard','dashboard','messages','edit-profile','admin'].includes(page)) {
+        if (page && !['home','feed','wall','reputation','circle','circles','crew','browse','profile','client','formodels','westackr','contracts','login','signup','choose-role','model-demo','cherry-picker','team','bidboard','dashboard','messages','edit-profile','admin'].includes(page)) {
           return <ProfilePage modelId={page} isUsername={true} />;
         }
         return !auth.currentUser ? <HomePage /> : <BrowseModelsPage />;
@@ -17998,6 +18258,7 @@ RULES
             {!auth.currentUser && (
             <div className="nav-links desktop-nav">
               <a className="nav-link" onClick={() => window.location.hash = 'browse'}>Browse</a>
+              <a className="nav-link" onClick={() => window.location.hash = 'circles'}>Circles</a>
               <a className="nav-link" onClick={() => window.location.hash = 'formodels'}>For Models</a>
             </div>
             )}
@@ -18006,6 +18267,7 @@ RULES
             {auth.currentUser && (
             <div className="nav-links desktop-nav">
               <a className="nav-link" onClick={() => window.location.hash = 'browse'}>Browse</a>
+              <a className="nav-link" onClick={() => window.location.hash = 'circles'}>Circles</a>
               <a className="nav-link" onClick={() => window.location.hash = 'feed'}>Feed</a>
               <div className="nav-dropdown">
                 <span className="nav-dropdown-toggle">More ▾</span>
@@ -18106,6 +18368,9 @@ RULES
             <div className="mobile-menu-section">
               <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'browse'; }}>
                 <span className="mm-icon">🔍</span> Browse
+              </div>
+              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'circles'; }}>
+                <span className="mm-icon">🔒</span> Circles
               </div>
               <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'feed'; }}>
                 <span className="mm-icon">📰</span> Feed
