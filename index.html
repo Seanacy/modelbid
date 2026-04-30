@@ -5784,6 +5784,7 @@
       const [showPaywallModal, setShowPaywallModal] = useState(false);
       const [selectedGalleryItem, setSelectedGalleryItem] = useState(null);
       const [notFound, setNotFound] = useState(false);
+      const [activeCampaign, setActiveCampaign] = useState(null);
 
       // Sync resolvedId when directId changes (handles prop updates on re-render)
       useEffect(() => {
@@ -5892,6 +5893,17 @@
 
             if (!reviewsError) {
               setReviews(reviewsData || []);
+            }
+
+            // Fetch active campaign for this model
+            const { data: campaigns } = await supabase
+              .from('campaigns').select('id, title, description, raised, goal, duration_days, image_url, backers, funded, created_at')
+              .eq('creator_id', modelId).eq('funded', false).order('created_at', { ascending: false }).limit(1);
+            if (campaigns && campaigns.length > 0) {
+              const camp = campaigns[0];
+              const elapsed = Math.floor((new Date() - new Date(camp.created_at)) / (1000 * 60 * 60 * 24));
+              const daysLeft = Math.max(0, camp.duration_days - elapsed);
+              if (daysLeft > 0) setActiveCampaign({ ...camp, daysLeft, pct: Math.min(Math.round(((Number(camp.raised) || 0) / Number(camp.goal)) * 100), 100) });
             }
 
             // Track profile view
@@ -6386,6 +6398,32 @@
               </div>
             </div>
           </div>
+
+          {/* Active WeStackr Campaign */}
+          {activeCampaign && (
+            <div className="profile-section" onClick={() => window.location.hash = 'westackr/' + activeCampaign.id} style={{ cursor: 'pointer' }}>
+              <div className="profile-section-title"><span>⚡</span> Active Campaign</div>
+              <div style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.06), rgba(255,110,199,0.06))', border: '1px solid rgba(255,215,0,0.15)', borderRadius: 12, overflow: 'hidden' }}>
+                {activeCampaign.image_url && (
+                  <img src={activeCampaign.image_url} alt={activeCampaign.title} style={{ width: '100%', height: 160, objectFit: 'cover' }} />
+                )}
+                <div style={{ padding: '1rem' }}>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff', marginBottom: '0.25rem' }}>{activeCampaign.title}</div>
+                  <div style={{ fontSize: '0.82rem', color: '#aaa', marginBottom: '0.75rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{activeCampaign.description}</div>
+                  <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden', marginBottom: '0.5rem' }}>
+                    <div style={{ height: '100%', width: activeCampaign.pct + '%', background: 'linear-gradient(90deg, #ffd700, #ff6ec7)', borderRadius: 3 }} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#888' }}>
+                    <span style={{ color: '#ffd700', fontWeight: 700 }}>${(Number(activeCampaign.raised) || 0).toLocaleString()} / ${Number(activeCampaign.goal).toLocaleString()}</span>
+                    <span>{activeCampaign.pct}% funded · {activeCampaign.daysLeft} days left</span>
+                  </div>
+                  <div style={{ marginTop: '0.75rem', textAlign: 'center' }}>
+                    <span style={{ padding: '6px 20px', borderRadius: 8, background: 'linear-gradient(135deg, #ffd700, #ff6ec7)', color: '#000', fontWeight: 700, fontSize: '0.82rem' }}>💰 Back This Shoot</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 8. Reviews */}
           <div className="profile-section">
@@ -13686,6 +13724,254 @@ REMEMBER:
       );
     }
 
+    // ===== CAMPAIGN DETAIL PAGE =====
+    function CampaignDetailPage({ campaignId }) {
+      const auth = useContext(AuthContext);
+      const [campaign, setCampaign] = useState(null);
+      const [storeItems, setStoreItems] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [notFound, setNotFound] = useState(false);
+
+      useEffect(() => {
+        if (!campaignId) { setNotFound(true); setLoading(false); return; }
+        (async () => {
+          try {
+            const { data: c, error } = await supabase
+              .from('campaigns')
+              .select('*, creator:profiles!creator_id(id, display_name, role, avatar_emoji, profile_photo_url, username)')
+              .eq('id', campaignId)
+              .single();
+            if (error || !c) { setNotFound(true); setLoading(false); return; }
+
+            const createdAt = new Date(c.created_at);
+            const elapsed = Math.floor((new Date() - createdAt) / (1000 * 60 * 60 * 24));
+            const daysLeft = Math.max(0, c.duration_days - elapsed);
+
+            setCampaign({
+              ...c,
+              daysLeft,
+              pct: Math.min(Math.round(((Number(c.raised) || 0) / Number(c.goal)) * 100), 100),
+              admins: [
+                { name: c.creator?.display_name || 'Creator', avatar: c.creator?.avatar_emoji || '👤' },
+                ...(c.co_admins || []).map(a => ({ name: a, avatar: '👤' }))
+              ]
+            });
+
+            // Fetch store items if store enabled
+            if (c.store_mode_enabled) {
+              const { data: items } = await supabase
+                .from('store_items').select('*')
+                .eq('campaign_id', c.id).eq('is_active', true)
+                .order('created_at', { ascending: true });
+              if (items) setStoreItems(items);
+            }
+          } catch (e) { console.error('Campaign detail error:', e); setNotFound(true); }
+          setLoading(false);
+        })();
+      }, [campaignId]);
+
+      if (loading) return <div style={{ textAlign: 'center', padding: '4rem', color: '#888' }}>Loading campaign...</div>;
+      if (notFound) return (
+        <div style={{ textAlign: 'center', padding: '4rem' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>😕</div>
+          <h2 style={{ color: '#fff', marginBottom: '0.5rem' }}>Campaign Not Found</h2>
+          <p style={{ color: '#888', marginBottom: '1.5rem' }}>This campaign may have been removed or the link is incorrect.</p>
+          <button onClick={() => window.location.hash = 'westackr'} style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #ffd700, #ff6ec7)', color: '#000', fontWeight: 700, cursor: 'pointer' }}>Browse All Campaigns</button>
+        </div>
+      );
+
+      const c = campaign;
+      const raised = Number(c.raised) || 0;
+      const goal = Number(c.goal);
+      const splitAmount = c.admins.length > 1 ? (goal / c.admins.length).toFixed(0) : null;
+
+      return (
+        <div style={{ maxWidth: 700, margin: '0 auto', padding: '1rem' }}>
+          {/* Back link */}
+          <div style={{ marginBottom: '1rem' }}>
+            <a onClick={() => window.location.hash = 'westackr'} style={{ color: '#888', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'none' }}>← All Campaigns</a>
+          </div>
+
+          {/* Campaign image */}
+          <div style={{ borderRadius: 16, overflow: 'hidden', marginBottom: '1.25rem', maxHeight: 350 }}>
+            <img src={c.image_url || 'https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=600&h=300&fit=crop'} alt={c.title}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          </div>
+
+          {/* Title + status */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+            <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#fff', margin: 0, flex: 1 }}>{c.title}</h1>
+            <span style={{ padding: '4px 14px', borderRadius: 20, fontSize: '0.78rem', fontWeight: 700, flexShrink: 0,
+              background: c.funded ? 'rgba(0,230,118,0.12)' : 'rgba(255,215,0,0.12)',
+              color: c.funded ? '#00e676' : '#ffd700',
+              border: `1px solid ${c.funded ? 'rgba(0,230,118,0.25)' : 'rgba(255,215,0,0.25)'}` }}>
+              {c.funded ? '✅ Funded' : c.daysLeft === 0 ? '⏰ Expired' : '🟢 Active'}
+            </span>
+          </div>
+
+          {/* Creator info */}
+          <div onClick={() => { if (c.creator?.id) window.location.hash = (c.creator.username || ((c.creator.role === 'model' ? 'profile/' : 'client/') + c.creator.id)); }}
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.25rem', cursor: 'pointer' }}>
+            {c.creator?.profile_photo_url ? (
+              <img src={c.creator.profile_photo_url} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,215,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>{c.creator?.avatar_emoji || '👤'}</div>
+            )}
+            <div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#fff' }}>{c.creator?.display_name || 'Anonymous'}</div>
+              <div style={{ fontSize: '0.78rem', color: '#888' }}>{c.creator?.role === 'model' ? '🎀 Model' : '📸 Client'}{c.creator?.username ? ` · @${c.creator.username}` : ''}</div>
+            </div>
+          </div>
+
+          {/* Progress card */}
+          <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '1.25rem', border: '1px solid var(--border-color)', marginBottom: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ffd700' }}>${raised.toLocaleString()}</span>
+              <span style={{ fontSize: '0.85rem', color: '#888', alignSelf: 'flex-end' }}>of ${goal.toLocaleString()} goal</span>
+            </div>
+            <div style={{ height: 10, background: 'rgba(255,255,255,0.06)', borderRadius: 5, overflow: 'hidden', marginBottom: '0.75rem' }}>
+              <div style={{ height: '100%', width: c.pct + '%', background: 'linear-gradient(90deg, #ffd700, #ff6ec7)', borderRadius: 5, transition: 'width 0.5s' }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: '#aaa' }}>
+              <span>👥 {c.backers || 0} backers</span>
+              <span>📊 {c.pct}% funded</span>
+              {c.daysLeft > 0 && <span>⏰ {c.daysLeft} days left</span>}
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          {!c.funded && (
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+              <button onClick={async () => {
+                if (!auth.currentUser) { window.location.hash = 'signup'; return; }
+                const pledgeAmount = prompt('How much would you like to pledge? (USD)', '25');
+                if (!pledgeAmount || isNaN(Number(pledgeAmount)) || Number(pledgeAmount) <= 0) return;
+                try {
+                  await redirectToCheckout('campaign_backing', { amount: Number(pledgeAmount), item_name: 'Back: ' + (c.title || 'Campaign'), campaign_id: c.id });
+                } catch(e) { auth.showToast(e.message, 'error'); }
+              }} style={{ flex: 1, padding: '12px 20px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #ffd700, #ff6ec7)', color: '#000', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer', minWidth: 150 }}>
+                💰 Back This Shoot
+              </button>
+              <button onClick={() => { navigator.clipboard.writeText('https://modelbid.tech/#westackr/' + c.id); auth.showToast('Campaign link copied!', 'success'); }}
+                style={{ padding: '12px 20px', borderRadius: 10, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#ccc', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}>
+                🔗 Share
+              </button>
+              <button onClick={() => {
+                if (!auth.currentUser) { window.location.hash = 'signup'; return; }
+                window.location.hash = 'messages/' + c.creator_id;
+              }} style={{ padding: '12px 20px', borderRadius: 10, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#ccc', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}>
+                💬 Message
+              </button>
+            </div>
+          )}
+
+          {/* Description */}
+          <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '1.25rem', border: '1px solid var(--border-color)', marginBottom: '1.25rem' }}>
+            <h3 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', fontWeight: 700, color: '#fff' }}>About This Campaign</h3>
+            <p style={{ color: '#bbb', fontSize: '0.9rem', lineHeight: 1.6, margin: 0, whiteSpace: 'pre-wrap' }}>{c.description}</p>
+          </div>
+
+          {/* Backer reward */}
+          {c.backer_reward && (
+            <div style={{ background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.15)', borderRadius: 16, padding: '1.25rem', marginBottom: '1.25rem' }}>
+              <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem', fontWeight: 700, color: '#ffd700' }}>🎁 Backer Reward</h3>
+              <p style={{ color: '#ccc', fontSize: '0.9rem', margin: 0 }}>{c.backer_reward}</p>
+            </div>
+          )}
+
+          {/* Multi-admin info */}
+          {c.admins.length > 1 && (
+            <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '1.25rem', border: '1px solid var(--border-color)', marginBottom: '1.25rem' }}>
+              <h3 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', fontWeight: 700, color: '#fff' }}>Campaign Admins</h3>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                {c.admins.map((a, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '6px 12px' }}>
+                    <span>{a.avatar}</span>
+                    <span style={{ color: '#ddd', fontSize: '0.85rem' }}>{a.name}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#888' }}>Funds split evenly — ${splitAmount} per admin</div>
+            </div>
+          )}
+
+          {/* Funded banner */}
+          {c.funded && (
+            <div style={{ background: 'rgba(0,230,118,0.08)', border: '1px solid rgba(0,230,118,0.2)', borderRadius: 16, padding: '1.25rem', marginBottom: '1.25rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🎉</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#00e676', marginBottom: '0.25rem' }}>Goal Reached — Funds Released!</div>
+              <div style={{ fontSize: '0.85rem', color: '#888' }}>This campaign hit its target. Funds have been distributed to the {c.admins.length > 1 ? c.admins.length + ' admins' : 'creator'}.</div>
+            </div>
+          )}
+
+          {/* Campaign store */}
+          {c.store_mode_enabled && (storeItems.length > 0 || c.store_embed_url) && (
+            <div style={{ background: 'rgba(255,110,199,0.06)', border: '1px solid rgba(255,110,199,0.15)', borderRadius: 16, padding: '1.25rem', marginBottom: '1.25rem' }}>
+              <h3 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', fontWeight: 700, color: '#ff6ec7' }}>🛍️ Campaign Store</h3>
+              {c.store_embed_url && (
+                <div style={{ marginBottom: storeItems.length > 0 ? '1rem' : 0 }}>
+                  {c.store_embed_provider === 'gumroad' ? (
+                    <iframe src={c.store_embed_url} title="Gumroad store" style={{ width: '100%', height: '360px', border: 'none', borderRadius: '8px' }} sandbox="allow-scripts allow-same-origin allow-popups allow-forms" />
+                  ) : (
+                    <a href={c.store_embed_url} target="_blank" rel="noopener noreferrer"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', color: '#ff6ec7', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600 }}>
+                      {c.store_embed_provider === 'etsy' ? '🧡 Visit Etsy Store' : c.store_embed_provider === 'shopify' ? '💚 Visit Shopify Store' : '🔗 Visit External Store'} ↗
+                    </a>
+                  )}
+                </div>
+              )}
+              {storeItems.length > 0 && (
+                <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '10px' }}>
+                    {storeItems.map(item => {
+                      const available = item.inventory_count > 0 ? item.inventory_count - (item.sold_count || 0) : null;
+                      return (
+                        <div key={item.id} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, overflow: 'hidden' }}>
+                          {item.image_url ? <img src={item.image_url} alt={item.name} style={{ width: '100%', height: 100, objectFit: 'cover' }} /> : (
+                            <div style={{ width: '100%', height: 100, background: 'rgba(255,110,199,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>🛍️</div>
+                          )}
+                          <div style={{ padding: '8px 10px' }}>
+                            <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#fff' }}>{item.name}</div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#00e676' }}>${Number(item.price).toFixed(2)}</span>
+                            </div>
+                            <button onClick={async () => {
+                              if (available === 0) return;
+                              if (!auth.currentUser) { window.location.hash = 'signup'; return; }
+                              try { await redirectToCheckout('store_item', { amount: Number(item.price), item_name: item.name, item_id: item.id, campaign_id: c.id }); } catch(e) { auth.showToast(e.message, 'error'); }
+                            }} style={{ width: '100%', marginTop: 6, padding: '5px 0', borderRadius: 6, border: 'none', background: available === 0 ? 'rgba(255,255,255,0.05)' : '#ff6ec7', color: available === 0 ? '#666' : '#fff', fontSize: '0.78rem', fontWeight: 600, cursor: available === 0 ? 'not-allowed' : 'pointer' }}>
+                              {available === 0 ? 'Sold Out' : 'Buy'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#00e676', marginTop: '8px', textAlign: 'center' }}>Store purchases count toward the campaign goal!</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Share section at bottom */}
+          <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '1.25rem', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#fff', marginBottom: '0.5rem' }}>Share This Campaign</div>
+            <div style={{ fontSize: '0.82rem', color: '#888', marginBottom: '0.75rem' }}>Help this campaign reach its goal by sharing the link</div>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button onClick={() => { navigator.clipboard.writeText('https://modelbid.tech/#westackr/' + c.id); auth.showToast('Link copied!', 'success'); }}
+                style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: '#ffd700', color: '#000', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}>
+                📋 Copy Link
+              </button>
+              <button onClick={() => { navigator.clipboard.writeText('modelbid.tech/#westackr/' + c.id); auth.showToast('Forum-safe link copied!', 'success'); }}
+                style={{ padding: '8px 20px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#ccc', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}>
+                📝 Forum Link (no https)
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     function WeStackrPage() {
       const auth = useContext(AuthContext);
       const [activeTab, setActiveTab] = useState('all');
@@ -18224,6 +18510,7 @@ RULES
         if (page === 'profile') return auth.currentUser ? <ProfilePage modelId={auth.currentUser.id} /> : <LoginPage />;
         if (page === 'client' && params[0]) return <ClientProfilePage clientId={params[0]} />;
         if (page === 'formodels') return auth.profile?.role === 'client' ? <FeedPage /> : <ForModelsPage />;
+        if (page === 'westackr' && params[0]) return <CampaignDetailPage campaignId={params[0]} />;
         if (page === 'westackr') return <WeStackrPage />;
         if (page === 'contracts') return requiresSub(<ContractsPage />);
         if (page === 'login') return <LoginPage />;
