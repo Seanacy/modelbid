@@ -1,7 +1,4 @@
 {
-  "redirects": [
-    { "source": "/(.*)", "has": [{ "type": "host", "value": "www.modelbid.tech" }], "destination": "https://modelbid.tech/$1", "permanent": true }
-  ],
   "rewrites": [
     { "source": "/join", "destination": "/join.html" },
     { "source": "/app", "destination": "/index.html" },
