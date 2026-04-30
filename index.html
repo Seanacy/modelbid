@@ -10226,6 +10226,10 @@ REMEMBER:
       // Screenshot verifications state
       const [screenshotVerifications, setScreenshotVerifications] = useState([]);
       const [loadingScreenshots, setLoadingScreenshots] = useState(false);
+      // Traffic dashboard state
+      const [trafficData, setTrafficData] = useState(null);
+      const [loadingTraffic, setLoadingTraffic] = useState(false);
+      const [trafficRange, setTrafficRange] = useState('today');
 
       // Direct REST helper to avoid Supabase JS auth lock issues
       const adminFetch = async (table, { method = 'GET', filters = '', body = null, select = '*' } = {}) => {
@@ -10471,6 +10475,71 @@ REMEMBER:
         } catch(e) { showAdminToast('Reject failed: ' + e.message); }
       };
 
+      // Fetch traffic data
+      const fetchTraffic = async (range = trafficRange) => {
+        setLoadingTraffic(true);
+        try {
+          const now = new Date();
+          let since;
+          if (range === 'today') { since = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString(); }
+          else if (range === '7d') { since = new Date(now - 7 * 86400000).toISOString(); }
+          else if (range === '30d') { since = new Date(now - 30 * 86400000).toISOString(); }
+          else { since = new Date(now - 86400000).toISOString(); }
+
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/page_views?select=page,visitor_id,user_id,referrer,created_at&created_at=gte.${since}&order=created_at.desc&limit=10000`, {
+            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+          });
+          const views = await res.json();
+          if (!Array.isArray(views)) { setTrafficData({ total: 0, unique: 0, pages: {}, hourly: [], referrers: {} }); setLoadingTraffic(false); return; }
+
+          const uniqueVisitors = new Set(views.map(v => v.visitor_id)).size;
+          const loggedIn = new Set(views.filter(v => v.user_id).map(v => v.user_id)).size;
+
+          // Page breakdown
+          const pages = {};
+          views.forEach(v => { pages[v.page] = (pages[v.page] || 0) + 1; });
+          const topPages = Object.entries(pages).sort((a, b) => b[1] - a[1]);
+
+          // Hourly/daily breakdown
+          const timeBuckets = {};
+          views.forEach(v => {
+            const d = new Date(v.created_at);
+            const key = range === 'today'
+              ? `${d.getHours()}:00`
+              : `${d.getMonth() + 1}/${d.getDate()}`;
+            timeBuckets[key] = (timeBuckets[key] || 0) + 1;
+          });
+
+          // Unique visitors per time bucket
+          const uniqueBuckets = {};
+          views.forEach(v => {
+            const d = new Date(v.created_at);
+            const key = range === 'today'
+              ? `${d.getHours()}:00`
+              : `${d.getMonth() + 1}/${d.getDate()}`;
+            if (!uniqueBuckets[key]) uniqueBuckets[key] = new Set();
+            uniqueBuckets[key].add(v.visitor_id);
+          });
+          const uniqueByTime = Object.entries(uniqueBuckets).map(([k, v]) => ({ time: k, unique: v.size, total: timeBuckets[k] || 0 }));
+          if (range === 'today') {
+            uniqueByTime.sort((a, b) => parseInt(a.time) - parseInt(b.time));
+          }
+
+          // Referrers
+          const referrers = {};
+          views.forEach(v => {
+            if (v.referrer) {
+              try { const host = new URL(v.referrer).hostname; referrers[host] = (referrers[host] || 0) + 1; }
+              catch(e) {}
+            }
+          });
+          const topReferrers = Object.entries(referrers).sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+          setTrafficData({ total: views.length, unique: uniqueVisitors, loggedIn, topPages, uniqueByTime, topReferrers });
+        } catch(e) { console.error('Traffic fetch error:', e); }
+        setLoadingTraffic(false);
+      };
+
       // Fetch screenshot verifications
       const fetchScreenshotVerifications = async () => {
         setLoadingScreenshots(true);
@@ -10530,6 +10599,7 @@ REMEMBER:
         if (tab === 'auth') fetchAuthUsers();
         if (tab === 'verify') fetchVerifications();
         if (tab === 'screenshots') fetchScreenshotVerifications();
+        if (tab === 'traffic') fetchTraffic();
         if (tab === 'bookings' && allBookings.length === 0) fetchBookings();
         if (tab === 'posts' && allPosts.length === 0) fetchPosts();
       }, [tab, adminAuthed]);
@@ -10719,6 +10789,7 @@ REMEMBER:
               <button onClick={() => setTab('auth')} style={tabStyle('auth')}>Auth Users</button>
               <button onClick={() => { setTab('verify'); fetchVerifications(); }} style={tabStyle('verify')}>Verifications</button>
               <button onClick={() => { setTab('screenshots'); fetchScreenshotVerifications(); }} style={tabStyle('screenshots')}>Screenshots</button>
+              <button onClick={() => { setTab('traffic'); fetchTraffic(); }} style={tabStyle('traffic')}>Traffic</button>
               <button onClick={() => setTab('bookings')} style={tabStyle('bookings')}>Bookings</button>
               <button onClick={() => setTab('posts')} style={tabStyle('posts')}>Posts</button>
             </div>
@@ -11208,6 +11279,95 @@ REMEMBER:
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TRAFFIC TAB */}
+          {tab === 'traffic' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <h3 style={{ margin: 0 }}>Site Traffic</h3>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  {['today', '7d', '30d'].map(r => (
+                    <button key={r} onClick={() => { setTrafficRange(r); fetchTraffic(r); }}
+                      style={{ padding: '4px 12px', borderRadius: 6, border: '1px solid ' + (trafficRange === r ? '#ffd700' : 'var(--border-color)'), background: trafficRange === r ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.05)', color: trafficRange === r ? '#ffd700' : '#aaa', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
+                      {r === 'today' ? 'Today' : r === '7d' ? '7 Days' : '30 Days'}
+                    </button>
+                  ))}
+                  <button onClick={() => fetchTraffic()} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#ccc', fontSize: '0.75rem', cursor: 'pointer' }}>↻</button>
+                </div>
+              </div>
+
+              {loadingTraffic ? <div style={{ color: '#888', textAlign: 'center', padding: '2rem' }}>Loading...</div> : !trafficData ? (
+                <div style={{ color: '#888', textAlign: 'center', padding: '2rem' }}>No traffic data yet. Data starts collecting now.</div>
+              ) : (
+                <div>
+                  {/* Stats cards */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                    <div style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                      <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ffd700' }}>{trafficData.total}</div>
+                      <div style={{ fontSize: '0.72rem', color: '#888' }}>Total Views</div>
+                    </div>
+                    <div style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                      <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ff6ec7' }}>{trafficData.unique}</div>
+                      <div style={{ fontSize: '0.72rem', color: '#888' }}>Unique Visitors</div>
+                    </div>
+                    <div style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                      <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#00e676' }}>{trafficData.loggedIn || 0}</div>
+                      <div style={{ fontSize: '0.72rem', color: '#888' }}>Logged In</div>
+                    </div>
+                  </div>
+
+                  {/* Traffic chart (simple bar chart) */}
+                  {trafficData.uniqueByTime && trafficData.uniqueByTime.length > 0 && (
+                    <div style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid var(--border-color)', marginBottom: '1rem' }}>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, marginBottom: '0.75rem' }}>
+                        {trafficRange === 'today' ? 'Visitors by Hour' : 'Visitors by Day'}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '120px', overflow: 'hidden' }}>
+                        {trafficData.uniqueByTime.map((bucket, i) => {
+                          const maxVal = Math.max(...trafficData.uniqueByTime.map(b => b.total), 1);
+                          const height = Math.max((bucket.total / maxVal) * 100, 4);
+                          return (
+                            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+                              <div style={{ fontSize: '0.6rem', color: '#ffd700', marginBottom: '2px' }}>{bucket.total > 0 ? bucket.total : ''}</div>
+                              <div style={{ width: '100%', height: height + '%', background: 'linear-gradient(to top, #ff6ec7, #ffd700)', borderRadius: '3px 3px 0 0', minHeight: bucket.total > 0 ? '4px' : '0' }} />
+                              <div style={{ fontSize: '0.55rem', color: '#666', marginTop: '3px', transform: 'rotate(-45deg)', transformOrigin: 'top left', whiteSpace: 'nowrap' }}>{bucket.time}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Top pages */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid var(--border-color)' }}>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, marginBottom: '0.5rem' }}>Top Pages</div>
+                      {(trafficData.topPages || []).slice(0, 8).map(([page, count], i) => (
+                        <div key={page} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', fontSize: '0.78rem' }}>
+                          <span style={{ color: '#ddd' }}>{page || 'home'}</span>
+                          <span style={{ color: '#ffd700', fontWeight: 600 }}>{count}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid var(--border-color)' }}>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, marginBottom: '0.5rem' }}>Top Referrers</div>
+                      {(trafficData.topReferrers || []).length === 0 ? (
+                        <div style={{ fontSize: '0.78rem', color: '#666' }}>No referrer data yet</div>
+                      ) : (
+                        (trafficData.topReferrers || []).slice(0, 8).map(([ref, count], i) => (
+                          <div key={ref} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', fontSize: '0.78rem' }}>
+                            <span style={{ color: '#ddd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>{ref}</span>
+                            <span style={{ color: '#ff6ec7', fontWeight: 600 }}>{count}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -17589,6 +17749,24 @@ RULES
         handleHashChange();
         return () => window.removeEventListener('hashchange', handleHashChange);
       }, []);
+
+      // Page view tracker — logs every page navigation
+      useEffect(() => {
+        if (!currentPage) return;
+        // Generate or retrieve a visitor fingerprint (anonymous, no personal data)
+        let visitorId = sessionStorage.getItem('mb_visitor');
+        if (!visitorId) {
+          visitorId = 'v_' + Math.random().toString(36).substr(2, 12) + Date.now().toString(36);
+          sessionStorage.setItem('mb_visitor', visitorId);
+        }
+        const pageName = currentPage.split('?')[0].split('/')[0] || 'home';
+        supabase.from('page_views').insert({
+          page: pageName,
+          visitor_id: visitorId,
+          user_id: auth.currentUser?.id || null,
+          referrer: document.referrer || null,
+        }).then(() => {});
+      }, [currentPage]);
 
       if (auth.loading) {
         return (
