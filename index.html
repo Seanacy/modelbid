@@ -5791,28 +5791,17 @@
         if (directId) setResolvedId(directId);
       }, [directId]);
 
-      // Username lookup: resolve username to user ID, then fetch profile directly
+      // Username lookup: just resolve username to user ID — main useEffect handles data fetching
       useEffect(() => {
         if (!isUsername || !rawModelId) return;
         setNotFound(false);
         setLoading(true);
-        setModel(null);
         (async () => {
           try {
             const { data: prof, error } = await supabase
               .from('profiles').select('id').eq('username', rawModelId.toLowerCase()).single();
             if (error || !prof) { setNotFound(true); setLoading(false); return; }
             setResolvedId(prof.id);
-            // Also fetch the profile data directly to avoid race conditions
-            const { data: modelData, error: modelError } = await supabase
-              .from('profiles').select('*').eq('id', prof.id).single();
-            if (modelError) throw modelError;
-            setModel(modelData);
-            setLoading(false);
-            // Fetch reviews
-            const { data: reviewsData } = await supabase.from('reviews')
-              .select('*, reviewer_id(*)').eq('model_id', prof.id).order('created_at', { ascending: false });
-            if (reviewsData) setReviews(reviewsData);
           } catch (e) { console.error('Username lookup error:', e); setNotFound(true); setLoading(false); }
         })();
       }, [rawModelId, isUsername]);
@@ -5864,66 +5853,47 @@
         // Don't fetch if modelId hasn't resolved yet
         if (!modelId) return;
 
-        // Reset state when modelId changes (prevents stale notFound from previous render)
+        // Reset state when modelId changes
         setNotFound(false);
         setLoading(true);
         setModel(null);
+        setActiveCampaign(null);
 
-        const timeout = setTimeout(() => {
-          setLoading(false);
-          setNotFound(true);
-        }, 5000);
-
-        const fetchData = async () => {
+        (async () => {
           try {
+            // Fetch profile first — this is the critical path
             const { data: modelData, error: modelError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', modelId)
-              .single();
+              .from('profiles').select('*').eq('id', modelId).single();
 
-            if (modelError) throw modelError;
+            if (modelError || !modelData) { setNotFound(true); setLoading(false); return; }
             setModel(modelData);
+            setLoading(false); // Show profile immediately
 
-            const { data: reviewsData, error: reviewsError } = await supabase
-              .from('reviews')
-              .select('*, reviewer_id(*)')
-              .eq('model_id', modelId)
-              .order('created_at', { ascending: false });
+            // Fire secondary queries in parallel — non-blocking
+            const [reviewsRes, campaignsRes] = await Promise.all([
+              supabase.from('reviews').select('*, reviewer_id(*)').eq('model_id', modelId).order('created_at', { ascending: false }),
+              supabase.from('campaigns').select('id, title, description, raised, goal, duration_days, image_url, backers, funded, created_at')
+                .eq('creator_id', modelId).eq('funded', false).order('created_at', { ascending: false }).limit(1),
+            ]);
 
-            if (!reviewsError) {
-              setReviews(reviewsData || []);
-            }
-
-            // Fetch active campaign for this model
-            const { data: campaigns } = await supabase
-              .from('campaigns').select('id, title, description, raised, goal, duration_days, image_url, backers, funded, created_at')
-              .eq('creator_id', modelId).eq('funded', false).order('created_at', { ascending: false }).limit(1);
-            if (campaigns && campaigns.length > 0) {
-              const camp = campaigns[0];
+            if (reviewsRes.data) setReviews(reviewsRes.data);
+            if (campaignsRes.data && campaignsRes.data.length > 0) {
+              const camp = campaignsRes.data[0];
               const elapsed = Math.floor((new Date() - new Date(camp.created_at)) / (1000 * 60 * 60 * 24));
               const daysLeft = Math.max(0, camp.duration_days - elapsed);
               if (daysLeft > 0) setActiveCampaign({ ...camp, daysLeft, pct: Math.min(Math.round(((Number(camp.raised) || 0) / Number(camp.goal)) * 100), 100) });
             }
 
-            // Track profile view
-            if (modelData && auth.currentUser && auth.currentUser.id !== modelId) {
-              supabase.from('profile_views').insert({
-                profile_id: modelId,
-                viewer_id: auth.currentUser.id
-              }).then(() => {});
+            // Track profile view (fire and forget)
+            if (auth.currentUser && auth.currentUser.id !== modelId) {
+              supabase.from('profile_views').insert({ profile_id: modelId, viewer_id: auth.currentUser.id }).then(() => {});
             }
           } catch (error) {
             console.error('Fetch error:', error);
             setNotFound(true);
-          } finally {
             setLoading(false);
-            clearTimeout(timeout);
           }
-        };
-
-        fetchData();
-        return () => clearTimeout(timeout);
+        })();
       }, [modelId]);
 
       // Still waiting for modelId to resolve (e.g. auth loading)
@@ -16000,8 +15970,7 @@ REMEMBER:
                           <button type="button" onClick={async () => {
                             const updated = portfolioImages.filter((_, idx) => idx !== i);
                             setPortfolioImages(updated);
-                            await supabase.from('profiles').update({ gallery: updated }).eq('id', currentUser.id);
-                            patchProfile({ gallery: updated });
+                            await updateProfile({ gallery: updated });
                           }} style={{
                             position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%',
                             background: 'rgba(0,0,0,0.7)', border: 'none', color: '#ff4444', fontSize: '0.75rem',
@@ -16044,8 +16013,7 @@ REMEMBER:
                             if (newImages.length > 0) {
                               const updated = [...portfolioImages, ...newImages];
                               setPortfolioImages(updated);
-                              await supabase.from('profiles').update({ gallery: updated }).eq('id', currentUser.id);
-                              patchProfile({ gallery: updated });
+                              await updateProfile({ gallery: updated });
                             }
                           } catch (err) { console.error('Portfolio upload error:', err); alert('Upload failed: ' + err.message); }
                           setUploadingPortfolio(false);
