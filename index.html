@@ -6112,8 +6112,8 @@
           </div>
           )}
 
-          {/* If model has no crew yet and viewing own profile, show create prompt (verified only) */}
-          {!crewData && isOwnProfile && !viewAsPublic && (
+          {/* If model has no crew yet and viewing own profile, show create prompt (verified only) — models only */}
+          {!crewData && isOwnProfile && !viewAsPublic && model.role === 'model' && (
           <div style={{
             marginBottom: '1rem', borderRadius: '16px', overflow: 'hidden',
             background: 'linear-gradient(135deg, #1a0a2e, #0d0015)',
@@ -6240,7 +6240,8 @@
             </div>
           </div>
 
-          {/* Stats Bar */}
+          {/* Stats Bar — only show model stats for model profiles */}
+          {model.role !== 'client' ? (
           <div className="profile-stats-bar">
             <div className="profile-stat">
               <div className="profile-stat-value">${model.rate || 0}</div>
@@ -6259,9 +6260,21 @@
               <div className="profile-stat-label">Response</div>
             </div>
           </div>
+          ) : (
+          <div className="profile-stats-bar">
+            <div className="profile-stat">
+              <div className="profile-stat-value">🎯</div>
+              <div className="profile-stat-label">Client</div>
+            </div>
+            <div className="profile-stat">
+              <div className="profile-stat-value">{model.sessions_completed || 0}</div>
+              <div className="profile-stat-label">Bookings</div>
+            </div>
+          </div>
+          )}
 
-          {/* Action Buttons — booking always open, reputation adds perks */}
-          {(() => {
+          {/* Action Buttons — booking always open, reputation adds perks (models only) */}
+          {model.role !== 'client' && (() => {
             const isElite = model.sessions_completed > 100;
             const viewerRep = getClientRepLevel(auth.profile?.sessions_completed || 0, auth.profile?.trust_score || 0);
             return (
@@ -6287,6 +6300,14 @@
               </div>
             );
           })()}
+          {/* Client profile — show message button only, no booking */}
+          {model.role === 'client' && !isOwnProfile && (
+            <div className="profile-actions">
+              <button className="btn btn-secondary" onClick={handleMessage} style={{ flex: 1 }}>
+                💬 Send Message
+              </button>
+            </div>
+          )}
 
 
           {/* Tags */}
@@ -6381,7 +6402,8 @@
           </div>
           ) : null}
 
-          {/* 7. Details + Availability side by side on desktop, stacked on mobile */}
+          {/* 7. Details + Availability side by side on desktop, stacked on mobile (models only) */}
+          {model.role !== 'client' && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
             <div className="profile-section">
               <div className="profile-section-title"><span>📋</span> Details</div>
@@ -6419,6 +6441,7 @@
               </div>
             </div>
           </div>
+          )}
 
           {/* Active WeStackr Campaign */}
           {activeCampaign && (
@@ -14929,7 +14952,7 @@ REMEMBER:
       const [displayName, setDisplayName] = useState('');
       const [email, setEmail] = useState('');
       const [password, setPassword] = useState('');
-      const [role, setRole] = useState('model');
+      const [role, setRole] = useState('client');
       const [error, setError] = useState('');
       const [loading, setLoading] = useState(false);
       const [promoCode, setPromoCode] = useState('');
@@ -15019,7 +15042,7 @@ REMEMBER:
                   <div className="role-icon">🎯</div>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>Client</div>
-                    <div style={{ fontSize: '0.75rem', color: '#999' }}>Book models & browse</div>
+                    <div style={{ fontSize: '0.75rem', color: '#999' }}>Book, browse & create circles</div>
                   </div>
                 </label>
                 <label className={`role-option ${role === 'model' ? 'selected' : ''}`} onClick={() => setRole('model')}>
@@ -15032,6 +15055,21 @@ REMEMBER:
                 </label>
               </div>
 
+              {role === 'client' && (
+                <div style={{
+                  marginTop: '12px', padding: '12px 14px', borderRadius: '10px',
+                  background: 'linear-gradient(135deg, rgba(196,77,255,0.08), rgba(255,110,199,0.05))',
+                  border: '1px solid rgba(196,77,255,0.2)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '1.1rem' }}>🎯</span>
+                    <span style={{ fontWeight: 800, fontSize: '0.85rem', color: '#c44dff' }}>Free forever</span>
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#ccc', lineHeight: 1.6 }}>
+                    Client accounts are 100% free. Browse models, book sessions, and create <strong style={{ color: '#ff6ec7' }}>Inner Circles</strong> — handpick your favorite creators and earn 5% commission on every subscriber you bring in.
+                  </div>
+                </div>
+              )}
               {role === 'model' && (
                 <div style={{
                   marginTop: '12px', padding: '12px 14px', borderRadius: '10px',
@@ -18552,6 +18590,23 @@ RULES
     // --- Create Circle Page ---
     function CreateCirclePage() {
       const auth = useContext(AuthContext);
+
+      // Only clients can create circles
+      if (auth.profile?.role !== 'client') {
+        return (
+          <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚫</div>
+            <h2 style={{ marginBottom: '0.5rem' }}>Clients Only</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+              Inner Circles can only be created by client accounts. Models get invited to join circles by clients.
+            </p>
+            <button className="btn btn-secondary" onClick={() => window.location.hash = 'browse'}>
+              ← Browse Models
+            </button>
+          </div>
+        );
+      }
+
       const [step, setStep] = useState(1); // 1=name/size/price, 2=pick creators, 3=review+send
       const [circleName, setCircleName] = useState('');
       const [circleDesc, setCircleDesc] = useState('');
