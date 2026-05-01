@@ -5395,11 +5395,35 @@
     function FeaturedCirclesPage() {
       const auth = useContext(AuthContext);
       const [featured, setFeatured] = useState([]);
+      const [clientCircles, setClientCircles] = useState([]);
       const [loading, setLoading] = useState(true);
 
       useEffect(() => {
         (async () => {
           try {
+            // Fetch live client circles in parallel with featured
+            const clientCirclesPromise = (async () => {
+              const { data: circles } = await supabase.from('client_circles')
+                .select('*').eq('status', 'live').order('launched_at', { ascending: false });
+              if (!circles || circles.length === 0) return [];
+              // Get creator profiles for each circle
+              const circleIds = circles.map(c => c.id);
+              const { data: invites } = await supabase.from('circle_invites')
+                .select('circle_id, creator_id').in('circle_id', circleIds).eq('status', 'accepted');
+              const creatorIds = [...new Set((invites || []).map(i => i.creator_id))];
+              const ownerIds = [...new Set(circles.map(c => c.client_id))];
+              const allIds = [...new Set([...creatorIds, ...ownerIds])];
+              const { data: profiles } = await supabase.from('profiles')
+                .select('id, display_name, profile_photo_url, avatar_emoji').in('id', allIds);
+              const profMap = {};
+              (profiles || []).forEach(p => { profMap[p.id] = p; });
+              return circles.map(c => ({
+                ...c,
+                ownerProfile: profMap[c.client_id] || {},
+                creators: (invites || []).filter(i => i.circle_id === c.id).map(i => profMap[i.creator_id] || {}),
+              }));
+            })();
+
             // Get featured circle entries
             const { data: featuredList, error } = await supabase
               .from('featured_circles').select('*').order('display_order', { ascending: true });
@@ -5434,6 +5458,9 @@
               return { ...f, profile, crew };
             }).filter(f => f.profile.id); // only show if profile exists
             setFeatured(merged);
+            // Resolve client circles
+            const cc = await clientCirclesPromise;
+            setClientCircles(cc);
           } catch (e) { console.error('Featured circles error:', e); }
           setLoading(false);
         })();
@@ -5496,6 +5523,36 @@
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Client-Created Circles */}
+          {!loading && clientCircles.length > 0 && (
+            <div style={{ marginTop: '2.5rem' }}>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '1rem', textAlign: 'center' }}>🔥 Live Circles</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+                {clientCircles.map(c => (
+                  <div key={c.id} onClick={() => window.location.hash = 'circle-feed/' + c.id}
+                    style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border-color)', padding: '1.25rem', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(255,110,199,0.15)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', marginBottom: '0.3rem' }}>{c.name}</div>
+                    {c.description && <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.75rem', lineHeight: 1.4 }}>{c.description.length > 80 ? c.description.slice(0, 80) + '...' : c.description}</div>}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                      {c.creators.slice(0, 3).map((cr, i) => (
+                        <div key={i} style={{ width: 30, height: 30, borderRadius: '50%', background: '#2a2a3e', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', border: '2px solid var(--bg-card)', marginLeft: i > 0 ? '-8px' : 0 }}>
+                          {cr.profile_photo_url ? <img src={cr.profile_photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (cr.avatar_emoji || '👤')}
+                        </div>
+                      ))}
+                      <span style={{ fontSize: '0.78rem', color: '#aaa' }}>{c.creators.map(cr => cr.display_name).join(', ')}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.9rem', color: '#ff6ec7', fontWeight: 700 }}>${c.price}/mo</span>
+                      <span style={{ fontSize: '0.72rem', color: '#888' }}>{c.subscriber_count || 0} subscriber{(c.subscriber_count || 0) !== 1 ? 's' : ''}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
