@@ -4419,11 +4419,6 @@
           sessionStorage.setItem('oauthReturn', 'true');
         }
 
-        const authTimeout = setTimeout(() => {
-          console.warn('Auth init timeout — forcing app to render');
-          setLoading(false);
-        }, 1500);
-
         const initAuth = async () => {
           try {
             // Check for admin impersonation flag
@@ -4437,15 +4432,18 @@
                     setCurrentUser({ id: imp.userId, email: impProfile.email || 'impersonated' });
                     setProfile(impProfile);
                     setImpersonating({ userId: imp.userId, userName: imp.userName || impProfile.display_name });
-                    setLoading(false);
-                    clearTimeout(authTimeout);
                     return;
                   }
                 }
               } catch (e) { localStorage.removeItem('modelbid_impersonate'); }
             }
 
-            const { data: { session } } = await supabase.auth.getSession();
+            // Race getSession against a 2s timeout so a cold/stalled Supabase connection can't hang the app
+            const sessionResult = await Promise.race([
+              supabase.auth.getSession(),
+              new Promise((resolve) => setTimeout(() => resolve({ data: { session: null } }), 2000))
+            ]);
+            const session = sessionResult?.data?.session;
             if (session?.user) {
               setCurrentUser(session.user);
               await fetchProfile(session.user.id);
@@ -4454,7 +4452,6 @@
             console.error('Auth init error:', error);
           } finally {
             setLoading(false);
-            clearTimeout(authTimeout);
           }
         };
 
@@ -4535,7 +4532,7 @@
           }
         });
 
-        return () => { subscription?.unsubscribe(); clearTimeout(authTimeout); clearInterval(ghostCleanupInterval); };
+        return () => { subscription?.unsubscribe(); clearInterval(ghostCleanupInterval); };
       }, []);
 
       const fetchProfile = async (userId) => {
