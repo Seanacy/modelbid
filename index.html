@@ -18595,8 +18595,7 @@ RULES
 
         if (page === 'home') {
           if (!auth.currentUser) return <HomePage />;
-          if (!subActive) return <BrowseModelsPage />;
-          return auth.profile?.role === 'model' ? <DashboardPage /> : <FeedPage />;
+          return <ProfilePage modelId={auth.currentUser.id} />;
         }
         if (page === 'feed') return requiresSub(<FeedPage />);
         if (page === 'wall') return <TopClientsPage />;
