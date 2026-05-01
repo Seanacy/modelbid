@@ -4534,7 +4534,15 @@
           }
         });
 
-        return () => { subscription?.unsubscribe(); clearInterval(ghostCleanupInterval); };
+        // Keep-alive ping — prevents Supabase free tier from pausing the DB
+        // Runs every 4 minutes (Supabase pauses after ~5 min of inactivity)
+        const keepAliveInterval = setInterval(() => {
+          supabase.from('profiles').select('id', { count: 'exact', head: true }).limit(1).then(() => {});
+        }, 4 * 60 * 1000);
+        // Fire one immediately so the DB is warm from the start
+        supabase.from('profiles').select('id', { count: 'exact', head: true }).limit(1).then(() => {});
+
+        return () => { subscription?.unsubscribe(); clearInterval(ghostCleanupInterval); clearInterval(keepAliveInterval); };
       }, []);
 
       const fetchProfile = async (userId) => {
