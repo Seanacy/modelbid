@@ -19402,18 +19402,28 @@ RULES
       const [replaceSearching, setReplaceSearching] = useState(false);
       const [editingDesc, setEditingDesc] = useState(false);
       const [descDraft, setDescDraft] = useState('');
+      const [transfers, setTransfers] = useState([]);
+      const [showTransferUI, setShowTransferUI] = useState(false);
+      const [showSaleUI, setShowSaleUI] = useState(false);
+      const [salePrice, setSalePrice] = useState('');
+      const [saleSaving, setSaleSaving] = useState(false);
+      const [saleSearch, setSaleSearch] = useState('');
+      const [saleSearchResults, setSaleSearchResults] = useState([]);
+      const [saleSearching, setSaleSearching] = useState(false);
 
       const fetchCircle = async () => {
         const { data: c } = await supabase.from('client_circles').select('*').eq('id', circleId).single();
         if (!c) { setLoading(false); return; }
         setCircle(c);
 
-        const [invRes, actRes] = await Promise.all([
+        const [invRes, actRes, transferRes] = await Promise.all([
           supabase.from('circle_invites').select('*').eq('circle_id', circleId).order('sent_at'),
           supabase.from('circle_activity').select('*').eq('circle_id', circleId).order('created_at', { ascending: false }),
+          supabase.from('circle_transfers').select('*').eq('circle_id', circleId).order('created_at', { ascending: false }),
         ]);
         setInvites(invRes.data || []);
         setActivity(actRes.data || []);
+        setTransfers(transferRes.data || []);
 
         // Fetch creator profiles
         const creatorIds = (invRes.data || []).map(i => i.creator_id);
@@ -19484,12 +19494,122 @@ RULES
         return s;
       };
 
+      // Transfer ownership to a model in the circle
+      const offerTransfer = async (creatorId, creatorName) => {
+        try {
+          await supabase.from('circle_transfers').insert({
+            circle_id: circleId, from_user_id: auth.currentUser.id, to_user_id: creatorId, transfer_type: 'transfer',
+          });
+          await supabase.from('circle_activity').insert({
+            circle_id: circleId, actor_id: auth.currentUser.id,
+            action: 'transfer_offered', detail: `Ownership offered to ${creatorName}`,
+          });
+          await supabase.from('notifications').insert({
+            user_id: creatorId, type: 'circle_transfer',
+            title: '🔄 Circle Ownership Offer',
+            body: `You've been offered ownership of "${circle?.name}". Accept to become the owner.`,
+            link: '#circle-transfer/' + circleId,
+          });
+          auth.showToast(`Transfer offer sent to ${creatorName}!`, 'success');
+          setShowTransferUI(false);
+          fetchCircle();
+        } catch (e) { auth.showToast('Failed to send transfer offer', 'error'); }
+      };
+
+      // List circle for sale
+      const listForSale = async () => {
+        const price = parseFloat(salePrice);
+        if (!price || price < 1) { auth.showToast('Enter a valid price', 'error'); return; }
+        setSaleSaving(true);
+        try {
+          await supabase.from('client_circles').update({ for_sale: true, sale_price: price }).eq('id', circleId);
+          await supabase.from('circle_activity').insert({
+            circle_id: circleId, actor_id: auth.currentUser.id,
+            action: 'listed_for_sale', detail: `Circle listed for sale at $${price}`,
+          });
+          auth.showToast('Circle listed for sale!', 'success');
+          setShowSaleUI(false);
+          fetchCircle();
+        } catch (e) { auth.showToast('Failed to list for sale', 'error'); }
+        setSaleSaving(false);
+      };
+
+      // Remove sale listing
+      const removeFromSale = async () => {
+        await supabase.from('client_circles').update({ for_sale: false, sale_price: null }).eq('id', circleId);
+        await supabase.from('circle_activity').insert({
+          circle_id: circleId, actor_id: auth.currentUser.id,
+          action: 'sale_removed', detail: 'Circle removed from sale',
+        });
+        auth.showToast('Sale listing removed', 'success');
+        fetchCircle();
+      };
+
+      // Search for buyer (any ModelBid user)
+      const searchBuyers = async (term) => {
+        if (!term.trim()) { setSaleSearchResults([]); return; }
+        setSaleSearching(true);
+        const { data } = await supabase.from('profiles').select('id, display_name, username, profile_photo_url, avatar_emoji, role')
+          .ilike('display_name', `%${term}%`).neq('id', auth.currentUser.id).limit(10);
+        setSaleSearchResults(data || []);
+        setSaleSearching(false);
+      };
+
+      // Send sale offer to specific user
+      const offerSale = async (buyerId, buyerName) => {
+        const price = circle.sale_price || parseFloat(salePrice);
+        try {
+          await supabase.from('circle_transfers').insert({
+            circle_id: circleId, from_user_id: auth.currentUser.id, to_user_id: buyerId,
+            transfer_type: 'sale', sale_price: price,
+          });
+          await supabase.from('circle_activity').insert({
+            circle_id: circleId, actor_id: auth.currentUser.id,
+            action: 'sale_offered', detail: `Sale offered to ${buyerName} for $${price}`,
+          });
+          await supabase.from('notifications').insert({
+            user_id: buyerId, type: 'circle_sale',
+            title: '💰 Circle For Sale',
+            body: `You've been offered to buy "${circle?.name}" for $${price}.`,
+            link: '#circle-transfer/' + circleId,
+          });
+          auth.showToast(`Sale offer sent to ${buyerName}!`, 'success');
+          setSaleSearch(''); setSaleSearchResults([]);
+          fetchCircle();
+        } catch (e) { auth.showToast('Failed to send sale offer', 'error'); }
+      };
+
+      // Delete circle (only if all models declined transfer)
+      const deleteCircle = async () => {
+        if (!confirm('Are you sure you want to delete this circle? This cannot be undone.')) return;
+        try {
+          await supabase.from('client_circles').update({ status: 'deleted' }).eq('id', circleId);
+          await supabase.from('circle_activity').insert({
+            circle_id: circleId, actor_id: auth.currentUser.id,
+            action: 'circle_deleted', detail: 'Circle deleted after all models declined ownership',
+          });
+          auth.showToast('Circle deleted', 'success');
+          window.location.hash = 'circle-dashboard';
+        } catch (e) { auth.showToast('Failed to delete circle', 'error'); }
+      };
+
       if (loading) return <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>;
       if (!circle) return <div style={{ textAlign: 'center', padding: '2rem' }}>Circle not found.</div>;
 
       const acceptedCount = invites.filter(i => i.status === 'accepted').length;
       const allAccepted = acceptedCount === circle.roster_size;
       const hasProposedPrice = circle.proposed_price && circle.proposed_price !== circle.price;
+
+      // Transfer logic for live circles
+      const isOwner = auth.currentUser && auth.currentUser.id === circle.client_id;
+      const acceptedCreatorIds = invites.filter(i => i.status === 'accepted').map(i => i.creator_id);
+      const pendingTransfers = transfers.filter(t => t.status === 'pending' && t.transfer_type === 'transfer');
+      const declinedTransfers = transfers.filter(t => t.status === 'declined' && t.transfer_type === 'transfer');
+      const declinedCreatorIds = declinedTransfers.map(t => t.to_user_id);
+      const allModelsDeclinedTransfer = acceptedCreatorIds.length > 0 && acceptedCreatorIds.every(id => declinedCreatorIds.includes(id));
+      const canDelete = circle.status === 'live' && isOwner && allModelsDeclinedTransfer;
+      const hasActiveTransfer = pendingTransfers.length > 0;
+      const pendingSales = transfers.filter(t => t.status === 'pending' && t.transfer_type === 'sale');
 
       return (
         <div style={{ maxWidth: '600px', margin: '0 auto', padding: '1rem' }}>
@@ -19697,6 +19817,153 @@ RULES
             </div>
           )}
 
+          {/* ===== OWNERSHIP & TRANSFER SECTION (live circles, owner only) ===== */}
+          {circle.status === 'live' && isOwner && (
+            <div style={{ background: 'rgba(255,165,0,0.06)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid rgba(255,165,0,0.15)', marginBottom: '1.5rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem' }}>⚙️ Circle Ownership</div>
+
+              {/* Show current transfer status */}
+              {hasActiveTransfer && (
+                <div style={{ background: 'rgba(255,165,0,0.1)', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: '0.75rem', fontSize: '0.85rem' }}>
+                  <div style={{ fontWeight: 600, color: '#ffa500', marginBottom: '0.25rem' }}>⏳ Transfer Pending</div>
+                  {pendingTransfers.map(t => (
+                    <div key={t.id} style={{ color: 'var(--text-secondary)' }}>
+                      Ownership offered to <strong>{profiles[t.to_user_id]?.display_name || 'a creator'}</strong> — waiting for response.
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Show declined transfers */}
+              {declinedTransfers.length > 0 && (
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+                  Declined by: {declinedTransfers.map(t => profiles[t.to_user_id]?.display_name || 'Creator').join(', ')}
+                </div>
+              )}
+
+              {/* Sale listing status */}
+              {circle.for_sale && (
+                <div style={{ background: 'rgba(0,200,100,0.08)', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: '0.75rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, color: '#00c864', fontSize: '0.88rem' }}>💰 Listed for Sale — ${circle.sale_price}</div>
+                      {pendingSales.length > 0 && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{pendingSales.length} pending offer(s)</div>}
+                    </div>
+                    <button onClick={removeFromSale} style={{ padding: '0.3rem 0.8rem', borderRadius: 6, border: '1px solid rgba(255,82,82,0.3)', background: 'rgba(255,82,82,0.08)', color: '#ff5252', fontSize: '0.75rem', cursor: 'pointer' }}>Remove Listing</button>
+                  </div>
+
+                  {/* Search to send sale offer */}
+                  <div style={{ marginTop: '0.75rem' }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.4rem' }}>Send offer to a specific user:</div>
+                    <input type="text" value={saleSearch} onChange={(e) => { setSaleSearch(e.target.value); searchBuyers(e.target.value); }}
+                      placeholder="Search by name..." style={{ width: '100%', marginBottom: '0.4rem', fontSize: '0.85rem' }} />
+                    {saleSearching && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Searching...</div>}
+                    {saleSearchResults.map(u => (
+                      <div key={u.id} onClick={() => offerSale(u.id, u.display_name)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem', borderRadius: '0.5rem', cursor: 'pointer', marginBottom: '0.2rem' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-card-light)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                        <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--bg-card-light)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', flexShrink: 0 }}>
+                          {u.profile_photo_url ? <img src={u.profile_photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (u.avatar_emoji || '👤')}
+                        </div>
+                        <div style={{ flex: 1, fontSize: '0.83rem' }}>{u.display_name} <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>({u.role})</span></div>
+                        <span style={{ color: '#00c864', fontSize: '0.78rem', fontWeight: 700 }}>Send Offer</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {/* Transfer to model button */}
+                {!hasActiveTransfer && !showTransferUI && (
+                  <button onClick={() => setShowTransferUI(true)}
+                    style={{ padding: '0.65rem', borderRadius: 8, border: '1px solid rgba(100,200,255,0.3)', background: 'rgba(100,200,255,0.08)', color: '#64c8ff', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', width: '100%' }}>
+                    🔄 Transfer Ownership to a Model
+                  </button>
+                )}
+
+                {/* Transfer picker — shows models in the circle */}
+                {showTransferUI && (
+                  <div style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '0.75rem', border: '1px solid rgba(100,200,255,0.2)' }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64c8ff', marginBottom: '0.5rem' }}>Pick a model to transfer ownership to:</div>
+                    {acceptedCreatorIds.filter(id => !declinedCreatorIds.includes(id)).map(id => {
+                      const prof = profiles[id] || {};
+                      const alreadyOffered = transfers.some(t => t.to_user_id === id && t.status === 'pending');
+                      return (
+                        <div key={id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem', borderRadius: '0.5rem', marginBottom: '0.25rem' }}>
+                          <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--bg-card-light)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>
+                            {prof.profile_photo_url ? <img src={prof.profile_photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (prof.avatar_emoji || '👤')}
+                          </div>
+                          <div style={{ flex: 1, fontSize: '0.85rem', fontWeight: 600 }}>{prof.display_name || 'Creator'}</div>
+                          {alreadyOffered ? (
+                            <span style={{ fontSize: '0.75rem', color: '#ffa500' }}>Pending...</span>
+                          ) : (
+                            <button onClick={() => offerTransfer(id, prof.display_name)}
+                              style={{ padding: '0.3rem 0.8rem', borderRadius: 6, border: 'none', background: '#64c8ff', color: '#000', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer' }}>
+                              Offer
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {acceptedCreatorIds.filter(id => !declinedCreatorIds.includes(id)).length === 0 && (
+                      <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', padding: '0.5rem 0' }}>All models have been offered and declined.</div>
+                    )}
+                    <button onClick={() => setShowTransferUI(false)} style={{ marginTop: '0.5rem', background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.78rem', cursor: 'pointer' }}>Cancel</button>
+                  </div>
+                )}
+
+                {/* Sell circle button */}
+                {!circle.for_sale && !showSaleUI && (
+                  <button onClick={() => setShowSaleUI(true)}
+                    style={{ padding: '0.65rem', borderRadius: 8, border: '1px solid rgba(0,200,100,0.3)', background: 'rgba(0,200,100,0.08)', color: '#00c864', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', width: '100%' }}>
+                    💰 List Circle for Sale
+                  </button>
+                )}
+
+                {/* Sale price input */}
+                {showSaleUI && !circle.for_sale && (
+                  <div style={{ background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '0.75rem', border: '1px solid rgba(0,200,100,0.2)' }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#00c864', marginBottom: '0.5rem' }}>Set your asking price:</div>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 700, fontSize: '1rem' }}>$</span>
+                      <input type="number" value={salePrice} onChange={(e) => setSalePrice(e.target.value)}
+                        placeholder="e.g. 500" min="1" style={{ flex: 1, fontSize: '0.9rem' }} />
+                      <button onClick={listForSale} disabled={saleSaving}
+                        style={{ padding: '0.5rem 1rem', borderRadius: 6, border: 'none', background: '#00c864', color: '#fff', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', opacity: saleSaving ? 0.5 : 1 }}>
+                        {saleSaving ? '...' : 'List'}
+                      </button>
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>This transfers full ownership — the buyer becomes the circle owner and earns all future revenue.</div>
+                    <button onClick={() => setShowSaleUI(false)} style={{ marginTop: '0.5rem', background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.78rem', cursor: 'pointer' }}>Cancel</button>
+                  </div>
+                )}
+
+                {/* Delete button — only if all models declined transfer */}
+                {canDelete && (
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.4rem', textAlign: 'center' }}>
+                      All models declined ownership. You may now delete this circle.
+                    </div>
+                    <button onClick={deleteCircle}
+                      style={{ padding: '0.65rem', borderRadius: 8, border: '1px solid rgba(255,82,82,0.4)', background: 'rgba(255,82,82,0.1)', color: '#ff5252', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', width: '100%' }}>
+                      🗑️ Delete Circle
+                    </button>
+                  </div>
+                )}
+
+                {/* Info text if circle is live and not all models declined */}
+                {circle.status === 'live' && !canDelete && !hasActiveTransfer && !circle.for_sale && !showTransferUI && !showSaleUI && (
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '0.25rem', lineHeight: 1.5 }}>
+                    Live circles can't be deleted. To close this circle, offer ownership to each model first. If all models decline, you'll be able to delete it.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Activity Log */}
           <div>
             <h3 style={{ fontSize: '0.95rem', marginBottom: '0.75rem' }}>Activity</h3>
@@ -19712,6 +19979,143 @@ RULES
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      );
+    }
+
+    // --- Circle Transfer / Sale Response Page ---
+    function CircleTransferPage({ circleId }) {
+      const auth = useContext(AuthContext);
+      const [circle, setCircle] = useState(null);
+      const [transfer, setTransfer] = useState(null);
+      const [ownerProfile, setOwnerProfile] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [responding, setResponding] = useState(false);
+
+      useEffect(() => {
+        (async () => {
+          const { data: c } = await supabase.from('client_circles').select('*').eq('id', circleId).single();
+          if (!c) { setLoading(false); return; }
+          setCircle(c);
+
+          // Find the pending transfer for this user
+          const { data: transfers } = await supabase.from('circle_transfers').select('*')
+            .eq('circle_id', circleId).eq('to_user_id', auth.currentUser.id).eq('status', 'pending')
+            .order('created_at', { ascending: false }).limit(1);
+          if (transfers && transfers.length > 0) setTransfer(transfers[0]);
+
+          // Fetch owner profile
+          const { data: owner } = await supabase.from('profiles').select('id, display_name, profile_photo_url, avatar_emoji').eq('id', c.client_id).single();
+          if (owner) setOwnerProfile(owner);
+
+          setLoading(false);
+        })();
+      }, [circleId]);
+
+      const respond = async (accept) => {
+        if (!transfer) return;
+        setResponding(true);
+        try {
+          const newStatus = accept ? 'accepted' : 'declined';
+          await supabase.from('circle_transfers').update({ status: newStatus, responded_at: new Date().toISOString() }).eq('id', transfer.id);
+
+          if (accept) {
+            // Transfer ownership
+            await supabase.from('client_circles').update({ client_id: auth.currentUser.id }).eq('id', circleId);
+            await supabase.from('circle_activity').insert({
+              circle_id: circleId, actor_id: auth.currentUser.id,
+              action: transfer.transfer_type === 'sale' ? 'circle_sold' : 'ownership_transferred',
+              detail: transfer.transfer_type === 'sale'
+                ? `Ownership sold to ${auth.profile?.display_name} for $${transfer.sale_price}`
+                : `Ownership transferred to ${auth.profile?.display_name}`,
+            });
+            // Notify the old owner
+            await supabase.from('notifications').insert({
+              user_id: transfer.from_user_id, type: 'circle_transfer',
+              title: accept ? '✅ Transfer Accepted' : '❌ Transfer Declined',
+              body: `${auth.profile?.display_name} ${accept ? 'accepted' : 'declined'} ownership of "${circle?.name}".`,
+              link: '#my-circle/' + circleId,
+            });
+            auth.showToast('You are now the owner of this circle!', 'success');
+            window.location.hash = 'my-circle/' + circleId;
+          } else {
+            await supabase.from('circle_activity').insert({
+              circle_id: circleId, actor_id: auth.currentUser.id,
+              action: 'transfer_declined',
+              detail: `${auth.profile?.display_name} declined ${transfer.transfer_type === 'sale' ? 'purchase' : 'ownership'}`,
+            });
+            await supabase.from('notifications').insert({
+              user_id: transfer.from_user_id, type: 'circle_transfer',
+              title: '❌ Transfer Declined',
+              body: `${auth.profile?.display_name} declined ownership of "${circle?.name}".`,
+              link: '#my-circle/' + circleId,
+            });
+            auth.showToast('Transfer declined', 'success');
+            window.location.hash = 'dashboard';
+          }
+        } catch (e) {
+          auth.showToast('Something went wrong: ' + e.message, 'error');
+        }
+        setResponding(false);
+      };
+
+      if (loading) return <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>;
+      if (!circle) return <div style={{ textAlign: 'center', padding: '2rem' }}>Circle not found.</div>;
+      if (!transfer) return (
+        <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
+          <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>✅</div>
+          <h3>No Pending Offers</h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>There's no pending transfer or sale offer for you on this circle.</p>
+          <button className="btn btn-secondary" onClick={() => window.location.hash = 'dashboard'} style={{ marginTop: '1rem' }}>← Dashboard</button>
+        </div>
+      );
+
+      const isSale = transfer.transfer_type === 'sale';
+
+      return (
+        <div style={{ maxWidth: '500px', margin: '0 auto', padding: '1.5rem 1rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{isSale ? '💰' : '🔄'}</div>
+            <h2 style={{ marginBottom: '0.25rem' }}>{isSale ? 'Circle For Sale' : 'Ownership Offer'}</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
+              {isSale
+                ? `${ownerProfile?.display_name || 'The owner'} wants to sell you this circle for $${transfer.sale_price}.`
+                : `${ownerProfile?.display_name || 'The owner'} wants to transfer ownership of this circle to you — for free.`}
+            </p>
+          </div>
+
+          <div className="card" style={{ marginBottom: '1.5rem' }}>
+            <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem' }}>{circle.name}</div>
+            {circle.description && <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>{circle.description}</p>}
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              <span>💵 ${circle.price}/mo</span>
+              <span>👥 {circle.subscriber_count || 0} subscribers</span>
+              <span>👯 {circle.roster_size} creators</span>
+            </div>
+          </div>
+
+          <div style={{ background: 'rgba(255,165,0,0.06)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid rgba(255,165,0,0.15)', marginBottom: '1.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            {isSale ? (
+              <>
+                <strong>What you're buying:</strong> Full ownership of this circle. You'll earn the owner's revenue share, control the affiliate program, and manage the roster. The models and subscribers stay.
+              </>
+            ) : (
+              <>
+                <strong>What this means:</strong> You'll become the full owner of this circle. You'll earn the owner's revenue share, control the affiliate program, and manage the roster. This is a free transfer — no payment required.
+              </>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button onClick={() => respond(false)} disabled={responding}
+              className="btn btn-secondary" style={{ flex: 1, padding: '0.75rem', fontSize: '0.95rem', opacity: responding ? 0.5 : 1 }}>
+              Decline
+            </button>
+            <button onClick={() => respond(true)} disabled={responding}
+              className="btn glow-btn" style={{ flex: 1, padding: '0.75rem', fontSize: '0.95rem', opacity: responding ? 0.5 : 1 }}>
+              {responding ? '...' : isSale ? `Buy for $${transfer.sale_price}` : 'Accept Ownership'}
+            </button>
           </div>
         </div>
       );
@@ -20632,6 +21036,7 @@ RULES
         if (page === 'my-circle' && params[0]) return auth.currentUser ? <MyCirclePage circleId={params[0]} /> : <LoginPage />;
         if (page === 'notifications') return auth.currentUser ? <NotificationsPage /> : <LoginPage />;
         if (page === 'circle-invite' && params[0]) return auth.currentUser ? <CircleInvitePage circleId={params[0]} /> : <LoginPage />;
+        if (page === 'circle-transfer' && params[0]) return auth.currentUser ? <CircleTransferPage circleId={params[0]} /> : <LoginPage />;
         if (page === 'circle-dashboard') return auth.currentUser ? <CircleDashboardPage /> : <LoginPage />;
         if (page === 'circle-feed' && params[0]) return <CircleFeedPage circleId={params[0]} />;
         if (page === 'circle-join' && params[0]) return <CircleJoinPage circleId={params[0]} />;
