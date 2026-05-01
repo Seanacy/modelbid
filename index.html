@@ -19221,6 +19221,21 @@ RULES
                 const refCode = circle.referral_code || ('cc_' + Math.random().toString(36).substr(2, 8));
                 await supabase.from('client_circles').update({ status: 'live', launched_at: new Date().toISOString(), referral_code: refCode }).eq('id', circleId);
                 await supabase.from('circle_activity').insert({ circle_id: circleId, actor_id: auth.currentUser.id, action: 'circle_launched', detail: 'Circle is now live!' });
+
+                // Notify all creators that the circle is live
+                const { data: acceptedInvites } = await supabase.from('circle_invites').select('creator_id').eq('circle_id', circleId).eq('status', 'accepted');
+                if (acceptedInvites) {
+                  for (const inv of acceptedInvites) {
+                    await supabase.from('notifications').insert({
+                      user_id: inv.creator_id,
+                      type: 'circle_live',
+                      title: '🚀 Circle is LIVE!',
+                      body: `"${circle.name}" is now live! Start posting content for your subscribers.`,
+                      link: '#circle-feed/' + circleId,
+                    });
+                  }
+                }
+
                 auth.showToast('Your circle is LIVE!', 'success');
                 fetchCircle();
               }} style={{ width: '100%', padding: '0.85rem', fontSize: '1rem' }}>🚀 Launch Circle</button>
@@ -19354,12 +19369,38 @@ RULES
 
       const respond = async (accepted) => {
         const status = accepted ? 'accepted' : 'declined';
+        const myName = auth.profile?.display_name || 'A creator';
         await supabase.from('circle_invites').update({ status, responded_at: new Date().toISOString() }).eq('id', invite.id);
         await supabase.from('circle_activity').insert({
           circle_id: circleId, actor_id: auth.currentUser.id,
           action: accepted ? 'creator_accepted' : 'creator_declined',
-          detail: `${auth.profile?.display_name || 'Creator'} ${accepted ? 'accepted' : 'declined'} the invite`,
+          detail: `${myName} ${accepted ? 'accepted' : 'declined'} the invite`,
         });
+
+        // Notify circle owner
+        if (circle.client_id) {
+          await supabase.from('notifications').insert({
+            user_id: circle.client_id,
+            type: accepted ? 'circle_accepted' : 'circle_declined',
+            title: accepted ? 'Invite Accepted!' : 'Invite Declined',
+            body: `${myName} ${accepted ? 'accepted' : 'declined'} the invite to "${circle.name}"`,
+            link: '#my-circle/' + circleId,
+          });
+        }
+
+        // Notify other creators in the circle
+        for (const inv of invites) {
+          if (inv.creator_id !== auth.currentUser.id && (inv.status === 'accepted' || inv.status === 'opened' || inv.status === 'pending')) {
+            await supabase.from('notifications').insert({
+              user_id: inv.creator_id,
+              type: accepted ? 'circle_accepted' : 'circle_declined',
+              title: accepted ? 'Teammate Joined!' : 'Creator Declined',
+              body: `${myName} ${accepted ? 'accepted the invite to' : 'declined the invite to'} "${circle.name}"`,
+              link: '#circle-invite/' + circleId,
+            });
+          }
+        }
+
         auth.showToast(accepted ? 'You\'re in!' : 'Invite declined.', accepted ? 'success' : 'error');
         fetchAll();
       };
@@ -19693,6 +19734,7 @@ RULES
         if (type === 'new_follower') return '👤';
         if (type === 'direct_message') return '💬';
         if (type === 'feed_subscriber') return '⭐';
+        if (type === 'circle_live') return '🚀';
         return '🔔';
       };
 
