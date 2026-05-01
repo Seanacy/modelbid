@@ -4446,7 +4446,9 @@
             const session = sessionResult?.data?.session;
             if (session?.user) {
               setCurrentUser(session.user);
-              await fetchProfile(session.user.id);
+              // Don't await — let the app render immediately while profile loads in background
+              // fetchProfile sets profileLoading=true/false and the app already handles that state
+              fetchProfile(session.user.id);
             }
           } catch (error) {
             console.error('Auth init error:', error);
@@ -4539,7 +4541,7 @@
         setProfileLoading(true);
         try {
           const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
+            setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
           );
           const fetchPromise = supabase
             .from('profiles')
