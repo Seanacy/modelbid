@@ -13074,6 +13074,7 @@ REMEMBER:
       const auth = useContext(AuthContext);
       const [bookings, setBookings] = useState([]);
       const [loading, setLoading] = useState(true);
+      const [myClientCircles, setMyClientCircles] = useState([]);
       const [myCampaigns, setMyCampaigns] = useState([]);
       const [myCampaignItems, setMyCampaignItems] = useState({});
       const [showAddProduct, setShowAddProduct] = useState(null); // campaign_id or null
@@ -13266,9 +13267,28 @@ REMEMBER:
           }
         };
 
+        // Fetch client's circles if they're a client
+        const fetchClientCircles = async () => {
+          if (auth.profile?.role !== 'client') return;
+          try {
+            const { data: circles } = await supabase.from('client_circles').select('*')
+              .eq('client_id', auth.currentUser.id).order('created_at', { ascending: false });
+            if (circles && circles.length > 0) {
+              const circleIds = circles.map(c => c.id);
+              const { data: invites } = await supabase.from('circle_invites').select('circle_id, creator_id, status, profiles:creator_id(display_name, avatar_emoji, profile_photo_url)')
+                .in('circle_id', circleIds).eq('status', 'accepted');
+              const enriched = circles.map(c => ({
+                ...c,
+                creators: (invites || []).filter(i => i.circle_id === c.id).map(i => i.profiles).filter(Boolean),
+              }));
+              setMyClientCircles(enriched);
+            }
+          } catch (e) { console.error('Fetch client circles:', e); }
+        };
+
         if (auth.currentUser && auth.profile) {
           const timeout = setTimeout(() => setLoading(false), 2000);
-          fetchBookings().then(() => clearTimeout(timeout));
+          Promise.all([fetchBookings(), fetchClientCircles()]).then(() => clearTimeout(timeout));
         } else if (auth.currentUser) {
           // Profile hasn't loaded yet — wait briefly then show page anyway
           const timeout = setTimeout(() => setLoading(false), 2000);
@@ -13820,13 +13840,51 @@ REMEMBER:
               </div>
             </div>
 
-            {auth.profile.subscription_tier === 'free' && (
-              <div className="card" style={{ marginBottom: '2rem', border: '2px solid var(--accent-pink)', background: 'linear-gradient(135deg, rgba(255, 110, 199, 0.1), rgba(157, 78, 221, 0.1))' }}>
-                <h3 style={{ marginBottom: '0.5rem', color: 'var(--accent-pink)' }}>Upgrade to Premium</h3>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                  Send messages to models, receive responses, and secure bookings with premium features.
-                </p>
-                <button className="btn glow-btn" onClick={() => auth.upgradeToPremium()}>Upgrade - {auth.profile?.role === 'model' ? '$29.99' : '$9.99'}/month</button>
+
+            {/* My Inner Circles */}
+            {myClientCircles.length > 0 && (
+              <div style={{ marginBottom: '2rem' }}>
+                <h3 style={{ marginBottom: '1rem' }}>My Inner Circles</h3>
+                <div className="grid">
+                  {myClientCircles.map(circle => (
+                    <div key={circle.id} className="card" style={{ cursor: 'pointer', transition: 'transform 0.15s' }}
+                      onClick={() => window.location.hash = 'my-circle/' + circle.id}
+                      onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                      onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '0.25rem' }}>{circle.name}</div>
+                          {circle.description && <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{circle.description}</div>}
+                        </div>
+                        <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem', borderRadius: '1rem', background: circle.status === 'live' ? 'rgba(0,217,163,0.15)' : 'rgba(255,170,0,0.15)', color: circle.status === 'live' ? '#00d9a3' : '#ffaa00', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                          {circle.status === 'live' ? 'Live' : circle.status === 'pending' ? 'Pending' : circle.status}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {circle.creators && circle.creators.map((creator, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--bg-card-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', overflow: 'hidden' }}>
+                              {creator.profile_photo_url ? <img src={creator.profile_photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (creator.avatar_emoji || '👤')}
+                            </div>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{creator.display_name}</span>
+                          </div>
+                        ))}
+                        <span style={{ marginLeft: 'auto', fontSize: '0.85rem', fontWeight: 600 }}>${circle.price}/mo</span>
+                        {circle.subscriber_count > 0 && <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>• {circle.subscriber_count} subs</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button className="btn btn-secondary" onClick={() => window.location.hash = 'create-circle'} style={{ marginTop: '0.75rem', width: '100%', fontSize: '0.85rem' }}>+ Create New Circle</button>
+              </div>
+            )}
+
+            {myClientCircles.length === 0 && (
+              <div style={{ marginBottom: '2rem', padding: '1.25rem', borderRadius: '12px', background: 'linear-gradient(135deg, rgba(0,210,180,0.08), rgba(0,102,255,0.08))', border: '1px solid rgba(0,210,180,0.2)', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🔒</div>
+                <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>Build An Inner Circle</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Invite 2–4 models, launch a shared subscription feed, and earn together.</div>
+                <button className="btn glow-btn" onClick={() => window.location.hash = 'create-circle'}>+ New Circle</button>
               </div>
             )}
 
