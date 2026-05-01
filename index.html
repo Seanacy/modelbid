@@ -19790,13 +19790,13 @@ RULES
 
         if (page === 'home') {
           if (!auth.currentUser) return <HomePage />;
-          // Wait for profile to load before deciding which page to show
-          if (!auth.profile || auth.profileLoading) return (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-              <div className="loading-spinner"></div>
-            </div>
-          );
-          if (auth.profile.role === 'client') return <ClientProfilePage clientId={auth.currentUser.id} />;
+          // If profile loaded, route by role
+          if (auth.profile) {
+            if (auth.profile.role === 'client') return <ClientProfilePage clientId={auth.currentUser.id} />;
+            return <ProfilePage modelId={auth.currentUser.id} />;
+          }
+          // Profile still loading — show profile page immediately (it fetches its own data)
+          // Default to ProfilePage which handles both roles
           return <ProfilePage modelId={auth.currentUser.id} />;
         }
         if (page === 'feed') return requiresSub(<FeedPage />);
