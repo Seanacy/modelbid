@@ -5565,8 +5565,7 @@
           }
         };
 
-        const timeout = setTimeout(() => setLoading(false), 2500);
-        fetchModels().then(() => clearTimeout(timeout));
+        fetchModels();
       }, []);
 
       // Reset city when state changes
@@ -5667,11 +5666,18 @@
             </div>
           )}
 
-          {filtered.length === 0 && models.length === 0 && (
+          {filtered.length === 0 && models.length === 0 && !loading && (
             <div className="empty-state">
               <div className="empty-state-icon">🔍</div>
               <div className="empty-state-title">No models yet</div>
               <div className="empty-state-text">Be one of the first to join ModelBid</div>
+            </div>
+          )}
+
+          {loading && models.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '3rem' }}>
+              <div className="loading-spinner" />
+              <div style={{ color: '#999', marginTop: '1rem', fontSize: '0.9rem' }}>Loading models...</div>
             </div>
           )}
         </div>
