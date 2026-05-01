@@ -4540,16 +4540,14 @@
       const fetchProfile = async (userId) => {
         setProfileLoading(true);
         try {
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
-          );
-          const fetchPromise = supabase
+          // No artificial timeout — let the query complete naturally.
+          // The app renders immediately (doesn't await this), so a slow
+          // Supabase connection just means the profile fills in a moment later.
+          const { data, error } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', userId)
             .single();
-
-          const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
 
           if (error) throw error;
 
@@ -4565,12 +4563,7 @@
           setProfile(data);
         } catch (error) {
           console.error('Profile fetch error:', error);
-          // Set a minimal fallback profile so the app doesn't hang — but only if we don't already have a real profile
-          setProfile(prev => {
-            if (prev && !prev._fallback) return prev; // keep existing real profile
-            return { id: userId, display_name: '', role: 'model', _fallback: true };
-          });
-          // Retry once after 800ms
+          // Retry once after a short delay — network hiccups happen
           setTimeout(async () => {
             try {
               const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
