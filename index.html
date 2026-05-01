@@ -4692,6 +4692,24 @@
             });
 
           if (error) throw error;
+
+          // Create notification for the recipient
+          try {
+            const { data: conv } = await supabase.from('conversations').select('participant_1, participant_2').eq('id', conversationId).single();
+            if (conv) {
+              const recipientId = conv.participant_1 === currentUser.id ? conv.participant_2 : conv.participant_1;
+              const senderName = profile?.display_name || 'Someone';
+              const preview = typeof content === 'string' && content.length > 80 ? content.slice(0, 80) + '...' : (typeof content === 'string' ? content : 'Sent you a message');
+              await supabase.from('notifications').insert({
+                user_id: recipientId,
+                type: 'direct_message',
+                title: `New message from ${senderName}`,
+                body: preview,
+                link: '#messages/' + conversationId,
+              });
+            }
+          } catch (notifErr) { console.warn('Notification insert failed:', notifErr); }
+
           return true;
         } catch (error) {
           showToast(error.message, 'error');
@@ -19915,7 +19933,7 @@ RULES
       return <CircleFeedPage circleId={circleId} refCode={refCode} />;
     }
 
-    function NotificationBadge() {
+    function NotificationBadge({ style: badgeStyle }) {
       const auth = useContext(AuthContext);
       const [count, setCount] = useState(0);
       useEffect(() => {
@@ -19923,8 +19941,18 @@ RULES
         supabase.from('notifications').select('id', { count: 'exact', head: true })
           .eq('user_id', auth.currentUser.id).eq('read', false)
           .then(({ count: c }) => setCount(c || 0));
+        // Refresh every 30 seconds
+        const iv = setInterval(() => {
+          supabase.from('notifications').select('id', { count: 'exact', head: true })
+            .eq('user_id', auth.currentUser.id).eq('read', false)
+            .then(({ count: c }) => setCount(c || 0));
+        }, 30000);
+        return () => clearInterval(iv);
       }, [auth.currentUser]);
       if (count === 0) return null;
+      if (badgeStyle === 'navbar') {
+        return <span style={{ position: 'absolute', top: -2, right: -2, background: '#ff4444', color: '#fff', borderRadius: '50%', fontSize: '0.55rem', fontWeight: 700, minWidth: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px' }}>{count > 99 ? '99+' : count}</span>;
+      }
       return <span style={{ background: '#ff4444', color: '#fff', borderRadius: '50%', fontSize: '0.65rem', fontWeight: 700, minWidth: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginLeft: 6, padding: '0 4px' }}>{count > 99 ? '99+' : count}</span>;
     }
 
@@ -20182,8 +20210,16 @@ RULES
               )}
             </div>
 
-            {/* Hamburger button — always visible */}
-            <button className="hamburger-btn" onClick={() => setMobileMenuOpen(true)}>☰</button>
+            {/* Notification bell + Hamburger button — always visible */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              {auth.currentUser && (
+                <button onClick={() => { window.location.hash = 'notifications'; }} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', position: 'relative', padding: '0.3rem 0.4rem', lineHeight: 1 }}>
+                  🔔
+                  <NotificationBadge style="navbar" />
+                </button>
+              )}
+              <button className="hamburger-btn" onClick={() => setMobileMenuOpen(true)}>☰</button>
+            </div>
           </nav>
 
           {/* Mobile slide-out menu */}
