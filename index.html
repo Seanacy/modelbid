@@ -5429,6 +5429,8 @@
               .from('featured_circles').select('*').order('display_order', { ascending: true });
             if (error || !featuredList || featuredList.length === 0) {
               setFeatured([]);
+              const cc = await clientCirclesPromise;
+              setClientCircles(cc);
               setLoading(false);
               return;
             }
