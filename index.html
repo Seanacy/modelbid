@@ -15365,7 +15365,9 @@ REMEMBER:
           return;
         }
         setLoading(true);
-        const success = await updateProfile(data);
+        // Merge current portfolio images into save data so it doesn't get overwritten
+        const saveData = { ...data, gallery: portfolioImages };
+        const success = await updateProfile(saveData);
         setLoading(false);
         if (success) {
           // If subscription is active, go to profile. Otherwise, go to subscription gate (dashboard triggers it).
