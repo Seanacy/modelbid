@@ -4422,7 +4422,7 @@
         const authTimeout = setTimeout(() => {
           console.warn('Auth init timeout — forcing app to render');
           setLoading(false);
-        }, 3000);
+        }, 1500);
 
         const initAuth = async () => {
           try {
@@ -4542,7 +4542,7 @@
         setProfileLoading(true);
         try {
           const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+            setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
           );
           const fetchPromise = supabase
             .from('profiles')
@@ -5564,7 +5564,7 @@
           } catch (error) {
             console.error('Fetch models error (attempt ' + attempt + '):', error?.message || error);
             if (attempt < 3) {
-              await new Promise(r => setTimeout(r, 1000 * attempt));
+              await new Promise(r => setTimeout(r, 500 * attempt));
               return fetchModels(attempt + 1);
             }
             auth.showToast('Failed to load models. Pull down to refresh.', 'error');
@@ -5573,7 +5573,7 @@
           }
         };
 
-        const timeout = setTimeout(() => setLoading(false), 5000);
+        const timeout = setTimeout(() => setLoading(false), 2500);
         fetchModels().then(() => clearTimeout(timeout));
       }, []);
 
@@ -6975,11 +6975,22 @@
             setCrew(crewData);
             setTierEdits({ tier1_name: crewData.tier1_name, tier1_price: crewData.tier1_price, tier2_name: crewData.tier2_name, tier2_price: crewData.tier2_price, tier3_name: crewData.tier3_name, tier3_price: crewData.tier3_price });
 
-            const { data: membersData } = await supabase.from('crew_members').select('*').eq('crew_id', crewId);
-            setMembers(membersData || []);
+            // Fire all remaining fetches in parallel
+            const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+            const [membersRes, postsRes, invRes, countRes, subsRes, viewsRes] = await Promise.all([
+              supabase.from('crew_members').select('*').eq('crew_id', crewId).then(r => r.data),
+              supabase.from('crew_posts').select('*').eq('crew_id', crewId).order('created_at', { ascending: false }).then(r => r.data),
+              supabase.from('crew_invites').select('*').eq('crew_id', crewId).eq('status', 'pending').then(r => r.data),
+              supabase.from('crew_subscriptions').select('id', { count: 'exact', head: true }).eq('crew_id', crewId).eq('active', true).then(r => r.count),
+              supabase.from('crew_subscriptions').select('referred_by').eq('crew_id', crewId).eq('active', true).then(r => r.data),
+              supabase.from('crew_views').select('referred_by').eq('crew_id', crewId).gte('created_at', weekAgo.toISOString()).then(r => r.data),
+            ]);
 
-            // Fetch member profiles
-            if (membersData && membersData.length > 0) {
+            const membersData = membersRes || [];
+            setMembers(membersData);
+
+            // Fetch member profiles (depends on members result)
+            if (membersData.length > 0) {
               const ids = membersData.map(m => m.user_id);
               const { data: profiles } = await supabase.from('profiles').select('id, display_name, profile_photo_url, avatar_emoji').in('id', ids);
               const pMap = {};
@@ -6987,48 +6998,35 @@
               setMemberProfiles(pMap);
             }
 
-            const { data: postsData } = await supabase.from('crew_posts').select('*').eq('crew_id', crewId).order('created_at', { ascending: false });
-            setPosts(postsData || []);
+            const postsData = postsRes || [];
+            setPosts(postsData);
 
             // Calculate post stats per member
             const stats = {};
-            (postsData || []).forEach(p => {
+            postsData.forEach(p => {
               if (!stats[p.author_id]) stats[p.author_id] = { total: 0, thisWeek: 0 };
               stats[p.author_id].total++;
-              const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
               if (new Date(p.created_at) > weekAgo) stats[p.author_id].thisWeek++;
             });
             setPostStats(stats);
 
-            const { data: invData } = await supabase.from('crew_invites').select('*').eq('crew_id', crewId).eq('status', 'pending');
-            setInvites(invData || []);
+            setInvites(invRes || []);
+            setSubCount(countRes || 0);
 
-            // Sub count
-            const { count } = await supabase.from('crew_subscriptions').select('id', { count: 'exact', head: true }).eq('crew_id', crewId).eq('active', true);
-            setSubCount(count || 0);
-
-            // Referral stats — who brought in subscribers
-            const { data: subs } = await supabase.from('crew_subscriptions').select('referred_by').eq('crew_id', crewId).eq('active', true);
+            // Referral stats
             const refCounts = {};
-            (subs || []).forEach(s => {
-              if (s.referred_by) {
-                refCounts[s.referred_by] = (refCounts[s.referred_by] || 0) + 1;
-              }
+            (subsRes || []).forEach(s => {
+              if (s.referred_by) { refCounts[s.referred_by] = (refCounts[s.referred_by] || 0) + 1; }
             });
             setReferralStats(refCounts);
 
-            // View stats — traffic attribution (last 7 days)
-            const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
-            const { data: views } = await supabase.from('crew_views').select('referred_by').eq('crew_id', crewId).gte('created_at', weekAgo.toISOString());
+            // View stats
             const viewCounts = {};
             let totalViews = 0;
-            (views || []).forEach(v => {
+            (viewsRes || []).forEach(v => {
               totalViews++;
-              if (v.referred_by) {
-                viewCounts[v.referred_by] = (viewCounts[v.referred_by] || 0) + 1;
-              }
+              if (v.referred_by) { viewCounts[v.referred_by] = (viewCounts[v.referred_by] || 0) + 1; }
             });
-            // Convert to percentages
             const viewPcts = {};
             Object.keys(viewCounts).forEach(uid => {
               viewPcts[uid] = { count: viewCounts[uid], pct: totalViews > 0 ? Math.round((viewCounts[uid] / totalViews) * 100) : 0 };
@@ -7676,15 +7674,32 @@
             if (!crewData) { setLoading(false); return; }
             setCrew(crewData);
 
-            // Log page view with referral attribution
+            // Log page view (fire and forget — don't block render)
             supabase.from('crew_views').insert({
               crew_id: crewId,
               viewer_id: auth.currentUser?.id || null,
               referred_by: refParam || null,
             }).then(() => {});
 
-            const { data: membersData } = await supabase.from('crew_members').select('*').eq('crew_id', crewId);
+            // Fire all remaining fetches in parallel
+            const parallelFetches = [
+              supabase.from('crew_members').select('*').eq('crew_id', crewId).then(r => r.data),
+              supabase.from('crew_posts').select('*').eq('crew_id', crewId).order('created_at', { ascending: false }).then(r => r.data),
+              supabase.from('crew_subscriptions').select('id', { count: 'exact', head: true }).eq('crew_id', crewId).eq('active', true).then(r => r.count),
+            ];
+            // Only check subscription if logged in
+            if (auth.currentUser) {
+              parallelFetches.push(
+                supabase.from('crew_subscriptions').select('*').eq('crew_id', crewId).eq('subscriber_id', auth.currentUser.id).eq('active', true).single().then(r => r.data).catch(() => null)
+              );
+            }
+
+            const [membersData, postsData, subCountVal, subData] = await Promise.all(parallelFetches);
+
             setMembers(membersData || []);
+            setPosts(postsData || []);
+            setSubCount(subCountVal || 0);
+            if (subData) { setIsSubscribed(true); setSubscribedTier(subData.tier); }
 
             // Check if current user is a member
             if (auth.currentUser && membersData) {
@@ -7692,7 +7707,7 @@
               if (memberMatch) setIsMember(true);
             }
 
-            // Fetch profiles
+            // Fetch profiles (depends on members result)
             if (membersData && membersData.length > 0) {
               const ids = membersData.map(m => m.user_id);
               const { data: profiles } = await supabase.from('profiles').select('id, display_name, profile_photo_url, avatar_emoji').in('id', ids);
@@ -7700,19 +7715,6 @@
               (profiles || []).forEach(p => { pMap[p.id] = p; });
               setMemberProfiles(pMap);
             }
-
-            // Check subscription
-            if (auth.currentUser) {
-              const { data: sub } = await supabase.from('crew_subscriptions').select('*').eq('crew_id', crewId).eq('subscriber_id', auth.currentUser.id).eq('active', true).single();
-              if (sub) { setIsSubscribed(true); setSubscribedTier(sub.tier); }
-            }
-
-            // Posts (only if member or subscriber)
-            const { data: postsData } = await supabase.from('crew_posts').select('*').eq('crew_id', crewId).order('created_at', { ascending: false });
-            setPosts(postsData || []);
-
-            const { count } = await supabase.from('crew_subscriptions').select('id', { count: 'exact', head: true }).eq('crew_id', crewId).eq('active', true);
-            setSubCount(count || 0);
           } catch(e) { console.error(e); }
           setLoading(false);
         };
@@ -8216,7 +8218,7 @@
       const fetchPosts = async () => {
         try {
           setLoadingPosts(true);
-          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000));
           const fetchPromise = supabase
             .from('posts')
             .select('*, profiles(display_name, avatar_emoji, role)')
@@ -12868,84 +12870,101 @@ REMEMBER:
           const fetchActionData = async () => {
             const uid = auth.currentUser.id;
             try {
-              // Unread messages: conversations where latest message isn't from me
+              // Fire all independent fetches in parallel
+              const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+              const monthAgo = new Date(); monthAgo.setDate(monthAgo.getDate() - 30);
+
+              const [convosRes, followsRes, postsRes, allPostsRes] = await Promise.all([
+                supabase.from('conversations').select('id, participant_1, participant_2').or(`participant_1.eq.${uid},participant_2.eq.${uid}`).then(r => r.data).catch(() => null),
+                supabase.from('follows').select('follower_id, created_at').eq('following_id', uid).gte('created_at', weekAgo.toISOString()).order('created_at', { ascending: false }).then(r => r.data).catch(() => null),
+                supabase.from('posts').select('id, text, created_at, media_urls').eq('user_id', uid).gte('created_at', monthAgo.toISOString()).order('created_at', { ascending: false }).limit(20).then(r => r.data).catch(() => null),
+                supabase.from('posts').select('id').eq('user_id', uid).then(r => r.data).catch(() => null),
+              ]);
+
+              // --- Unread messages ---
               let unreadCount = 0;
-              try {
-                const { data: convos } = await supabase.from('conversations').select('id, participant_1, participant_2')
-                  .or(`participant_1.eq.${uid},participant_2.eq.${uid}`);
-                if (convos && convos.length > 0) {
-                  const convoIds = convos.map(c => c.id);
-                  const { data: latestMsgs } = await supabase.from('messages').select('conversation_id, sender_id, created_at')
-                    .in('conversation_id', convoIds).order('created_at', { ascending: false });
-                  if (latestMsgs) {
-                    const seen = {};
-                    latestMsgs.forEach(m => { if (!seen[m.conversation_id]) seen[m.conversation_id] = m; });
-                    unreadCount = Object.values(seen).filter(m => m.sender_id !== uid).length;
-                  }
+              if (convosRes && convosRes.length > 0) {
+                const convoIds = convosRes.map(c => c.id);
+                const { data: latestMsgs } = await supabase.from('messages').select('conversation_id, sender_id, created_at')
+                  .in('conversation_id', convoIds).order('created_at', { ascending: false });
+                if (latestMsgs) {
+                  const seen = {};
+                  latestMsgs.forEach(m => { if (!seen[m.conversation_id]) seen[m.conversation_id] = m; });
+                  unreadCount = Object.values(seen).filter(m => m.sender_id !== uid).length;
                 }
-              } catch(e) {}
+              }
 
-              // New followers in last 7 days
+              // --- Followers (parallel profile fetch) ---
               let newFollowers = [];
-              try {
-                const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
-                const { data: follows } = await supabase.from('follows').select('follower_id, created_at')
-                  .eq('following_id', uid).gte('created_at', weekAgo.toISOString()).order('created_at', { ascending: false });
-                if (follows && follows.length > 0) {
-                  const followerIds = follows.map(f => f.follower_id);
-                  const { data: profiles } = await supabase.from('profiles').select('id, display_name, profile_photo_url').in('id', followerIds);
-                  const profMap = {};
-                  (profiles || []).forEach(p => profMap[p.id] = p);
-                  newFollowers = follows.map(f => ({ ...f, profile: profMap[f.follower_id] || { display_name: 'Someone' } }));
-                }
-              } catch(e) {}
+              let followerProfilesPromise = Promise.resolve(null);
+              if (followsRes && followsRes.length > 0) {
+                const followerIds = followsRes.map(f => f.follower_id);
+                followerProfilesPromise = supabase.from('profiles').select('id, display_name, profile_photo_url').in('id', followerIds).then(r => r.data).catch(() => null);
+              }
 
-              // Top posts (last 30 days by likes)
+              // --- Top posts engagement (parallel) ---
               let topPosts = [];
-              try {
-                const monthAgo = new Date(); monthAgo.setDate(monthAgo.getDate() - 30);
-                const { data: myPosts } = await supabase.from('posts').select('id, text, created_at, media_urls')
-                  .eq('user_id', uid).gte('created_at', monthAgo.toISOString()).order('created_at', { ascending: false }).limit(20);
-                if (myPosts && myPosts.length > 0) {
-                  const postIds = myPosts.map(p => p.id);
-                  const { data: likes } = await supabase.from('post_likes').select('post_id').in('post_id', postIds);
-                  const { data: comments } = await supabase.from('comments').select('post_id').in('post_id', postIds);
-                  const { data: reactions } = await supabase.from('reactions').select('post_id').in('post_id', postIds);
-                  const likeCounts = {}; (likes || []).forEach(l => { likeCounts[l.post_id] = (likeCounts[l.post_id] || 0) + 1; });
-                  const commentCounts = {}; (comments || []).forEach(c => { commentCounts[c.post_id] = (commentCounts[c.post_id] || 0) + 1; });
-                  const reactionCounts = {}; (reactions || []).forEach(r => { reactionCounts[r.post_id] = (reactionCounts[r.post_id] || 0) + 1; });
-                  topPosts = myPosts.map(p => ({
-                    ...p,
-                    likeCount: likeCounts[p.id] || 0,
-                    commentCount: commentCounts[p.id] || 0,
-                    reactionCount: reactionCounts[p.id] || 0,
-                    totalEngagement: (likeCounts[p.id] || 0) + (commentCounts[p.id] || 0) * 2 + (reactionCounts[p.id] || 0),
-                  })).sort((a, b) => b.totalEngagement - a.totalEngagement).slice(0, 5);
-                }
-              } catch(e) {}
+              let engagementPromise = Promise.resolve({ likes: null, comments: null, reactions: null });
+              if (postsRes && postsRes.length > 0) {
+                const postIds = postsRes.map(p => p.id);
+                engagementPromise = Promise.all([
+                  supabase.from('post_likes').select('post_id').in('post_id', postIds).then(r => r.data).catch(() => null),
+                  supabase.from('comments').select('post_id').in('post_id', postIds).then(r => r.data).catch(() => null),
+                  supabase.from('reactions').select('post_id').in('post_id', postIds).then(r => r.data).catch(() => null),
+                ]).then(([likes, comments, reactions]) => ({ likes, comments, reactions }));
+              }
 
-              // Hot clients — most active in last 14 days
+              // --- Hot clients (parallel) ---
               let hotClients = [];
-              try {
-                const twoWeeksAgo = new Date(); twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-                const { data: myPosts2 } = await supabase.from('posts').select('id').eq('user_id', uid);
-                const postIds2 = (myPosts2 || []).map(p => p.id);
-                if (postIds2.length > 0) {
-                  const { data: recentLikes } = await supabase.from('post_likes').select('user_id').in('post_id', postIds2);
-                  const { data: recentComments } = await supabase.from('comments').select('user_id').in('post_id', postIds2);
-                  const clientActivity = {};
-                  (recentLikes || []).forEach(l => { if (l.user_id !== uid) clientActivity[l.user_id] = (clientActivity[l.user_id] || 0) + 1; });
-                  (recentComments || []).forEach(c => { if (c.user_id !== uid) clientActivity[c.user_id] = (clientActivity[c.user_id] || 0) + 2; });
-                  const topClientIds = Object.entries(clientActivity).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([id]) => id);
-                  if (topClientIds.length > 0) {
-                    const { data: clientProfiles } = await supabase.from('profiles').select('id, display_name, profile_photo_url').in('id', topClientIds);
-                    hotClients = topClientIds.map(id => {
-                      const prof = (clientProfiles || []).find(p => p.id === id) || { display_name: 'Client' };
-                      return { id, ...prof, score: clientActivity[id] };
-                    });
-                  }
+              let clientActivityPromise = Promise.resolve({ recentLikes: null, recentComments: null });
+              const postIds2 = (allPostsRes || []).map(p => p.id);
+              if (postIds2.length > 0) {
+                clientActivityPromise = Promise.all([
+                  supabase.from('post_likes').select('user_id').in('post_id', postIds2).then(r => r.data).catch(() => null),
+                  supabase.from('comments').select('user_id').in('post_id', postIds2).then(r => r.data).catch(() => null),
+                ]).then(([recentLikes, recentComments]) => ({ recentLikes, recentComments }));
+              }
+
+              // Await all secondary fetches in parallel
+              const [followerProfiles, engagement, clientAct] = await Promise.all([
+                followerProfilesPromise, engagementPromise, clientActivityPromise
+              ]);
+
+              // Process followers
+              if (followsRes && followsRes.length > 0) {
+                const profMap = {};
+                (followerProfiles || []).forEach(p => profMap[p.id] = p);
+                newFollowers = followsRes.map(f => ({ ...f, profile: profMap[f.follower_id] || { display_name: 'Someone' } }));
+              }
+
+              // Process top posts
+              if (postsRes && postsRes.length > 0) {
+                const likeCounts = {}; (engagement.likes || []).forEach(l => { likeCounts[l.post_id] = (likeCounts[l.post_id] || 0) + 1; });
+                const commentCounts = {}; (engagement.comments || []).forEach(c => { commentCounts[c.post_id] = (commentCounts[c.post_id] || 0) + 1; });
+                const reactionCounts = {}; (engagement.reactions || []).forEach(r => { reactionCounts[r.post_id] = (reactionCounts[r.post_id] || 0) + 1; });
+                topPosts = postsRes.map(p => ({
+                  ...p,
+                  likeCount: likeCounts[p.id] || 0,
+                  commentCount: commentCounts[p.id] || 0,
+                  reactionCount: reactionCounts[p.id] || 0,
+                  totalEngagement: (likeCounts[p.id] || 0) + (commentCounts[p.id] || 0) * 2 + (reactionCounts[p.id] || 0),
+                })).sort((a, b) => b.totalEngagement - a.totalEngagement).slice(0, 5);
+              }
+
+              // Process hot clients
+              if (postIds2.length > 0) {
+                const clientActivity = {};
+                (clientAct.recentLikes || []).forEach(l => { if (l.user_id !== uid) clientActivity[l.user_id] = (clientActivity[l.user_id] || 0) + 1; });
+                (clientAct.recentComments || []).forEach(c => { if (c.user_id !== uid) clientActivity[c.user_id] = (clientActivity[c.user_id] || 0) + 2; });
+                const topClientIds = Object.entries(clientActivity).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([id]) => id);
+                if (topClientIds.length > 0) {
+                  const { data: clientProfiles } = await supabase.from('profiles').select('id, display_name, profile_photo_url').in('id', topClientIds);
+                  hotClients = topClientIds.map(id => {
+                    const prof = (clientProfiles || []).find(p => p.id === id) || { display_name: 'Client' };
+                    return { id, ...prof, score: clientActivity[id] };
+                  });
                 }
-              } catch(e) {}
+              }
 
               setActionData({ unreadCount, newFollowers, topPosts, hotClients, loadedActions: true });
             } catch(e) { console.error('Action data fetch:', e); setActionData(prev => ({ ...prev, loadedActions: true })); }
@@ -19409,7 +19428,7 @@ RULES
         if (params.get('checkout') === 'success') {
           // Give Stripe webhook a moment to process, then fetch
           auth.showToast('Payment successful! Loading your content...', 'success');
-          const timer = setTimeout(() => { fetchAll(); }, 2500);
+          const timer = setTimeout(() => { fetchAll(); }, 1000);
           return () => clearTimeout(timer);
         }
         fetchAll();
