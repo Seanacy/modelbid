@@ -19432,8 +19432,8 @@ RULES
                       <input type="number" min={circle.price + 1} value={proposedAmount} onChange={(e) => setProposedAmount(e.target.value)}
                         style={{ width: '100%', padding: '0.75rem 0.5rem 0.75rem 1.75rem', borderRadius: 8, border: '1px solid rgba(255,215,0,0.3)', background: 'rgba(0,0,0,0.4)', color: '#fff', fontSize: '1.1rem', fontWeight: 600, boxSizing: 'border-box' }} placeholder="25" />
                     </div>
-                    <button className="btn glow-btn" onClick={proposePrice} style={{ fontSize: '0.7rem', padding: '0.4rem 0.5rem', flexShrink: 0, lineHeight: 1 }}>Send</button>
-                    <button className="btn btn-secondary" onClick={() => setProposingPrice(false)} style={{ fontSize: '0.7rem', padding: '0.4rem 0.4rem', flexShrink: 0, lineHeight: 1 }}>✕</button>
+                    <button onClick={proposePrice} style={{ fontSize: '0.75rem', padding: '0.4rem 0.6rem', flexShrink: 0, background: 'linear-gradient(135deg, #ff6ec7, #9d4edd)', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 700, cursor: 'pointer' }}>Send</button>
+                    <button onClick={() => setProposingPrice(false)} style={{ fontSize: '0.75rem', padding: '0.4rem 0.5rem', flexShrink: 0, background: 'rgba(255,255,255,0.1)', color: '#aaa', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, cursor: 'pointer' }}>✕</button>
                   </div>
                 </div>
               )}
