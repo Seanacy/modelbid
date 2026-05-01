@@ -20001,26 +20001,26 @@ RULES
             {/* ===== LOGGED-IN MENU — ordered by importance ===== */}
             {auth.currentUser && (
             <div className="mobile-menu-section">
-              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'browse'; }}>
-                <span className="mm-icon">🔍</span> Browse
-              </div>
               <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'messages'; }}>
                 <span className="mm-icon">📬</span> Messages
               </div>
-              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'feed'; }}>
-                <span className="mm-icon">📰</span> Feed
-              </div>
               <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'dashboard'; }}>
                 <span className="mm-icon">📊</span> Dashboard
-              </div>
-              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'circles'; }}>
-                <span className="mm-icon">🔒</span> Circles
               </div>
               {auth.profile?.role === 'client' && (
                 <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'circle-dashboard'; }}>
                   <span className="mm-icon">🎯</span> My Circles
                 </div>
               )}
+              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'browse'; }}>
+                <span className="mm-icon">🔍</span> Browse
+              </div>
+              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'feed'; }}>
+                <span className="mm-icon">📰</span> Feed
+              </div>
+              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'circles'; }}>
+                <span className="mm-icon">🔒</span> Circles
+              </div>
               <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'bidboard'; }}>
                 <span className="mm-icon">📋</span> Bid Board
               </div>
