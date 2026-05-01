@@ -5468,93 +5468,97 @@
         })();
       }, []);
 
+      const allCircles = [...clientCircles];
+      const hasAny = allCircles.length > 0 || featured.length > 0;
+
       return (
         <div style={{ maxWidth: 900, margin: '0 auto', padding: '1rem' }}>
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <h1 style={{ fontSize: '1.8rem', fontWeight: 800, background: 'linear-gradient(135deg, #ffd700, #ff6ec7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.5rem' }}>Inner Circles</h1>
-            <p style={{ color: '#888', fontSize: '0.9rem', maxWidth: 500, margin: '0 auto' }}>Exclusive content from top models. Subscribe to get behind-the-scenes access, private posts, and direct interaction.</p>
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+            <h1 style={{ fontSize: '1.8rem', fontWeight: 800, background: 'linear-gradient(135deg, #ffd700, #ff6ec7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.4rem' }}>Inner Circles</h1>
+            <p style={{ color: '#888', fontSize: '0.85rem', maxWidth: 440, margin: '0 auto' }}>Exclusive content from top creators. Subscribe for behind-the-scenes access, private posts, and direct interaction.</p>
           </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#888' }}>Loading...</div>
-          ) : featured.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3rem' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔒</div>
-              <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: '#fff', marginBottom: '0.75rem' }}>Coming Soon</h2>
-              <p style={{ color: '#888', fontSize: '0.9rem', maxWidth: 400, margin: '0 auto 1.5rem' }}>Featured Inner Circles are on the way. Models are setting up exclusive content right now.</p>
-              {auth.currentUser && auth.profile?.role === 'model' ? (
-                <div style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,110,199,0.1))', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 12, padding: '1.25rem', maxWidth: 420, margin: '0 auto' }}>
-                  <div style={{ fontSize: '0.85rem', color: '#ffd700', fontWeight: 700, marginBottom: '0.5rem' }}>Want to be featured?</div>
-                  <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '0.75rem' }}>Create your Inner Circle, set your tiers, and start posting exclusive content. The admin will feature top circles here.</div>
-                  <button onClick={() => window.location.hash = 'crew'} style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #ffd700, #ff6ec7)', color: '#000', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}>Create Your Circle</button>
-                </div>
-              ) : !auth.currentUser ? (
-                <div>
-                  <p style={{ color: '#666', fontSize: '0.82rem', marginBottom: '1rem' }}>Sign up to be the first to know when circles go live.</p>
-                  <button onClick={() => window.location.hash = 'signup'} style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #ffd700, #ff6ec7)', color: '#000', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer' }}>Sign Up</button>
-                </div>
-              ) : (
-                <p style={{ color: '#666', fontSize: '0.82rem' }}>Check back soon — new circles are being added regularly.</p>
+            <div style={{ textAlign: 'center', padding: '3rem', color: '#888' }}>Loading circles...</div>
+          ) : !hasAny ? (
+            /* Empty state — only shows when there are truly zero circles */
+            <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🔒</div>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#fff', marginBottom: '0.5rem' }}>No Circles Yet</h2>
+              <p style={{ color: '#888', fontSize: '0.85rem', maxWidth: 380, margin: '0 auto 1rem' }}>Circles are coming soon. Check back shortly!</p>
+              {!auth.currentUser && (
+                <button onClick={() => window.location.hash = 'signup'} style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #ffd700, #ff6ec7)', color: '#000', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}>Sign Up</button>
               )}
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
-              {featured.map(f => (
-                <div key={f.id} onClick={() => window.location.hash = f.profile.username ? f.profile.username : 'circle/' + f.model_id}
-                  style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border-color)', overflow: 'hidden', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(255,215,0,0.15)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}>
-                  {/* Model photo */}
-                  <div style={{ height: 220, background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                    {f.profile.profile_photo_url ? (
-                      <img src={f.profile.profile_photo_url} alt={f.profile.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <span style={{ fontSize: '4rem' }}>{f.profile.avatar_emoji || '👤'}</span>
-                    )}
-                  </div>
-                  {/* Info */}
-                  <div style={{ padding: '1rem' }}>
-                    <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff', marginBottom: '0.25rem' }}>{f.profile.display_name || 'Model'}</div>
-                    {f.profile.username && <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.5rem' }}>@{f.profile.username}</div>}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.82rem', color: '#ff6ec7', fontWeight: 700 }}>
-                        {f.crew ? `$${parseFloat(f.crew.tier1_price || 9.99).toFixed(2)}/mo` : 'View Profile'}
-                      </span>
-                      <span style={{ fontSize: '0.72rem', background: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,110,199,0.15))', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 20, padding: '3px 10px', color: '#ffd700', fontWeight: 600 }}>Inner Circle</span>
+            <div>
+              {/* Live Circles Grid */}
+              {allCircles.length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                  {allCircles.map(c => (
+                    <div key={c.id} onClick={() => window.location.hash = 'circle-feed/' + c.id}
+                      style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border-color)', overflow: 'hidden', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }}
+                      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(255,110,199,0.15)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}>
+                      {/* Creator photos banner */}
+                      <div style={{ height: 120, background: 'linear-gradient(135deg, #1a1a2e, #2a1a3e)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0 1rem' }}>
+                        {c.creators.slice(0, 3).map((cr, i) => (
+                          <div key={i} style={{ width: 64, height: 64, borderRadius: '50%', background: '#2a2a3e', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', border: '3px solid rgba(255,110,199,0.3)' }}>
+                            {cr.profile_photo_url ? <img src={cr.profile_photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (cr.avatar_emoji || '👤')}
+                          </div>
+                        ))}
+                      </div>
+                      {/* Info */}
+                      <div style={{ padding: '1rem' }}>
+                        <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff', marginBottom: '0.2rem' }}>{c.name}</div>
+                        <div style={{ fontSize: '0.78rem', color: '#aaa', marginBottom: '0.6rem' }}>{c.creators.map(cr => cr.display_name).join(' & ')}</div>
+                        {c.description && <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.75rem', lineHeight: 1.4 }}>{c.description.length > 90 ? c.description.slice(0, 90) + '...' : c.description}</div>}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.95rem', fontWeight: 700, background: 'linear-gradient(135deg, #ff6ec7, #ffd700)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>${c.price}/mo</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                            {(c.subscriber_count || 0) > 0 && <span style={{ fontSize: '0.72rem', color: '#888' }}>{c.subscriber_count} sub{c.subscriber_count !== 1 ? 's' : ''}</span>}
+                            <span style={{ fontSize: '0.68rem', background: 'rgba(0,200,100,0.1)', border: '1px solid rgba(0,200,100,0.2)', borderRadius: 20, padding: '2px 8px', color: '#00c864', fontWeight: 600 }}>LIVE</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Featured model circles (admin-picked) */}
+              {featured.length > 0 && (
+                <div>
+                  <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.75rem', color: '#ffd700' }}>⭐ Featured</h2>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
+                    {featured.map(f => (
+                      <div key={f.id} onClick={() => window.location.hash = f.profile.username ? f.profile.username : 'circle/' + f.model_id}
+                        style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border-color)', overflow: 'hidden', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }}
+                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(255,215,0,0.15)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}>
+                        <div style={{ height: 200, background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                          {f.profile.profile_photo_url ? (
+                            <img src={f.profile.profile_photo_url} alt={f.profile.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <span style={{ fontSize: '4rem' }}>{f.profile.avatar_emoji || '👤'}</span>
+                          )}
+                        </div>
+                        <div style={{ padding: '1rem' }}>
+                          <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff', marginBottom: '0.25rem' }}>{f.profile.display_name || 'Model'}</div>
+                          {f.profile.username && <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.5rem' }}>@{f.profile.username}</div>}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.82rem', color: '#ff6ec7', fontWeight: 700 }}>
+                              {f.crew ? `$${parseFloat(f.crew.tier1_price || 9.99).toFixed(2)}/mo` : 'View Profile'}
+                            </span>
+                            <span style={{ fontSize: '0.72rem', background: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,110,199,0.15))', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 20, padding: '3px 10px', color: '#ffd700', fontWeight: 600 }}>Inner Circle</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-
-          {/* Client-Created Circles */}
-          {!loading && clientCircles.length > 0 && (
-            <div style={{ marginTop: '2.5rem' }}>
-              <h2 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '1rem', textAlign: 'center' }}>🔥 Live Circles</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
-                {clientCircles.map(c => (
-                  <div key={c.id} onClick={() => window.location.hash = 'circle-feed/' + c.id}
-                    style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border-color)', padding: '1.25rem', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(255,110,199,0.15)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', marginBottom: '0.3rem' }}>{c.name}</div>
-                    {c.description && <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.75rem', lineHeight: 1.4 }}>{c.description.length > 80 ? c.description.slice(0, 80) + '...' : c.description}</div>}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                      {c.creators.slice(0, 3).map((cr, i) => (
-                        <div key={i} style={{ width: 30, height: 30, borderRadius: '50%', background: '#2a2a3e', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', border: '2px solid var(--bg-card)', marginLeft: i > 0 ? '-8px' : 0 }}>
-                          {cr.profile_photo_url ? <img src={cr.profile_photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (cr.avatar_emoji || '👤')}
-                        </div>
-                      ))}
-                      <span style={{ fontSize: '0.78rem', color: '#aaa' }}>{c.creators.map(cr => cr.display_name).join(', ')}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.9rem', color: '#ff6ec7', fontWeight: 700 }}>${c.price}/mo</span>
-                      <span style={{ fontSize: '0.72rem', color: '#888' }}>{c.subscriber_count || 0} subscriber{(c.subscriber_count || 0) !== 1 ? 's' : ''}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              )}
             </div>
           )}
         </div>
