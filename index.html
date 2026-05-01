@@ -18770,6 +18770,10 @@ RULES
       const [activity, setActivity] = useState([]);
       const [loading, setLoading] = useState(true);
       const [profiles, setProfiles] = useState({});
+      const [replacingSlot, setReplacingSlot] = useState(null); // invite id being replaced
+      const [replaceSearch, setReplaceSearch] = useState('');
+      const [replaceResults, setReplaceResults] = useState([]);
+      const [replaceSearching, setReplaceSearching] = useState(false);
 
       const fetchCircle = async () => {
         const { data: c } = await supabase.from('client_circles').select('*').eq('id', circleId).single();
@@ -18803,6 +18807,27 @@ RULES
           action: 'invite_retracted', detail: `Invite to ${creatorName} retracted`,
         });
         auth.showToast('Invite retracted', 'success');
+        fetchCircle();
+      };
+
+      const searchReplacement = async (term) => {
+        if (!term.trim()) { setReplaceResults([]); return; }
+        setReplaceSearching(true);
+        const existingIds = invites.filter(i => i.status !== 'retracted' && i.status !== 'declined').map(i => i.creator_id);
+        const { data } = await supabase.from('profiles').select('id, display_name, username, profile_photo_url, avatar_emoji')
+          .eq('role', 'model').ilike('display_name', `%${term}%`).limit(10);
+        setReplaceResults((data || []).filter(m => !existingIds.includes(m.id)));
+        setReplaceSearching(false);
+      };
+
+      const inviteReplacement = async (creator) => {
+        await supabase.from('circle_invites').insert({ circle_id: circleId, creator_id: creator.id });
+        await supabase.from('circle_activity').insert({
+          circle_id: circleId, actor_id: auth.currentUser.id,
+          action: 'invite_sent', detail: `Invite sent to ${creator.display_name} (replacement)`,
+        });
+        auth.showToast(`Invite sent to ${creator.display_name}!`, 'success');
+        setReplacingSlot(null); setReplaceSearch(''); setReplaceResults([]);
         fetchCircle();
       };
 
@@ -18865,13 +18890,39 @@ RULES
                         {inv.opened_at && inv.status === 'opened' && <span style={{ color: '#666' }}> · {new Date(inv.opened_at).toLocaleDateString()}</span>}
                       </div>
                     </div>
-                    {(inv.status === 'pending' || inv.status === 'opened') && (
+                    {(inv.status === 'pending' || inv.status === 'opened') && circle.status !== 'live' && (
                       <button onClick={() => retractInvite(inv.id, prof.display_name)} style={{ padding: '0.3rem 0.6rem', borderRadius: 6, border: '1px solid rgba(255,82,82,0.3)', background: 'rgba(255,82,82,0.08)', color: '#ff5252', fontSize: '0.72rem', cursor: 'pointer' }}>Retract</button>
+                    )}
+                    {(inv.status === 'retracted' || inv.status === 'declined') && circle.status !== 'live' && (
+                      <button onClick={() => { setReplacingSlot(inv.id); setReplaceSearch(''); setReplaceResults([]); }} style={{ padding: '0.3rem 0.6rem', borderRadius: 6, border: '1px solid rgba(100,200,255,0.3)', background: 'rgba(100,200,255,0.08)', color: '#64c8ff', fontSize: '0.72rem', cursor: 'pointer' }}>Replace</button>
                     )}
                   </div>
                 );
               })}
             </div>
+
+            {/* Replacement Search */}
+            {replacingSlot && circle.status !== 'live' && (
+              <div style={{ marginTop: '0.75rem', background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid rgba(100,200,255,0.2)' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.5rem', color: '#64c8ff' }}>Find a replacement creator</div>
+                <input type="text" value={replaceSearch} onChange={(e) => { setReplaceSearch(e.target.value); searchReplacement(e.target.value); }}
+                  placeholder="Search by name..." style={{ width: '100%', marginBottom: '0.5rem' }} />
+                {replaceSearching && <div style={{ fontSize: '0.78rem', color: '#888', padding: '0.3rem 0' }}>Searching...</div>}
+                {replaceResults.map(m => (
+                  <div key={m.id} onClick={() => inviteReplacement(m)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem', borderRadius: '0.5rem', cursor: 'pointer', marginBottom: '0.25rem' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#2a2a3e', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', flexShrink: 0 }}>
+                      {m.profile_photo_url ? <img src={m.profile_photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (m.avatar_emoji || '👤')}
+                    </div>
+                    <div style={{ flex: 1, fontSize: '0.85rem' }}>{m.display_name}</div>
+                    <span style={{ color: '#00c864', fontSize: '0.78rem', fontWeight: 700 }}>+ Invite</span>
+                  </div>
+                ))}
+                <button onClick={() => setReplacingSlot(null)} style={{ marginTop: '0.5rem', background: 'none', border: 'none', color: '#888', fontSize: '0.78rem', cursor: 'pointer' }}>Cancel</button>
+              </div>
+            )}
           </div>
 
           {/* Price Negotiation */}
