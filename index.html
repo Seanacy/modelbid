@@ -19412,26 +19412,33 @@ RULES
       const [saleSearching, setSaleSearching] = useState(false);
 
       const fetchCircle = async () => {
-        const { data: c } = await supabase.from('client_circles').select('*').eq('id', circleId).single();
-        if (!c) { setLoading(false); return; }
-        setCircle(c);
+        try {
+          const { data: c } = await supabase.from('client_circles').select('*').eq('id', circleId).single();
+          if (!c) { setLoading(false); return; }
+          setCircle(c);
 
-        const [invRes, actRes, transferRes] = await Promise.all([
-          supabase.from('circle_invites').select('*').eq('circle_id', circleId).order('sent_at'),
-          supabase.from('circle_activity').select('*').eq('circle_id', circleId).order('created_at', { ascending: false }),
-          supabase.from('circle_transfers').select('*').eq('circle_id', circleId).order('created_at', { ascending: false }),
-        ]);
-        setInvites(invRes.data || []);
-        setActivity(actRes.data || []);
-        setTransfers(transferRes.data || []);
+          const [invRes, actRes] = await Promise.all([
+            supabase.from('circle_invites').select('*').eq('circle_id', circleId).order('sent_at'),
+            supabase.from('circle_activity').select('*').eq('circle_id', circleId).order('created_at', { ascending: false }),
+          ]);
+          setInvites(invRes.data || []);
+          setActivity(actRes.data || []);
 
-        // Fetch creator profiles
-        const creatorIds = (invRes.data || []).map(i => i.creator_id);
-        if (creatorIds.length > 0) {
-          const { data: profs } = await supabase.from('profiles').select('id, display_name, username, profile_photo_url, avatar_emoji').in('id', creatorIds);
-          const map = {};
-          (profs || []).forEach(p => { map[p.id] = p; });
-          setProfiles(map);
+          // Fetch transfers separately so errors don't break the page
+          const { data: transferData, error: transferErr } = await supabase.from('circle_transfers').select('*').eq('circle_id', circleId).order('created_at', { ascending: false });
+          if (!transferErr && transferData) setTransfers(transferData);
+          else setTransfers([]);
+
+          // Fetch creator profiles
+          const creatorIds = (invRes.data || []).map(i => i.creator_id);
+          if (creatorIds.length > 0) {
+            const { data: profs } = await supabase.from('profiles').select('id, display_name, username, profile_photo_url, avatar_emoji').in('id', creatorIds);
+            const map = {};
+            (profs || []).forEach(p => { map[p.id] = p; });
+            setProfiles(map);
+          }
+        } catch (e) {
+          console.error('MyCirclePage fetchCircle error:', e);
         }
         setLoading(false);
       };
@@ -21055,7 +21062,7 @@ RULES
         if (page === 'edit-profile') return auth.currentUser ? <EditProfilePage /> : <LoginPage />;
         if (page === 'u' && params[0]) return <ProfilePage modelId={params[0]} isUsername={true} />;
         // Vanity URL fallback: if page doesn't match any route, check if it's a username
-        if (page && !['home','feed','wall','reputation','circle','circles','crew','browse','profile','client','formodels','westackr','contracts','login','signup','choose-role','model-demo','cherry-picker','team','bidboard','dashboard','messages','edit-profile','admin','create-circle','my-circle','circle-invite','circle-dashboard','circle-feed','circle-join','notifications','u'].includes(page)) {
+        if (page && !['home','feed','wall','reputation','circle','circles','crew','browse','profile','client','formodels','westackr','contracts','login','signup','choose-role','model-demo','cherry-picker','team','bidboard','dashboard','messages','edit-profile','admin','create-circle','my-circle','circle-invite','circle-transfer','circle-dashboard','circle-feed','circle-join','notifications','u'].includes(page)) {
           return <ProfilePage modelId={page} isUsername={true} />;
         }
         return !auth.currentUser ? <HomePage /> : <BrowseModelsPage />;
