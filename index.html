@@ -18595,6 +18595,7 @@ RULES
 
         if (page === 'home') {
           if (!auth.currentUser) return <HomePage />;
+          if (auth.profile?.role === 'client') return <ClientProfilePage clientId={auth.currentUser.id} />;
           return <ProfilePage modelId={auth.currentUser.id} />;
         }
         if (page === 'feed') return requiresSub(<FeedPage />);
