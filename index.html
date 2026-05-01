@@ -5051,6 +5051,12 @@
         if (auth?.profile?.id) {
           try {
             await supabase.from('follows').insert({ follower_id: auth.profile.id, following_id: model.id }).select();
+            // Notify the followed user
+            const myName = auth.profile?.display_name || 'Someone';
+            supabase.from('notifications').insert({
+              user_id: model.id, type: 'new_follower', title: 'New Follower!',
+              body: `${myName} started following you`, link: '#profile/' + auth.profile.id,
+            }).then(() => {});
           } catch (err) { console.error('Follow error:', err); }
         }
         if (advanceRound) nextRound(true);
@@ -5902,6 +5908,50 @@
       const [viewAsPublic, setViewAsPublic] = useState(false);
       const isOwnProfile = auth.currentUser && modelId === auth.currentUser.id;
 
+      // Follow state
+      const [isFollowing, setIsFollowing] = useState(false);
+      const [followerCount, setFollowerCount] = useState(0);
+      const [followLoading, setFollowLoading] = useState(false);
+
+      useEffect(() => {
+        if (!modelId) return;
+        // Fetch follower count
+        supabase.from('follows').select('id', { count: 'exact', head: true }).eq('following_id', modelId)
+          .then(({ count }) => setFollowerCount(count || 0));
+        // Check if current user follows this profile
+        if (auth.currentUser && auth.currentUser.id !== modelId) {
+          supabase.from('follows').select('id').eq('follower_id', auth.currentUser.id).eq('following_id', modelId).then(({ data }) => {
+            setIsFollowing(data && data.length > 0);
+          });
+        }
+      }, [modelId, auth.currentUser]);
+
+      const handleFollowToggle = async () => {
+        if (!auth.currentUser || followLoading) return;
+        setFollowLoading(true);
+        try {
+          if (isFollowing) {
+            await supabase.from('follows').delete().eq('follower_id', auth.currentUser.id).eq('following_id', modelId);
+            setIsFollowing(false);
+            setFollowerCount(prev => Math.max(0, prev - 1));
+          } else {
+            await supabase.from('follows').insert({ follower_id: auth.currentUser.id, following_id: modelId });
+            setIsFollowing(true);
+            setFollowerCount(prev => prev + 1);
+            // Send notification to the followed user
+            const myName = auth.profile?.display_name || 'Someone';
+            await supabase.from('notifications').insert({
+              user_id: modelId,
+              type: 'new_follower',
+              title: 'New Follower!',
+              body: `${myName} started following you`,
+              link: '#profile/' + auth.currentUser.id,
+            });
+          }
+        } catch (err) { console.error('Follow toggle error:', err); }
+        setFollowLoading(false);
+      };
+
       useEffect(() => {
         // Don't fetch if modelId hasn't resolved yet
         if (!modelId) return;
@@ -6336,6 +6386,22 @@
               </button>
             </div>
           )}
+          {/* Follow button + follower count */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0.75rem 0' }}>
+            {auth.currentUser && !isOwnProfile && (
+              <button onClick={handleFollowToggle} disabled={followLoading} style={{
+                background: isFollowing ? 'rgba(255,255,255,0.08)' : 'linear-gradient(135deg, #ff6ec7, #9d4edd)',
+                color: isFollowing ? '#aaa' : '#fff', border: isFollowing ? '1px solid rgba(255,255,255,0.15)' : 'none',
+                borderRadius: '2rem', padding: '0.5rem 1.2rem', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}>
+                {isFollowing ? '✓ Following' : '+ Follow'}
+              </button>
+            )}
+            <span style={{ fontSize: '0.82rem', color: '#aaa' }}>
+              <strong style={{ color: '#fff' }}>{followerCount}</strong> {followerCount === 1 ? 'follower' : 'followers'}
+            </span>
+          </div>
 
 
           {/* Tags */}
@@ -8596,6 +8662,12 @@
             await supabase.from('follows').delete().eq('follower_id', auth.profile.id).eq('following_id', userId);
           } else {
             await supabase.from('follows').insert({ follower_id: auth.profile.id, following_id: userId });
+            // Notify the followed user
+            const myName = auth.profile?.display_name || 'Someone';
+            supabase.from('notifications').insert({
+              user_id: userId, type: 'new_follower', title: 'New Follower!',
+              body: `${myName} started following you`, link: '#profile/' + auth.profile.id,
+            }).then(() => {});
           }
         } catch (err) { console.error('Follow error:', err); }
       };
@@ -19593,6 +19665,9 @@ RULES
         if (type === 'circle_declined') return '❌';
         if (type === 'new_subscriber') return '🎉';
         if (type === 'new_post') return '📝';
+        if (type === 'new_follower') return '👤';
+        if (type === 'direct_message') return '💬';
+        if (type === 'feed_subscriber') return '⭐';
         return '🔔';
       };
 
