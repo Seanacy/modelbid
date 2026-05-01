@@ -4405,6 +4405,7 @@
       const [loading, setLoading] = useState(true);
       const [profileLoading, setProfileLoading] = useState(false);
       const [toast, setToast] = useState(null);
+      const [impersonating, setImpersonating] = useState(null);
 
       // Initialize auth state on mount
       useEffect(() => {
@@ -4425,6 +4426,25 @@
 
         const initAuth = async () => {
           try {
+            // Check for admin impersonation flag
+            const impersonateData = localStorage.getItem('modelbid_impersonate');
+            if (impersonateData) {
+              try {
+                const imp = JSON.parse(impersonateData);
+                if (imp.userId) {
+                  const { data: impProfile } = await supabase.from('profiles').select('*').eq('id', imp.userId).single();
+                  if (impProfile) {
+                    setCurrentUser({ id: imp.userId, email: impProfile.email || 'impersonated' });
+                    setProfile(impProfile);
+                    setImpersonating({ userId: imp.userId, userName: imp.userName || impProfile.display_name });
+                    setLoading(false);
+                    clearTimeout(authTimeout);
+                    return;
+                  }
+                }
+              } catch (e) { localStorage.removeItem('modelbid_impersonate'); }
+            }
+
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user) {
               setCurrentUser(session.user);
@@ -4631,6 +4651,7 @@
       };
 
       const updateProfile = async (updates) => {
+        if (impersonating) { showToast('View-only mode — cannot edit this profile', 'error'); return false; }
         try {
           const { error } = await supabase
             .from('profiles')
@@ -4774,11 +4795,20 @@
       // Merge fields into auth.profile without a DB write (useful when the caller already wrote to DB)
       const patchProfile = (updates) => setProfile(prev => prev ? { ...prev, ...updates } : updates);
 
+      const stopImpersonating = () => {
+        localStorage.removeItem('modelbid_impersonate');
+        setImpersonating(null);
+        window.location.hash = 'admin';
+        window.location.reload();
+      };
+
       const contextValue = {
         currentUser,
         profile,
         loading,
         profileLoading,
+        impersonating,
+        stopImpersonating,
         signup,
         login,
         signInWithGoogle,
@@ -11237,6 +11267,11 @@ REMEMBER:
                             </div>
                           </div>
                           <div style={{ display: 'flex', gap: '0.3rem' }}>
+                            <button onClick={() => {
+                              localStorage.setItem('modelbid_impersonate', JSON.stringify({ userId: user.id, userName: user.display_name || user.email }));
+                              window.location.hash = 'home';
+                              window.location.reload();
+                            }} style={{ padding: '0.35rem 0.7rem', borderRadius: 6, border: '1px solid rgba(255,165,0,0.4)', background: 'rgba(255,165,0,0.1)', color: '#ffa500', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>Login As</button>
                             <button onClick={() => { setEditingUser(user); setEditForm({ display_name: user.display_name, email: user.email, role: user.role, cherry_picker_active: user.cherry_picker_active, subscription_waived: user.subscription_waived, verified: user.verified }); }}
                               style={{ padding: '0.35rem 0.7rem', borderRadius: 6, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: '#ccc', fontSize: '0.75rem', cursor: 'pointer' }}>Edit</button>
                             {confirmDelete === user.id ? (
@@ -18603,7 +18638,23 @@ RULES
 
       return (
         <div className="app-container">
-          <nav className="nav">
+          {auth.impersonating && (
+            <div style={{
+              position: 'fixed', top: 0, left: 0, right: 0, zIndex: 99999,
+              background: 'linear-gradient(90deg, #e74c3c, #c0392b)', color: '#fff',
+              padding: '0.4rem 1rem', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', gap: '0.75rem', fontSize: '0.82rem', fontWeight: 700,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+            }}>
+              <span>👁️ Viewing as: {auth.impersonating.userName}</span>
+              <button onClick={auth.stopImpersonating} style={{
+                background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)',
+                color: '#fff', borderRadius: '1rem', padding: '0.2rem 0.8rem', fontSize: '0.75rem',
+                cursor: 'pointer', fontWeight: 700,
+              }}>✕ Exit</button>
+            </div>
+          )}
+          <nav className="nav" style={auth.impersonating ? { marginTop: '36px' } : {}}>
             <div className="nav-brand" onClick={() => window.location.hash = 'home'}>🎀 ModelBid</div>
 
             {/* Desktop nav links — logged-out visitors */}
