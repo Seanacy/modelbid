@@ -4504,6 +4504,9 @@
 
         // Listen for auth changes — only re-fetch profile on meaningful events, not token refreshes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+          // If impersonating, ignore auth state changes — don't let the real session overwrite the impersonated user
+          if (localStorage.getItem('modelbid_impersonate')) return;
+
           if (session?.user) {
             setCurrentUser(session.user);
             // Skip profile re-fetch on TOKEN_REFRESHED — the profile hasn't changed
