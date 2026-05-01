@@ -6988,7 +6988,7 @@
               const creatorIds = [...new Set((invites || []).map(i => i.creator_id))];
               let creatorMap = {};
               if (creatorIds.length > 0) {
-                const { data: creators } = await supabase.from('profiles').select('id, display_name, avatar_emoji').in('id', creatorIds);
+                const { data: creators } = await supabase.from('profiles').select('id, display_name, avatar_emoji, profile_photo_url').in('id', creatorIds);
                 if (creators) creators.forEach(c => { creatorMap[c.id] = c; });
               }
               const enriched = circlesRes.data.map(circle => ({
@@ -7161,18 +7161,18 @@
                           </div>
                           <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem', borderRadius: '1rem', background: 'rgba(0,217,163,0.15)', color: 'var(--success-green)', fontWeight: 600, whiteSpace: 'nowrap' }}>Live</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                          <div style={{ display: 'flex', gap: '-0.25rem' }}>
-                            {circle.creators.map((creator, i) => (
-                              <div key={i} style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', border: '2px solid var(--surface-1)', marginLeft: i > 0 ? '-8px' : '0', position: 'relative', zIndex: circle.creators.length - i }}>
-                                {creator.avatar_emoji || '👤'}
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                          {circle.creators.map((creator, i) => (
+                            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem' }}>
+                              <div style={{ width: 70, height: 70, borderRadius: 10, background: 'var(--bg-card-light)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', border: '2px solid rgba(255,110,199,0.25)' }}>
+                                {creator.profile_photo_url ? <img src={creator.profile_photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (creator.avatar_emoji || '👤')}
                               </div>
-                            ))}
-                          </div>
-                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                            {circle.creators.map(c => c.display_name).join(', ')}
-                          </span>
-                          <span style={{ marginLeft: 'auto', fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-gold)' }}>
+                              <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'center', maxWidth: 70, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{creator.display_name || 'Creator'}</div>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-gold)' }}>
                             ${circle.price}/mo
                           </span>
                         </div>
@@ -13860,17 +13860,19 @@ REMEMBER:
                           {circle.status === 'live' ? 'Live' : circle.status === 'pending' ? 'Pending' : circle.status}
                         </span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
                         {circle.creators && circle.creators.map((creator, i) => (
-                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--bg-card-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', overflow: 'hidden' }}>
+                          <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem' }}>
+                            <div style={{ width: 70, height: 70, borderRadius: 10, background: 'var(--bg-card-light)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', border: '2px solid rgba(255,110,199,0.25)' }}>
                               {creator.profile_photo_url ? <img src={creator.profile_photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (creator.avatar_emoji || '👤')}
                             </div>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{creator.display_name}</span>
+                            <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'center', maxWidth: 70, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{creator.display_name || 'Creator'}</div>
                           </div>
                         ))}
-                        <span style={{ marginLeft: 'auto', fontSize: '0.85rem', fontWeight: 600 }}>${circle.price}/mo</span>
-                        {circle.subscriber_count > 0 && <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>• {circle.subscriber_count} subs</span>}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>${circle.price}/mo</span>
+                        {circle.subscriber_count > 0 && <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{circle.subscriber_count} subscribers</span>}
                       </div>
                     </div>
                   ))}
