@@ -5740,6 +5740,12 @@
                       <div style={{ padding: '0.75rem 1rem 1rem' }}>
                         <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>{c.name}</div>
                         {c.description && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem', lineHeight: 1.4 }}>{c.description.length > 90 ? c.description.slice(0, 90) + '...' : c.description}</div>}
+                        {c.for_sale && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem', padding: '0.35rem 0.6rem', borderRadius: 8, background: 'rgba(255,165,0,0.1)', border: '1px solid rgba(255,165,0,0.25)' }}>
+                            <span style={{ fontSize: '0.85rem' }}>💰🏷️</span>
+                            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#ffa500' }}>For Sale — ${c.sale_price}</span>
+                          </div>
+                        )}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span style={{ fontSize: '0.95rem', fontWeight: 700, background: 'linear-gradient(135deg, #ff6ec7, #ffd700)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>${c.price}/mo</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
@@ -7181,6 +7187,12 @@
                             </div>
                           ))}
                         </div>
+                        {circle.for_sale && (
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.4rem', padding: '0.2rem 0.5rem', borderRadius: 6, background: 'rgba(255,165,0,0.1)', border: '1px solid rgba(255,165,0,0.25)' }}>
+                            <span style={{ fontSize: '0.75rem' }}>💰🏷️</span>
+                            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#ffa500' }}>For Sale — ${circle.sale_price}</span>
+                          </div>
+                        )}
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
                           <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-gold)' }}>
                             ${circle.price}/mo
@@ -20496,6 +20508,12 @@ RULES
                         color: c.status === 'live' ? '#00c864' : c.status === 'forming' ? '#ffa500' : '#888',
                       }}>{c.status.toUpperCase()}</span>
                     </div>
+                    {c.for_sale && (
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.4rem', padding: '0.2rem 0.5rem', borderRadius: 6, background: 'rgba(255,165,0,0.1)', border: '1px solid rgba(255,165,0,0.25)' }}>
+                        <span style={{ fontSize: '0.75rem' }}>💰🏷️</span>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#ffa500' }}>For Sale — ${c.sale_price}</span>
+                      </div>
+                    )}
                     <div style={{ display: 'flex', gap: '1rem', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
                       <span>${c.price}/mo</span>
                       <span>{c.roster_size} creators</span>
