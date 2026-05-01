@@ -18763,7 +18763,7 @@ RULES
           }).select().single();
           if (error) throw error;
 
-          // Create invites and activity log entries
+          // Create invites, activity log entries, and notifications
           for (const creator of selectedCreators) {
             await supabase.from('circle_invites').insert({
               circle_id: circle.id, creator_id: creator.id,
@@ -18772,6 +18772,13 @@ RULES
               circle_id: circle.id, actor_id: auth.currentUser.id,
               action: 'invite_sent',
               detail: `Invite sent to ${creator.display_name}`,
+            });
+            await supabase.from('notifications').insert({
+              user_id: creator.id,
+              type: 'circle_invite',
+              title: 'Circle Invite',
+              body: `You've been invited to join "${circleName.trim()}"`,
+              link: '#circle-invite/' + circle.id,
             });
           }
 
@@ -18986,6 +18993,13 @@ RULES
         await supabase.from('circle_activity').insert({
           circle_id: circleId, actor_id: auth.currentUser.id,
           action: 'invite_sent', detail: `Invite sent to ${creator.display_name} (replacement)`,
+        });
+        await supabase.from('notifications').insert({
+          user_id: creator.id,
+          type: 'circle_invite',
+          title: 'Circle Invite',
+          body: `You've been invited to join "${circle?.name || 'a circle'}"`,
+          link: '#circle-invite/' + circleId,
         });
         auth.showToast(`Invite sent to ${creator.display_name}!`, 'success');
         setReplacingSlot(null); setReplaceSearch(''); setReplaceResults([]);
@@ -19519,6 +19533,111 @@ RULES
       );
     }
 
+    // --- Notifications Page ---
+    function NotificationsPage() {
+      const auth = useContext(AuthContext);
+      const [notifications, setNotifications] = useState([]);
+      const [loading, setLoading] = useState(true);
+
+      const fetchNotifications = async () => {
+        const { data } = await supabase.from('notifications')
+          .select('*')
+          .eq('user_id', auth.currentUser.id)
+          .order('created_at', { ascending: false })
+          .limit(50);
+        setNotifications(data || []);
+        setLoading(false);
+      };
+
+      useEffect(() => {
+        if (auth.currentUser) fetchNotifications();
+      }, [auth.currentUser]);
+
+      const markRead = async (notif) => {
+        if (!notif.read) {
+          await supabase.from('notifications').update({ read: true }).eq('id', notif.id);
+          setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+        }
+        if (notif.link) window.location.hash = notif.link.replace('#', '');
+      };
+
+      const markAllRead = async () => {
+        const unread = notifications.filter(n => !n.read);
+        if (unread.length === 0) return;
+        await supabase.from('notifications').update({ read: true }).eq('user_id', auth.currentUser.id).eq('read', false);
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+        auth.showToast('All marked as read', 'success');
+      };
+
+      const typeIcon = (type) => {
+        if (type === 'circle_invite') return '💌';
+        if (type === 'circle_accepted') return '✅';
+        if (type === 'circle_declined') return '❌';
+        if (type === 'new_subscriber') return '🎉';
+        if (type === 'new_post') return '📝';
+        return '🔔';
+      };
+
+      const timeAgo = (ts) => {
+        const diff = Date.now() - new Date(ts).getTime();
+        const mins = Math.floor(diff / 60000);
+        if (mins < 1) return 'just now';
+        if (mins < 60) return mins + 'm ago';
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return hrs + 'h ago';
+        const days = Math.floor(hrs / 24);
+        return days + 'd ago';
+      };
+
+      if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: '#aaa' }}>Loading notifications...</div>;
+
+      const unreadCount = notifications.filter(n => !n.read).length;
+
+      return (
+        <div style={{ maxWidth: 600, margin: '0 auto', padding: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2 style={{ margin: 0, fontSize: '1.3rem' }}>🔔 Notifications</h2>
+            {unreadCount > 0 && (
+              <button onClick={markAllRead} style={{ background: 'rgba(100,200,255,0.15)', color: '#4fc3f7', border: 'none', borderRadius: '0.5rem', padding: '0.4rem 0.8rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+                Mark all read
+              </button>
+            )}
+          </div>
+
+          {notifications.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#888' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🔕</div>
+              <div style={{ fontSize: '0.95rem' }}>No notifications yet</div>
+              <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.3rem' }}>When someone invites you to a circle or something happens, it'll show up here.</div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {notifications.map(notif => (
+                <div key={notif.id} onClick={() => markRead(notif)} style={{
+                  padding: '0.8rem 1rem', borderRadius: '0.75rem', cursor: notif.link ? 'pointer' : 'default',
+                  background: notif.read ? 'rgba(255,255,255,0.03)' : 'rgba(100,200,255,0.08)',
+                  border: notif.read ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(100,200,255,0.2)',
+                  transition: 'background 0.2s',
+                }}>
+                  <div style={{ display: 'flex', gap: '0.7rem', alignItems: 'flex-start' }}>
+                    <div style={{ fontSize: '1.3rem', marginTop: '0.1rem' }}>{typeIcon(notif.type)}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ fontWeight: notif.read ? 400 : 700, fontSize: '0.9rem', color: notif.read ? '#ccc' : '#fff' }}>{notif.title}</div>
+                        {!notif.read && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4fc3f7', flexShrink: 0 }}></div>}
+                      </div>
+                      <div style={{ fontSize: '0.82rem', color: '#aaa', marginTop: '0.2rem', lineHeight: 1.4 }}>{notif.body}</div>
+                      <div style={{ fontSize: '0.72rem', color: '#666', marginTop: '0.3rem' }}>{timeAgo(notif.created_at)}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     // --- Circle Content Feed (subscribers + creators) ---
     function CircleFeedPage({ circleId, refCode }) {
       const auth = useContext(AuthContext);
@@ -19796,6 +19915,19 @@ RULES
       return <CircleFeedPage circleId={circleId} refCode={refCode} />;
     }
 
+    function NotificationBadge() {
+      const auth = useContext(AuthContext);
+      const [count, setCount] = useState(0);
+      useEffect(() => {
+        if (!auth.currentUser) return;
+        supabase.from('notifications').select('id', { count: 'exact', head: true })
+          .eq('user_id', auth.currentUser.id).eq('read', false)
+          .then(({ count: c }) => setCount(c || 0));
+      }, [auth.currentUser]);
+      if (count === 0) return null;
+      return <span style={{ background: '#ff4444', color: '#fff', borderRadius: '50%', fontSize: '0.65rem', fontWeight: 700, minWidth: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginLeft: 6, padding: '0 4px' }}>{count > 99 ? '99+' : count}</span>;
+    }
+
     function App() {
       const auth = useContext(AuthContext);
       const [currentPage, setCurrentPage] = useState('home');
@@ -19905,6 +20037,7 @@ RULES
         if (page === 'westackr') return <WeStackrPage />;
         if (page === 'create-circle') return auth.currentUser ? <CreateCirclePage /> : <LoginPage />;
         if (page === 'my-circle' && params[0]) return auth.currentUser ? <MyCirclePage circleId={params[0]} /> : <LoginPage />;
+        if (page === 'notifications') return auth.currentUser ? <NotificationsPage /> : <LoginPage />;
         if (page === 'circle-invite' && params[0]) return auth.currentUser ? <CircleInvitePage circleId={params[0]} /> : <LoginPage />;
         if (page === 'circle-dashboard') return auth.currentUser ? <CircleDashboardPage /> : <LoginPage />;
         if (page === 'circle-feed' && params[0]) return <CircleFeedPage circleId={params[0]} />;
@@ -19924,7 +20057,7 @@ RULES
         if (page === 'edit-profile') return auth.currentUser ? <EditProfilePage /> : <LoginPage />;
         if (page === 'u' && params[0]) return <ProfilePage modelId={params[0]} isUsername={true} />;
         // Vanity URL fallback: if page doesn't match any route, check if it's a username
-        if (page && !['home','feed','wall','reputation','circle','circles','crew','browse','profile','client','formodels','westackr','contracts','login','signup','choose-role','model-demo','cherry-picker','team','bidboard','dashboard','messages','edit-profile','admin','create-circle','my-circle','circle-invite','circle-dashboard','circle-feed','circle-join','u'].includes(page)) {
+        if (page && !['home','feed','wall','reputation','circle','circles','crew','browse','profile','client','formodels','westackr','contracts','login','signup','choose-role','model-demo','cherry-picker','team','bidboard','dashboard','messages','edit-profile','admin','create-circle','my-circle','circle-invite','circle-dashboard','circle-feed','circle-join','notifications','u'].includes(page)) {
           return <ProfilePage modelId={page} isUsername={true} />;
         }
         return !auth.currentUser ? <HomePage /> : <BrowseModelsPage />;
@@ -20077,6 +20210,10 @@ RULES
             <div className="mobile-menu-section">
               <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'messages'; }}>
                 <span className="mm-icon">📬</span> Messages
+              </div>
+              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'notifications'; }}>
+                <span className="mm-icon">🔔</span> Notifications
+                <NotificationBadge />
               </div>
               <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'dashboard'; }}>
                 <span className="mm-icon">📊</span> Dashboard
