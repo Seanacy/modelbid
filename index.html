@@ -19148,6 +19148,32 @@ RULES
             </div>
           )}
 
+          {/* ===== Affiliate Program Toggle (owner only, live circles) ===== */}
+          {circle.status === 'live' && (
+            <div style={{ background: 'rgba(100,200,255,0.06)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid rgba(100,200,255,0.15)', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>🤝 Affiliate Program</div>
+                <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={!!circle.affiliate_enabled} onChange={async (e) => {
+                    const newVal = e.target.checked;
+                    await supabase.from('client_circles').update({ affiliate_enabled: newVal }).eq('id', circleId);
+                    await supabase.from('circle_activity').insert({ circle_id: circleId, actor_id: auth.currentUser.id, action: newVal ? 'affiliate_enabled' : 'affiliate_disabled', detail: newVal ? 'Affiliate program turned ON' : 'Affiliate program turned OFF' });
+                    auth.showToast(newVal ? 'Affiliates enabled!' : 'Affiliates disabled', 'success');
+                    fetchCircle();
+                  }} style={{ opacity: 0, width: 0, height: 0 }} />
+                  <span style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 12, background: circle.affiliate_enabled ? '#00c864' : 'rgba(255,255,255,0.15)', transition: 'background 0.3s' }}>
+                    <span style={{ position: 'absolute', left: circle.affiliate_enabled ? 22 : 2, top: 2, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 0.3s' }}></span>
+                  </span>
+                </label>
+              </div>
+              <div style={{ fontSize: '0.82rem', color: '#aaa', lineHeight: 1.5 }}>
+                {circle.affiliate_enabled
+                  ? '✅ Anyone can become an affiliate for this circle. They get a unique referral link and earn 5% commission on every subscriber they bring in (2.5% from the platform cut + 2.5% from creators).'
+                  : 'When enabled, other users can share your circle and earn commission on subscribers they refer. You and your creators each give up 2.5% — affiliates earn 5% total.'}
+              </div>
+            </div>
+          )}
+
           {/* Activity Log */}
           <div>
             <h3 style={{ fontSize: '0.95rem', marginBottom: '0.75rem' }}>Activity</h3>
@@ -19463,6 +19489,32 @@ RULES
               })}
             </div>
           )}
+
+          {/* ===== Affiliate Info Section ===== */}
+          <div style={{ marginTop: '2rem', background: 'linear-gradient(135deg, rgba(100,200,255,0.06), rgba(0,200,100,0.06))', borderRadius: '1rem', padding: '1.25rem', border: '1px solid rgba(100,200,255,0.12)' }}>
+            <h3 style={{ fontSize: '1rem', marginBottom: '0.75rem', color: '#64c8ff' }}>💰 How Affiliate Earnings Work</h3>
+            <div style={{ fontSize: '0.85rem', color: '#ccc', lineHeight: 1.7 }}>
+              <div style={{ marginBottom: '0.75rem' }}>
+                When someone subscribes to <strong>any circle</strong> using your referral link, you earn <strong style={{ color: '#00c864' }}>5% commission</strong> on every payment — every single month they stay subscribed.
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '0.5rem', padding: '0.65rem', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#888', marginBottom: '0.2rem' }}>From Platform</div>
+                  <div style={{ fontWeight: 800, color: '#64c8ff' }}>2.5%</div>
+                </div>
+                <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '0.5rem', padding: '0.65rem', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#888', marginBottom: '0.2rem' }}>From Creators</div>
+                  <div style={{ fontWeight: 800, color: '#ff6ec7' }}>2.5%</div>
+                </div>
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#888' }}>
+                <strong>Example:</strong> A circle costs $20/month. Your referred subscriber pays $20. You get $1.00 every month (5%). The platform takes $3.50 (17.5%) and creators split $15.50 (77.5%). Nobody pays more — the commission is built into the existing split.
+              </div>
+            </div>
+            <div style={{ marginTop: '1rem', fontSize: '0.78rem', color: '#666', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.75rem' }}>
+              <strong>To earn affiliate commissions:</strong> Visit any circle with affiliates enabled, grab your unique link from the "Become an Affiliate" section, and share it. When someone subscribes through your link, you start earning automatically.
+            </div>
+          </div>
         </div>
       );
     }
@@ -19608,6 +19660,28 @@ RULES
               </button>
             )}
             {isSubscribed && <div style={{ fontSize: '0.82rem', color: '#00c864', fontWeight: 700 }}>✅ You're subscribed</div>}
+
+            {/* ===== Affiliate Program Section ===== */}
+            {circle.affiliate_enabled && auth.currentUser && !isOwner && (
+              <div style={{ marginTop: '1rem', padding: '1rem', borderRadius: '0.75rem', background: 'rgba(100,200,255,0.06)', border: '1px solid rgba(100,200,255,0.15)' }}>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.4rem' }}>🤝 Become an Affiliate</div>
+                <div style={{ fontSize: '0.82rem', color: '#aaa', marginBottom: '0.75rem', lineHeight: 1.5 }}>
+                  Share this circle and earn <strong style={{ color: '#00c864' }}>5% commission</strong> on every subscriber you bring in — every month, for as long as they stay subscribed.
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.5rem' }}>Your affiliate link:</div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input type="text" readOnly value={`${window.location.origin}/#circle-join/${circleId}?ref=aff_${auth.currentUser.id}`}
+                    style={{ flex: 1, fontSize: '0.72rem', padding: '0.5rem', borderRadius: 6, border: '1px solid var(--border-color)', background: 'rgba(0,0,0,0.3)', color: '#aaa' }} />
+                  <button onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/#circle-join/${circleId}?ref=aff_${auth.currentUser.id}`);
+                    auth.showToast('Affiliate link copied!', 'success');
+                  }} style={{ padding: '0.5rem 1rem', borderRadius: 6, border: 'none', background: '#64c8ff', color: '#fff', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>Copy Link</button>
+                </div>
+                <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#666', lineHeight: 1.5 }}>
+                  💡 How it works: 2.5% comes from the platform's cut and 2.5% from the creators' cut. Nobody pays extra — it's built into the split.
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Creator Post Form */}
