@@ -4336,6 +4336,8 @@
       auth: {
         persistSession: true,
         detectSessionInUrl: true,
+        flowType: 'implicit',
+        lock: 'no-op',
       },
     });
 
@@ -19795,9 +19797,8 @@ RULES
             if (auth.profile.role === 'client') return <ClientProfilePage clientId={auth.currentUser.id} />;
             return <ProfilePage modelId={auth.currentUser.id} />;
           }
-          // Profile still loading — show profile page immediately (it fetches its own data)
-          // Default to ProfilePage which handles both roles
-          return <ProfilePage modelId={auth.currentUser.id} />;
+          // Profile still loading — show BrowseModelsPage so the user sees something useful immediately
+          return <BrowseModelsPage />;
         }
         if (page === 'feed') return requiresSub(<FeedPage />);
         if (page === 'wall') return <TopClientsPage />;
