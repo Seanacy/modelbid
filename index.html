@@ -320,10 +320,13 @@
       text-align: center;
     }
 
+    /* Hamburger always visible — single-menu nav */
+    .hamburger-btn { display: block !important; }
+    .nav-links.desktop-nav { display: none !important; }
+    .nav-links.desktop-auth { display: none !important; }
+
     @media (max-width: 768px) {
-      .hamburger-btn { display: block; }
-      .nav-links.desktop-nav { display: none !important; }
-      .nav-links.desktop-auth { display: none !important; }
+      /* kept for any future overrides */
     }
 
     /* ===== BUTTONS ===== */
@@ -19972,10 +19975,8 @@ RULES
               )}
             </div>
 
-            {/* Hamburger button — mobile only, hidden when not signed in */}
-            {auth.currentUser && (
-              <button className="hamburger-btn" onClick={() => setMobileMenuOpen(true)}>☰</button>
-            )}
+            {/* Hamburger button — always visible */}
+            <button className="hamburger-btn" onClick={() => setMobileMenuOpen(true)}>☰</button>
           </nav>
 
           {/* Mobile slide-out menu */}
@@ -19986,6 +19987,7 @@ RULES
               <button className="mobile-menu-close" onClick={() => setMobileMenuOpen(false)}>✕</button>
             </div>
 
+            {/* Profile card — logged-in users */}
             {auth.currentUser && (
               <div className="mobile-menu-user" onClick={() => { setMobileMenuOpen(false); if (auth.currentUser?.id) window.location.hash = auth.profile?.role === 'client' ? 'client/' + auth.currentUser.id : 'profile/' + auth.currentUser.id; }}>
                 <div className="avatar">{auth.profile?.avatar_emoji || '👤'}</div>
@@ -19996,64 +19998,48 @@ RULES
               </div>
             )}
 
+            {/* ===== LOGGED-IN MENU — ordered by importance ===== */}
             {auth.currentUser && (
             <div className="mobile-menu-section">
               <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'browse'; }}>
                 <span className="mm-icon">🔍</span> Browse
               </div>
-              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'circles'; }}>
-                <span className="mm-icon">🔒</span> Circles
+              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'messages'; }}>
+                <span className="mm-icon">📬</span> Messages
               </div>
               <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'feed'; }}>
                 <span className="mm-icon">📰</span> Feed
               </div>
-              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'messages'; }}>
-                <span className="mm-icon">📬</span> Messages
-              </div>
               <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'dashboard'; }}>
                 <span className="mm-icon">📊</span> Dashboard
               </div>
-            </div>
-            )}
-
-            {auth.currentUser && (
-            <div className="mobile-menu-section">
-              <div className="mobile-menu-section-title">Tools</div>
-              {auth.profile?.role !== 'client' && (
-                <div className="mobile-menu-item accent" onClick={() => { setMobileMenuOpen(false); setShowMoneyTour(true); }}>
-                  <span className="mm-icon">💰</span> Money Tour
-                </div>
-              )}
-              {!auth.currentUser && (
-                <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'formodels'; }}>
-                  <span className="mm-icon">🎀</span> For Models
-                </div>
-              )}
-              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'contracts'; }}>
-                <span className="mm-icon">📝</span> Contracts
+              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'circles'; }}>
+                <span className="mm-icon">🔒</span> Circles
               </div>
+              {auth.profile?.role === 'client' && (
+                <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'circle-dashboard'; }}>
+                  <span className="mm-icon">🎯</span> My Circles
+                </div>
+              )}
               <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'bidboard'; }}>
                 <span className="mm-icon">📋</span> Bid Board
               </div>
-              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'westackr'; }}>
-                <span className="mm-icon">⚡</span> WeStackr
+              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'contracts'; }}>
+                <span className="mm-icon">📝</span> Contracts
               </div>
-              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'circle/' + (auth?.currentUser?.id || ''); }}>
-                <span className="mm-icon">👯‍♀️</span> Inner Circles
-              </div>
-              {auth.profile?.role !== 'client' && (
-              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'team'; }}>
-                <span className="mm-icon">💛</span> The Team
-              </div>
-              )}
-              {auth.profile?.role !== 'client' && (
-              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'wall'; }}>
-                <span className="mm-icon">🏆</span> The Wall
-              </div>
-              )}
               {auth.profile?.role !== 'client' && (
                 <div className="mobile-menu-item accent" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'cherry-picker'; }}>
                   <span className="mm-icon">🍒</span> Cherry Picker
+                </div>
+              )}
+              {auth.profile?.role !== 'client' && (
+                <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'wall'; }}>
+                  <span className="mm-icon">🏆</span> The Wall
+                </div>
+              )}
+              {auth.profile?.role !== 'client' && (
+                <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'team'; }}>
+                  <span className="mm-icon">💛</span> The Team
                 </div>
               )}
               {auth.profile?.role !== 'client' && (
@@ -20061,9 +20047,39 @@ RULES
                   <span className="mm-icon">🛡️</span> Reputation
                 </div>
               )}
+              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'westackr'; }}>
+                <span className="mm-icon">⚡</span> WeStackr
+              </div>
+              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'circle/' + (auth?.currentUser?.id || ''); }}>
+                <span className="mm-icon">👯‍♀️</span> Inner Circles
+              </div>
+              {auth.profile?.role !== 'client' && (
+                <div className="mobile-menu-item accent" onClick={() => { setMobileMenuOpen(false); setShowMoneyTour(true); }}>
+                  <span className="mm-icon">💰</span> Money Tour
+                </div>
+              )}
+              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'edit-profile'; }}>
+                <span className="mm-icon">⚙️</span> Settings
+              </div>
             </div>
             )}
 
+            {/* ===== LOGGED-OUT MENU ===== */}
+            {!auth.currentUser && (
+            <div className="mobile-menu-section">
+              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'browse'; }}>
+                <span className="mm-icon">🔍</span> Browse
+              </div>
+              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'circles'; }}>
+                <span className="mm-icon">🔒</span> Circles
+              </div>
+              <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'formodels'; }}>
+                <span className="mm-icon">🎀</span> For Models
+              </div>
+            </div>
+            )}
+
+            {/* Auth buttons */}
             {!auth.currentUser ? (
               <div className="mobile-menu-section" style={{ padding: '1rem 1.25rem', display: 'flex', gap: '0.75rem' }}>
                 {currentPage !== 'login' && currentPage !== 'signup' && <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => { setMobileMenuOpen(false); window.location.hash = 'login'; }}>Login</button>}
