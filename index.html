@@ -4336,8 +4336,7 @@
       auth: {
         persistSession: true,
         detectSessionInUrl: true,
-        flowType: 'implicit',
-        lock: 'no-op',
+        lock: async (name, acquireTimeout, fn) => await fn(),
       },
     });
 
