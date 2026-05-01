@@ -19427,10 +19427,10 @@ RULES
                 <div style={{ background: 'rgba(255,215,0,0.06)', borderRadius: '0.5rem', padding: '0.75rem', border: '1px solid rgba(255,215,0,0.2)', marginTop: '0.25rem' }}>
                   <div style={{ fontSize: '0.85rem', color: '#ccc', marginBottom: '0.5rem' }}>Current offer: <strong>${circle.price}/mo</strong>. Propose a higher price:</div>
                   <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                    <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-                      <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#aaa', fontSize: '1.1rem', fontWeight: 700 }}>$</span>
+                    <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, background: 'rgba(0,0,0,0.4)', borderRadius: 8, border: '1px solid rgba(255,215,0,0.3)', padding: '0 0.5rem' }}>
+                      <span style={{ color: '#aaa', fontSize: '1.1rem', fontWeight: 700, marginRight: 4, flexShrink: 0 }}>$</span>
                       <input type="number" min={circle.price + 1} value={proposedAmount} onChange={(e) => setProposedAmount(e.target.value)}
-                        style={{ width: '100%', padding: '0.75rem 0.5rem 0.75rem 1.75rem', borderRadius: 8, border: '1px solid rgba(255,215,0,0.3)', background: 'rgba(0,0,0,0.4)', color: '#fff', fontSize: '1.1rem', fontWeight: 600, boxSizing: 'border-box' }} placeholder="25" />
+                        style={{ width: '100%', padding: '0.75rem 0', border: 'none', background: 'transparent', color: '#fff', fontSize: '1.1rem', fontWeight: 600, outline: 'none' }} placeholder="25" />
                     </div>
                     <button onClick={proposePrice} style={{ fontSize: '0.75rem', padding: '0.4rem 0.6rem', flexShrink: 0, background: 'linear-gradient(135deg, #ff6ec7, #9d4edd)', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 700, cursor: 'pointer' }}>Send</button>
                     <button onClick={() => setProposingPrice(false)} style={{ fontSize: '0.75rem', padding: '0.4rem 0.5rem', flexShrink: 0, background: 'rgba(255,255,255,0.1)', color: '#aaa', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, cursor: 'pointer' }}>✕</button>
