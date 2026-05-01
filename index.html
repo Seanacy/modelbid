@@ -19414,15 +19414,40 @@ RULES
               <div style={{ fontSize: '0.85rem', color: '#ccc', marginBottom: '0.75rem' }}>
                 Join this Inner Circle at ${circle.price}/month. Revenue is split based on performance. Your content stays private from other creators — they only see titles and post times.
               </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
                 <button className="btn glow-btn" onClick={() => respond(true)} style={{ flex: 1 }}>✅ Accept</button>
                 <button className="btn btn-secondary" onClick={() => respond(false)} style={{ flex: 1 }}>Decline</button>
               </div>
+              {/* Counter-offer before accepting */}
+              {!proposingPrice ? (
+                <button onClick={() => { setProposingPrice(true); setProposedAmount(String(circle.price + 5)); }} style={{
+                  padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px dashed rgba(255,215,0,0.4)', background: 'rgba(255,215,0,0.06)',
+                  color: '#ffd700', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600, width: '100%' }}>💰 Counter with a different price</button>
+              ) : (
+                <div style={{ background: 'rgba(255,215,0,0.06)', borderRadius: '0.5rem', padding: '0.75rem', border: '1px solid rgba(255,215,0,0.2)', marginTop: '0.25rem' }}>
+                  <div style={{ fontSize: '0.82rem', color: '#ccc', marginBottom: '0.4rem' }}>Current offer: <strong>${circle.price}/mo</strong>. Propose a higher price:</div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#888', fontSize: '0.9rem' }}>$</span>
+                      <input type="number" min={circle.price + 1} value={proposedAmount} onChange={(e) => setProposedAmount(e.target.value)}
+                        style={{ width: '100%', padding: '0.5rem 0.5rem 0.5rem 1.5rem', borderRadius: 6, border: '1px solid var(--border-color)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontSize: '0.9rem' }} placeholder="Amount" />
+                    </div>
+                    <button className="btn glow-btn" onClick={proposePrice} style={{ fontSize: '0.82rem', padding: '0.5rem 1rem' }}>Send</button>
+                    <button className="btn btn-secondary" onClick={() => setProposingPrice(false)} style={{ fontSize: '0.82rem', padding: '0.5rem 0.75rem' }}>✕</button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {invite.status === 'accepted' && <div style={{ fontSize: '0.82rem', color: '#00c864', marginBottom: '1rem', fontWeight: 700 }}>✅ You accepted this invite</div>}
+          {invite.status === 'accepted' && <div style={{ fontSize: '0.82rem', color: '#00c864', marginBottom: '0.5rem', fontWeight: 700 }}>✅ You accepted this invite</div>}
           {invite.status === 'declined' && <div style={{ fontSize: '0.82rem', color: '#ff5252', marginBottom: '1rem', fontWeight: 700 }}>❌ You declined this invite</div>}
+          {circle.proposed_price && (
+            <div style={{ background: 'rgba(255,215,0,0.08)', borderRadius: '0.75rem', padding: '0.75rem 1rem', border: '1px solid rgba(255,215,0,0.2)', marginBottom: '1rem', fontSize: '0.85rem' }}>
+              <span style={{ color: '#ffd700', fontWeight: 700 }}>💰 Counter-offer pending:</span>{' '}
+              <span style={{ color: '#ccc' }}>${circle.proposed_price}/month (waiting for client to respond)</span>
+            </div>
+          )}
 
           {/* Other creators in the roster */}
           <div style={{ marginBottom: '1.5rem' }}>
@@ -19444,8 +19469,8 @@ RULES
             })}
           </div>
 
-          {/* Price Proposal — only for accepted creators */}
-          {invite.status === 'accepted' && circle.status !== 'live' && (
+          {/* Price Proposal — for accepted creators or when a counter-offer is pending */}
+          {invite.status === 'accepted' && circle.status !== 'live' && !circle.proposed_price && (
             <div style={{ marginBottom: '1.5rem' }}>
               {!proposingPrice ? (
                 <button onClick={() => { setProposingPrice(true); setProposedAmount(String(circle.price + 5)); }} style={{
