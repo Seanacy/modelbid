@@ -19296,7 +19296,16 @@ RULES
         setLoading(false);
       };
 
-      useEffect(() => { fetchAll(); }, [circleId]);
+      useEffect(() => {
+        const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
+        if (params.get('checkout') === 'success') {
+          // Give Stripe webhook a moment to process, then fetch
+          auth.showToast('Payment successful! Loading your content...', 'success');
+          const timer = setTimeout(() => { fetchAll(); }, 2500);
+          return () => clearTimeout(timer);
+        }
+        fetchAll();
+      }, [circleId]);
 
       const handleMediaUpload = async (file) => {
         if (!file || newMedia.length >= 6) return;
