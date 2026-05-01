@@ -13282,7 +13282,7 @@ REMEMBER:
           if (auth.profile?.role !== 'client') return;
           try {
             const { data: circles } = await supabase.from('client_circles').select('*')
-              .eq('client_id', auth.currentUser.id).order('created_at', { ascending: false });
+              .eq('client_id', auth.currentUser.id).neq('status', 'deleted').order('created_at', { ascending: false });
             if (circles && circles.length > 0) {
               const circleIds = circles.map(c => c.id);
               const { data: invites } = await supabase.from('circle_invites').select('circle_id, creator_id, status, profiles:creator_id(display_name, avatar_emoji, profile_photo_url)')
@@ -20426,7 +20426,7 @@ RULES
         (async () => {
           try {
             const [circlesRes, commissionsRes] = await Promise.all([
-              supabase.from('client_circles').select('*').eq('client_id', auth.currentUser.id).order('created_at', { ascending: false }),
+              supabase.from('client_circles').select('*').eq('client_id', auth.currentUser.id).neq('status', 'deleted').order('created_at', { ascending: false }),
               supabase.from('circle_commissions').select('*').eq('client_id', auth.currentUser.id),
             ]);
             setCircles(circlesRes.data || []);
