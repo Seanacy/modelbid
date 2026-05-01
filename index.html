@@ -5760,18 +5760,20 @@
                       style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border-color)', overflow: 'hidden', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }}
                       onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(255,110,199,0.15)'; }}
                       onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}>
-                      {/* Creator photos banner */}
-                      <div style={{ height: 120, background: 'linear-gradient(135deg, #1a1a2e, #2a1a3e)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0 1rem' }}>
+                      {/* Creator photos with names */}
+                      <div style={{ background: '#fff', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: '1.5rem', padding: '1.25rem 1rem 0.75rem' }}>
                         {c.creators.slice(0, 3).map((cr, i) => (
-                          <div key={i} style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--bg-card-light)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', border: '3px solid rgba(255,110,199,0.3)' }}>
-                            {cr.profile_photo_url ? <img src={cr.profile_photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (cr.avatar_emoji || '👤')}
+                          <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem' }}>
+                            <div style={{ width: 90, height: 90, borderRadius: '50%', background: 'var(--bg-card-light)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', border: '3px solid rgba(255,110,199,0.3)' }}>
+                              {cr.profile_photo_url ? <img src={cr.profile_photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (cr.avatar_emoji || '👤')}
+                            </div>
+                            <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'center', maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cr.display_name || 'Creator'}</div>
                           </div>
                         ))}
                       </div>
                       {/* Info */}
-                      <div style={{ padding: '1rem' }}>
-                        <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>{c.name}</div>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>{c.creators.map(cr => cr.display_name).join(' & ')}</div>
+                      <div style={{ padding: '0.75rem 1rem 1rem' }}>
+                        <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>{c.name}</div>
                         {c.description && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem', lineHeight: 1.4 }}>{c.description.length > 90 ? c.description.slice(0, 90) + '...' : c.description}</div>}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span style={{ fontSize: '0.95rem', fontWeight: 700, background: 'linear-gradient(135deg, #ff6ec7, #ffd700)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>${c.price}/mo</span>
