@@ -5653,82 +5653,43 @@
     // ===== FEATURED INNER CIRCLES PAGE =====
     function FeaturedCirclesPage() {
       const auth = useContext(AuthContext);
-      const [featured, setFeatured] = useState([]);
       const [clientCircles, setClientCircles] = useState([]);
       const [loading, setLoading] = useState(true);
 
       useEffect(() => {
         (async () => {
           try {
-            // Fetch live client circles in parallel with featured
-            const clientCirclesPromise = (async () => {
-              const { data: circles } = await supabase.from('client_circles')
-                .select('*').eq('status', 'live').order('launched_at', { ascending: false });
-              if (!circles || circles.length === 0) return [];
-              // Get creator profiles for each circle
-              const circleIds = circles.map(c => c.id);
-              const { data: invites } = await supabase.from('circle_invites')
-                .select('circle_id, creator_id').in('circle_id', circleIds).eq('status', 'accepted');
-              const creatorIds = [...new Set((invites || []).map(i => i.creator_id))];
-              const ownerIds = [...new Set(circles.map(c => c.client_id))];
-              const allIds = [...new Set([...creatorIds, ...ownerIds])];
-              const { data: profiles } = await supabase.from('profiles')
-                .select('id, display_name, profile_photo_url, avatar_emoji').in('id', allIds);
-              const profMap = {};
-              (profiles || []).forEach(p => { profMap[p.id] = p; });
-              return circles.map(c => ({
-                ...c,
-                ownerProfile: profMap[c.client_id] || {},
-                creators: (invites || []).filter(i => i.circle_id === c.id).map(i => profMap[i.creator_id] || {}),
-              }));
-            })();
-
-            // Get featured circle entries
-            const { data: featuredList, error } = await supabase
-              .from('featured_circles').select('*').order('display_order', { ascending: true });
-            if (error || !featuredList || featuredList.length === 0) {
-              setFeatured([]);
-              const cc = await clientCirclesPromise;
-              setClientCircles(cc);
+            // Fetch all live client circles, sorted by popularity (subscriber count)
+            const { data: circles } = await supabase.from('client_circles')
+              .select('*').eq('status', 'live').order('subscriber_count', { ascending: false });
+            if (!circles || circles.length === 0) {
+              setClientCircles([]);
               setLoading(false);
               return;
             }
-            // Get model profiles for each featured circle
-            const modelIds = featuredList.map(f => f.model_id);
-            const { data: profiles } = await supabase
-              .from('profiles').select('id, display_name, profile_photo_url, avatar_emoji, username, bio')
-              .in('id', modelIds);
-            // Get crews for each model to get pricing
-            const { data: memberships } = await supabase
-              .from('crew_members').select('user_id, crew_id, role')
-              .in('user_id', modelIds).eq('role', 'admin');
-            let crewMap = {};
-            if (memberships && memberships.length > 0) {
-              const crewIds = [...new Set(memberships.map(m => m.crew_id))];
-              const { data: crews } = await supabase
-                .from('crews').select('id, name, tier1_price, tier1_name, admin_id')
-                .in('id', crewIds);
-              if (crews) {
-                crews.forEach(c => { crewMap[c.admin_id] = c; });
-              }
-            }
-            // Merge data
-            const merged = featuredList.map(f => {
-              const profile = (profiles || []).find(p => p.id === f.model_id) || {};
-              const crew = crewMap[f.model_id] || null;
-              return { ...f, profile, crew };
-            }).filter(f => f.profile.id); // only show if profile exists
-            setFeatured(merged);
-            // Resolve client circles
-            const cc = await clientCirclesPromise;
-            setClientCircles(cc);
+            // Get creator profiles for each circle
+            const circleIds = circles.map(c => c.id);
+            const { data: invites } = await supabase.from('circle_invites')
+              .select('circle_id, creator_id').in('circle_id', circleIds).eq('status', 'accepted');
+            const creatorIds = [...new Set((invites || []).map(i => i.creator_id))];
+            const ownerIds = [...new Set(circles.map(c => c.client_id))];
+            const allIds = [...new Set([...creatorIds, ...ownerIds])];
+            const { data: profiles } = await supabase.from('profiles')
+              .select('id, display_name, profile_photo_url, avatar_emoji').in('id', allIds);
+            const profMap = {};
+            (profiles || []).forEach(p => { profMap[p.id] = p; });
+            setClientCircles(circles.map(c => ({
+              ...c,
+              ownerProfile: profMap[c.client_id] || {},
+              creators: (invites || []).filter(i => i.circle_id === c.id).map(i => profMap[i.creator_id] || {}),
+            })));
           } catch (e) { console.error('Featured circles error:', e); }
           setLoading(false);
         })();
       }, []);
 
       const allCircles = [...clientCircles];
-      const hasAny = allCircles.length > 0 || featured.length > 0;
+      const hasAny = allCircles.length > 0;
 
       return (
         <div style={{ maxWidth: 900, margin: '0 auto', padding: '1rem' }}>
@@ -5788,38 +5749,6 @@
                 </div>
               )}
 
-              {/* Featured model circles (admin-picked) */}
-              {featured.length > 0 && (
-                <div>
-                  <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.75rem', color: '#ffd700' }}>⭐ Featured</h2>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
-                    {featured.map(f => (
-                      <div key={f.id} onClick={() => window.location.hash = f.profile.username ? f.profile.username : 'circle/' + f.model_id}
-                        style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border-color)', overflow: 'hidden', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }}
-                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(255,215,0,0.15)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}>
-                        <div style={{ height: 200, background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                          {f.profile.profile_photo_url ? (
-                            <img src={f.profile.profile_photo_url} alt={f.profile.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          ) : (
-                            <span style={{ fontSize: '4rem' }}>{f.profile.avatar_emoji || '👤'}</span>
-                          )}
-                        </div>
-                        <div style={{ padding: '1rem' }}>
-                          <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>{f.profile.display_name || 'Model'}</div>
-                          {f.profile.username && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>@{f.profile.username}</div>}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.82rem', color: '#ff6ec7', fontWeight: 700 }}>
-                              {f.crew ? `$${parseFloat(f.crew.tier1_price || 9.99).toFixed(2)}/mo` : 'View Profile'}
-                            </span>
-                            <span style={{ fontSize: '0.72rem', background: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,110,199,0.15))', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 20, padding: '3px 10px', color: '#ffd700', fontWeight: 600 }}>Inner Circle</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
