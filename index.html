@@ -14831,7 +14831,7 @@ REMEMBER:
         const success = await login(email, password);
         setLoading(false);
         if (success) {
-          window.location.hash = 'dashboard';
+          window.location.hash = 'home';
         }
       };
 
@@ -19876,7 +19876,7 @@ RULES
                   <a className="nav-link" onClick={() => window.location.hash = 'messages'}>📬 Messages</a>
                   <a className="nav-link" onClick={() => window.location.hash = 'dashboard'}>Dashboard</a>
                   {/* Admin link removed — admin panel is standalone at #admin */}
-                  <div className="user-info" onClick={() => { if (auth.currentUser?.id) window.location.hash = 'profile/' + auth.currentUser.id; }} style={{ cursor: 'pointer' }}>
+                  <div className="user-info" onClick={() => { if (auth.currentUser?.id) window.location.hash = auth.profile?.role === 'client' ? 'client/' + auth.currentUser.id : 'profile/' + auth.currentUser.id; }} style={{ cursor: 'pointer' }}>
                     <div className="avatar">{auth.profile?.avatar_emoji || '👤'}</div>
                     <div className="user-name">{auth.profile?.display_name || 'User'}</div>
                   </div>
@@ -19903,7 +19903,7 @@ RULES
             </div>
 
             {auth.currentUser && (
-              <div className="mobile-menu-user" onClick={() => { setMobileMenuOpen(false); if (auth.currentUser?.id) window.location.hash = 'profile/' + auth.currentUser.id; }}>
+              <div className="mobile-menu-user" onClick={() => { setMobileMenuOpen(false); if (auth.currentUser?.id) window.location.hash = auth.profile?.role === 'client' ? 'client/' + auth.currentUser.id : 'profile/' + auth.currentUser.id; }}>
                 <div className="avatar">{auth.profile?.avatar_emoji || '👤'}</div>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{auth.profile?.display_name || 'User'}</div>
