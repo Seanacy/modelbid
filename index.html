@@ -5841,38 +5841,31 @@
         contractType: 'standard',
       });
 
-      // Fetch this model's Inner Circle crew + members
+      // Fetch this model's Inner Circle crew + members (called from main useEffect)
       const [crewData, setCrewData] = useState(null); // { crew, members[] }
-      useEffect(() => {
-        if (!modelId) return;
-        const fetchCrew = async () => {
-          try {
-            // Find crews this model belongs to
-            const { data: memberships } = await supabase.from('crew_members')
-              .select('crew_id, role').eq('user_id', modelId);
-            if (!memberships || memberships.length === 0) return;
-            // Get first crew
-            const crewId = memberships[0].crew_id;
-            const { data: crew } = await supabase.from('crews')
-              .select('*').eq('id', crewId).single();
-            if (!crew) return;
-            // Get all members with profiles
-            const { data: members } = await supabase.from('crew_members')
-              .select('user_id, role').eq('crew_id', crewId);
-            if (!members) return;
-            const memberIds = members.map(m => m.user_id);
-            const { data: profiles } = await supabase.from('profiles')
-              .select('id, display_name, avatar_emoji, profile_photo_url')
-              .in('id', memberIds);
-            const memberList = members.map(m => {
-              const prof = (profiles || []).find(p => p.id === m.user_id) || {};
-              return { ...m, ...prof };
-            });
-            setCrewData({ crew, members: memberList });
-          } catch (e) { console.error('Fetch crew for profile:', e); }
-        };
-        fetchCrew();
-      }, [modelId]);
+      const fetchCrew = async (mid) => {
+        try {
+          const { data: memberships } = await supabase.from('crew_members')
+            .select('crew_id, role').eq('user_id', mid);
+          if (!memberships || memberships.length === 0) return;
+          const crewId = memberships[0].crew_id;
+          // Fetch crew and its members in parallel
+          const [crewRes, membersRes] = await Promise.all([
+            supabase.from('crews').select('*').eq('id', crewId).single(),
+            supabase.from('crew_members').select('user_id, role').eq('crew_id', crewId),
+          ]);
+          if (!crewRes.data || !membersRes.data) return;
+          const memberIds = membersRes.data.map(m => m.user_id);
+          const { data: profiles } = await supabase.from('profiles')
+            .select('id, display_name, avatar_emoji, profile_photo_url')
+            .in('id', memberIds);
+          const memberList = membersRes.data.map(m => {
+            const prof = (profiles || []).find(p => p.id === m.user_id) || {};
+            return { ...m, ...prof };
+          });
+          setCrewData({ crew: crewRes.data, members: memberList });
+        } catch (e) { console.error('Fetch crew for profile:', e); }
+      };
 
       // "View as Public" toggle — lets model preview their page as visitors see it
       const [viewAsPublic, setViewAsPublic] = useState(false);
@@ -5890,19 +5883,26 @@
 
         (async () => {
           try {
-            // Fetch profile first — this is the critical path
-            const { data: modelData, error: modelError } = await supabase
-              .from('profiles').select('*').eq('id', modelId).single();
+            // If viewing own profile and auth already has the data, skip the network call
+            let modelData = null;
+            if (auth.currentUser?.id === modelId && auth.profile && auth.profile.id === modelId) {
+              modelData = auth.profile;
+            } else {
+              const { data, error } = await supabase
+                .from('profiles').select('*').eq('id', modelId).single();
+              if (error || !data) { setNotFound(true); setLoading(false); return; }
+              modelData = data;
+            }
 
-            if (modelError || !modelData) { setNotFound(true); setLoading(false); return; }
             setModel(modelData);
             setLoading(false); // Show profile immediately
 
-            // Fire secondary queries in parallel — non-blocking
+            // Fire ALL secondary queries in parallel — non-blocking
             const [reviewsRes, campaignsRes] = await Promise.all([
               supabase.from('reviews').select('*, reviewer_id(*)').eq('model_id', modelId).order('created_at', { ascending: false }),
               supabase.from('campaigns').select('id, title, description, raised, goal, duration_days, image_url, backers, funded, created_at')
                 .eq('creator_id', modelId).eq('funded', false).order('created_at', { ascending: false }).limit(1),
+              fetchCrew(modelId), // crew data loads in parallel too
             ]);
 
             if (reviewsRes.data) setReviews(reviewsRes.data);
@@ -6569,42 +6569,46 @@
       const [activeTab, setActiveTab] = useState('photos');
 
       useEffect(() => {
-        const timeout = setTimeout(() => {
-          setLoading(false);
-          if (!client) setNotFound(true);
-        }, 5000);
+        if (!clientId) return;
+        setNotFound(false);
+        setLoading(true);
+        setClient(null);
 
         const fetchData = async () => {
           try {
-            const { data: clientData, error: clientError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', clientId)
-              .single();
+            // If viewing own profile, use cached auth data instead of a network call
+            let clientData = null;
+            if (auth.currentUser?.id === clientId && auth.profile && auth.profile.id === clientId) {
+              clientData = auth.profile;
+            } else {
+              const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', clientId)
+                .single();
+              if (error || !data) { setNotFound(true); setLoading(false); return; }
+              clientData = data;
+            }
 
-            if (clientError) throw clientError;
             setClient(clientData);
+            setLoading(false);
 
-            const { data: feedbackData, error: feedbackError } = await supabase
+            // Non-blocking secondary fetch
+            const { data: feedbackData } = await supabase
               .from('reviews')
               .select('*')
               .eq('model_id', clientId)
               .order('created_at', { ascending: false });
 
-            if (!feedbackError) {
-              setFeedback(feedbackData || []);
-            }
+            if (feedbackData) setFeedback(feedbackData);
           } catch (error) {
             console.error('Fetch error:', error);
             setNotFound(true);
-          } finally {
             setLoading(false);
-            clearTimeout(timeout);
           }
         };
 
         fetchData();
-        return () => clearTimeout(timeout);
       }, [clientId]);
 
       if (loading) {
@@ -18595,7 +18599,13 @@ RULES
 
         if (page === 'home') {
           if (!auth.currentUser) return <HomePage />;
-          if (auth.profile?.role === 'client') return <ClientProfilePage clientId={auth.currentUser.id} />;
+          // Wait for profile to load before deciding which page to show
+          if (!auth.profile || auth.profileLoading) return (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+              <div className="loading-spinner"></div>
+            </div>
+          );
+          if (auth.profile.role === 'client') return <ClientProfilePage clientId={auth.currentUser.id} />;
           return <ProfilePage modelId={auth.currentUser.id} />;
         }
         if (page === 'feed') return requiresSub(<FeedPage />);
