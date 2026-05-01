@@ -19586,6 +19586,26 @@ RULES
         } catch (e) { auth.showToast('Failed to send sale offer', 'error'); }
       };
 
+      // Delete forming circle — retract all invites first
+      const retractAllAndDelete = async () => {
+        if (!confirm('This will retract all pending invites and permanently delete this circle. Are you sure?')) return;
+        try {
+          // Retract all non-responded invites
+          const pendingInvites = invites.filter(i => i.status === 'pending' || i.status === 'opened');
+          for (const inv of pendingInvites) {
+            await supabase.from('circle_invites').update({ status: 'retracted', responded_at: new Date().toISOString() }).eq('id', inv.id);
+          }
+          // Delete the circle
+          await supabase.from('client_circles').update({ status: 'deleted' }).eq('id', circleId);
+          await supabase.from('circle_activity').insert({
+            circle_id: circleId, actor_id: auth.currentUser.id,
+            action: 'circle_deleted', detail: 'Circle deleted during forming stage. All invites retracted.',
+          });
+          auth.showToast('Circle deleted and all invites retracted', 'success');
+          window.location.hash = 'circle-dashboard';
+        } catch (e) { auth.showToast('Failed to delete circle', 'error'); }
+      };
+
       // Delete circle (only if all models declined transfer)
       const deleteCircle = async () => {
         if (!confirm('Are you sure you want to delete this circle? This cannot be undone.')) return;
@@ -19773,6 +19793,19 @@ RULES
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '0.4rem' }}>
                 All {circle.roster_size} creators accepted. Roster will be locked permanently after launch.
               </div>
+            </div>
+          )}
+
+          {/* Delete forming circle — owner can retract invites and delete */}
+          {(circle.status === 'forming' || circle.status === 'negotiating') && isOwner && (
+            <div style={{ marginBottom: '1.5rem', padding: '1rem', borderRadius: '0.75rem', background: 'rgba(255,82,82,0.06)', border: '1px solid rgba(255,82,82,0.15)' }}>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem', lineHeight: 1.5 }}>
+                Changed your mind? You can retract all pending invites and delete this circle since it hasn't gone live yet.
+              </div>
+              <button onClick={retractAllAndDelete}
+                style={{ padding: '0.65rem', borderRadius: 8, border: '1px solid rgba(255,82,82,0.4)', background: 'rgba(255,82,82,0.1)', color: '#ff5252', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', width: '100%' }}>
+                🗑️ Retract Invites & Delete Circle
+              </button>
             </div>
           )}
 
