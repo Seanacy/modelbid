@@ -6598,6 +6598,7 @@
       const auth = useContext(AuthContext);
       const [client, setClient] = useState(null);
       const [feedback, setFeedback] = useState([]);
+      const [circles, setCircles] = useState([]);
       const [loading, setLoading] = useState(true);
       const [notFound, setNotFound] = useState(false);
       const [activeTab, setActiveTab] = useState('photos');
@@ -6627,14 +6628,31 @@
             setClient(clientData);
             setLoading(false);
 
-            // Non-blocking secondary fetch
-            const { data: feedbackData } = await supabase
-              .from('reviews')
-              .select('*')
-              .eq('model_id', clientId)
-              .order('created_at', { ascending: false });
+            // Non-blocking secondary fetches
+            const [feedbackRes, circlesRes] = await Promise.all([
+              supabase.from('reviews').select('*').eq('model_id', clientId).order('created_at', { ascending: false }),
+              supabase.from('client_circles').select('*').eq('client_id', clientId).eq('status', 'live').order('created_at', { ascending: false }),
+            ]);
 
-            if (feedbackData) setFeedback(feedbackData);
+            if (feedbackRes.data) setFeedback(feedbackRes.data);
+
+            // For each live circle, fetch the accepted creators
+            if (circlesRes.data && circlesRes.data.length > 0) {
+              const circleIds = circlesRes.data.map(c => c.id);
+              const { data: invites } = await supabase.from('circle_invites').select('circle_id, creator_id, status').in('circle_id', circleIds).eq('status', 'accepted');
+              const creatorIds = [...new Set((invites || []).map(i => i.creator_id))];
+              let creatorMap = {};
+              if (creatorIds.length > 0) {
+                const { data: creators } = await supabase.from('profiles').select('id, display_name, avatar_emoji').in('id', creatorIds);
+                if (creators) creators.forEach(c => { creatorMap[c.id] = c; });
+              }
+              const enriched = circlesRes.data.map(circle => ({
+                ...circle,
+                creators: (invites || []).filter(i => i.circle_id === circle.id).map(i => creatorMap[i.creator_id]).filter(Boolean),
+              }));
+              setCircles(enriched);
+              setActiveTab('circles');
+            }
           } catch (error) {
             console.error('Fetch error:', error);
             setNotFound(true);
@@ -6741,6 +6759,7 @@
           {/* Tab Navigation */}
           <div style={{ display: 'flex', gap: '0.5rem', margin: '1.5rem 0', flexWrap: 'wrap' }}>
             {[
+              ...(circles.length > 0 ? [{ key: 'circles', label: '🔒 My Circles', count: circles.length }] : []),
               { key: 'photos', label: '📸 My Photos', count: photos.length },
               { key: 'favorites', label: '❤️ Favorites', count: favorites.length },
               { key: 'feedback', label: '⭐ Model Feedback', count: feedback.length },
@@ -6766,6 +6785,44 @@
                 <div className="profile-section-title"><span>👋</span> About</div>
                 <div className="profile-about-text">{client.bio || 'No bio yet.'}</div>
               </div>
+
+              {/* Circles Tab */}
+              {activeTab === 'circles' && circles.length > 0 && (
+                <div className="profile-section">
+                  <div className="profile-section-title"><span>🔒</span> Inner Circles</div>
+                  <div style={{ display: 'grid', gap: '1rem' }}>
+                    {circles.map(circle => (
+                      <div key={circle.id} className="card" style={{ cursor: 'pointer', transition: 'transform 0.15s' }}
+                        onClick={() => window.location.hash = 'circle-feed/' + circle.id}
+                        onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                        onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '0.25rem' }}>{circle.name}</div>
+                            {circle.description && <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: 1.5 }}>{circle.description}</div>}
+                          </div>
+                          <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem', borderRadius: '1rem', background: 'rgba(0,217,163,0.15)', color: 'var(--success-green)', fontWeight: 600, whiteSpace: 'nowrap' }}>Live</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', gap: '-0.25rem' }}>
+                            {circle.creators.map((creator, i) => (
+                              <div key={i} style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', border: '2px solid var(--surface-1)', marginLeft: i > 0 ? '-8px' : '0', position: 'relative', zIndex: circle.creators.length - i }}>
+                                {creator.avatar_emoji || '👤'}
+                              </div>
+                            ))}
+                          </div>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                            {circle.creators.map(c => c.display_name).join(', ')}
+                          </span>
+                          <span style={{ marginLeft: 'auto', fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-gold)' }}>
+                            ${circle.price}/mo
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Photos Tab */}
               {activeTab === 'photos' && (
