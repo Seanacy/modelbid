@@ -6343,7 +6343,8 @@
           </div>
           )}
 
-          {/* 4. Ready to Book */}
+          {/* 4. Ready to Book (models only) */}
+          {model.role !== 'client' && (
           <div className="profile-section" data-tour="booking" style={{ background: 'linear-gradient(135deg, rgba(255,110,199,0.1), rgba(157,78,221,0.1))', borderColor: 'rgba(255,110,199,0.3)' }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>✨</div>
@@ -6356,9 +6357,10 @@
               </button>
             </div>
           </div>
+          )}
 
-          {/* 5. Private Feed — only show if model has BTS content set up, or on own profile as setup prompt */}
-          {model.bts_enabled ? (
+          {/* 5. Private Feed — only show for model profiles */}
+          {model.role !== 'client' && (model.bts_enabled ? (
           <div className="profile-section" data-tour="private-feed" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,110,199,0.08))', borderColor: 'rgba(255,215,0,0.25)' }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>💎</div>
@@ -6382,10 +6384,10 @@
               background: 'transparent', color: 'var(--accent-gold)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
             }}>Set Up Private Feed →</button>
           </div>
-          ) : null}
+          ) : null)}
 
-          {/* 6. 360° Outfit Viewer — only show if model uploaded real outfits, or on own profile */}
-          {model.outfits360 ? (
+          {/* 6. 360° Outfit Viewer — only show for model profiles */}
+          {model.role !== 'client' && (model.outfits360 ? (
           <div className="profile-section">
             <div className="profile-section-title"><span>🔄</span> 360° Outfit Viewer</div>
             <OutfitViewer360 outfits={model.outfits360} />
@@ -6400,7 +6402,7 @@
               background: 'transparent', color: '#00d9ff', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
             }}>Upload Outfits →</button>
           </div>
-          ) : null}
+          ) : null)}
 
           {/* 7. Details + Availability side by side on desktop, stacked on mobile (models only) */}
           {model.role !== 'client' && (
