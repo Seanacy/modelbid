@@ -5993,14 +5993,7 @@
         }
       };
 
-      const galleryItems = model.gallery || [
-        { emoji: '📸', label: 'Photo 1' },
-        { emoji: '📸', label: 'Photo 2' },
-        { emoji: '📸', label: 'Photo 3' },
-        { emoji: '📸', label: 'Photo 4' },
-        { emoji: '📸', label: 'Photo 5' },
-        { emoji: '📸', label: 'Photo 6' },
-      ];
+      const galleryItems = (model.gallery || []).filter(item => item.url);
 
       const availability = model.availability || { mon: true, tue: true, wed: false, thu: true, fri: true, sat: true, sun: false };
       const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -6285,21 +6278,23 @@
             <div className="profile-about-text">{model.bio || 'No bio available.'}</div>
           </div>
 
-          {/* 2. Portfolio Gallery */}
+          {/* 2. Portfolio Gallery — only shows if model has uploaded real photos */}
+          {galleryItems.length > 0 && (
           <div className="profile-section">
             <div className="profile-section-title"><span>📸</span> Portfolio</div>
             <div className="profile-gallery">
               {galleryItems.map((item, i) => (
                 <div key={i} className="gallery-item" onClick={() => setSelectedGalleryItem(i)}>
-                  {item.emoji}
+                  <img src={item.url} alt={item.label || 'Portfolio'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   <div className="gallery-item-overlay">{item.label}</div>
                 </div>
               ))}
             </div>
             <div style={{ textAlign: 'center', marginTop: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-              Tap any photo to enlarge • Models upload their own portfolio images
+              Tap any photo to enlarge
             </div>
           </div>
+          )}
 
           {/* 4. Ready to Book */}
           <div className="profile-section" data-tour="booking" style={{ background: 'linear-gradient(135deg, rgba(255,110,199,0.1), rgba(157,78,221,0.1))', borderColor: 'rgba(255,110,199,0.3)' }}>
@@ -6443,11 +6438,11 @@
           </div>
 
           {/* Gallery Lightbox */}
-          {selectedGalleryItem !== null && (
+          {selectedGalleryItem !== null && galleryItems[selectedGalleryItem] && (
             <div className="modal-overlay" onClick={() => setSelectedGalleryItem(null)}>
-              <div className="modal" onClick={(e) => e.stopPropagation()} style={{ textAlign: 'center', maxWidth: '500px' }}>
-                <div style={{ fontSize: '6rem', padding: '2rem 0' }}>{galleryItems[selectedGalleryItem]?.emoji}</div>
-                <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{galleryItems[selectedGalleryItem]?.label}</div>
+              <div className="modal" onClick={(e) => e.stopPropagation()} style={{ textAlign: 'center', maxWidth: '600px' }}>
+                <img src={galleryItems[selectedGalleryItem].url} alt={galleryItems[selectedGalleryItem].label || 'Portfolio'} style={{ width: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: 8 }} />
+                <div style={{ fontWeight: 600, marginBottom: '0.5rem', marginTop: '0.75rem' }}>{galleryItems[selectedGalleryItem]?.label}</div>
                 <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
                   Portfolio photo {selectedGalleryItem + 1} of {galleryItems.length}
                 </div>
@@ -15162,6 +15157,8 @@ REMEMBER:
       const [pendingScreenshot, setPendingScreenshot] = useState(null); // existing pending submission
       const waiveSectionRef = React.useRef(null);
       const verifySectionRef = React.useRef(null);
+      const [portfolioImages, setPortfolioImages] = useState(profile?.gallery || []);
+      const [uploadingPortfolio, setUploadingPortfolio] = useState(false);
 
       // Fetch existing verification request
       useEffect(() => {
@@ -15985,6 +15982,81 @@ REMEMBER:
                     onChange={(e) => setData({ ...data, availability: e.target.value })}
                     placeholder="e.g., Mon-Fri, Weekends"
                   />
+                </div>
+
+                {/* Portfolio Images */}
+                <div className="form-group">
+                  <label>Portfolio Photos</label>
+                  <p style={{ color: '#888', fontSize: '0.78rem', marginBottom: '10px', marginTop: '-4px' }}>
+                    Upload up to 12 photos for your portfolio. These show on your public profile. Only uploaded photos will appear — no empty placeholders.
+                  </p>
+
+                  {/* Current images grid */}
+                  {portfolioImages.length > 0 && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '8px', marginBottom: '12px' }}>
+                      {portfolioImages.map((img, i) => (
+                        <div key={i} style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', aspectRatio: '1', border: '1px solid var(--border-color)' }}>
+                          <img src={img.url} alt={img.label || 'Portfolio'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <button type="button" onClick={async () => {
+                            const updated = portfolioImages.filter((_, idx) => idx !== i);
+                            setPortfolioImages(updated);
+                            await supabase.from('profiles').update({ gallery: updated }).eq('id', currentUser.id);
+                            patchProfile({ gallery: updated });
+                          }} style={{
+                            position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%',
+                            background: 'rgba(0,0,0,0.7)', border: 'none', color: '#ff4444', fontSize: '0.75rem',
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700
+                          }}>✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Upload button */}
+                  {portfolioImages.length < 12 && (
+                    <label style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '6px',
+                      padding: '10px 20px', borderRadius: 10,
+                      background: 'linear-gradient(135deg, #ff6ec7, #c44dff)', color: '#fff',
+                      fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
+                      opacity: uploadingPortfolio ? 0.6 : 1
+                    }}>
+                      {uploadingPortfolio ? 'Uploading...' : `📸 Add Photo (${portfolioImages.length}/12)`}
+                      <input type="file" accept="image/*" multiple style={{ display: 'none' }}
+                        disabled={uploadingPortfolio}
+                        onChange={async (e) => {
+                          const files = Array.from(e.target.files);
+                          if (!files.length) return;
+                          const remaining = 12 - portfolioImages.length;
+                          const toUpload = files.slice(0, remaining);
+                          setUploadingPortfolio(true);
+                          try {
+                            const newImages = [];
+                            for (const file of toUpload) {
+                              if (file.size > 10 * 1024 * 1024) continue; // skip files > 10MB
+                              const ext = file.name.split('.').pop();
+                              const fileName = `${currentUser.id}/portfolio_${Date.now()}_${Math.random().toString(36).substr(2,6)}.${ext}`;
+                              const { error } = await supabase.storage.from('avatars').upload(fileName, file, { upsert: true });
+                              if (error) { console.error('Portfolio upload error:', error); continue; }
+                              const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+                              newImages.push({ url: urlData.publicUrl, label: file.name.replace(/\.[^/.]+$/, '') });
+                            }
+                            if (newImages.length > 0) {
+                              const updated = [...portfolioImages, ...newImages];
+                              setPortfolioImages(updated);
+                              await supabase.from('profiles').update({ gallery: updated }).eq('id', currentUser.id);
+                              patchProfile({ gallery: updated });
+                            }
+                          } catch (err) { console.error('Portfolio upload error:', err); alert('Upload failed: ' + err.message); }
+                          setUploadingPortfolio(false);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  )}
+                  {portfolioImages.length >= 12 && (
+                    <div style={{ fontSize: '0.78rem', color: '#ff6ec7' }}>Maximum 12 photos reached. Remove one to add more.</div>
+                  )}
                 </div>
 
                 {/* 360 Outfit Upload Teaser */}
