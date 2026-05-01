@@ -4571,13 +4571,13 @@
             if (prev && !prev._fallback) return prev; // keep existing real profile
             return { id: userId, display_name: '', role: 'model', _fallback: true };
           });
-          // Retry once after 2 seconds
+          // Retry once after 800ms
           setTimeout(async () => {
             try {
               const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
               if (data) setProfile(data);
             } catch (e) { /* silent retry */ }
-          }, 2000);
+          }, 800);
         } finally {
           setProfileLoading(false);
         }
