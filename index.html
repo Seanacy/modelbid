@@ -6178,6 +6178,30 @@
                   justifyContent: 'center', fontSize: '0.7rem', flexShrink: 0,
                 }}>✓</span>}
               </h1>
+              {model.username && <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>@{model.username}</span>
+                <button onClick={(e) => {
+                  e.stopPropagation();
+                  const shareUrl = model.username
+                    ? 'https://modelbid.tech/' + model.username
+                    : window.location.origin + '/#profile/' + model.id;
+                  if (navigator.share) {
+                    navigator.share({ title: model.display_name + ' on ModelBid', url: shareUrl }).catch(() => {});
+                  } else {
+                    navigator.clipboard.writeText(shareUrl).then(() => {
+                      const btn = e.currentTarget;
+                      btn.textContent = '✓ Copied!';
+                      btn.style.color = '#22c55e';
+                      setTimeout(() => { btn.textContent = '🔗 Share'; btn.style.color = 'rgba(255,255,255,0.5)'; }, 2000);
+                    });
+                  }
+                }} style={{
+                  background: 'none', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '1rem',
+                  color: 'rgba(255,255,255,0.5)', fontSize: '0.72rem', padding: '0.15rem 0.6rem',
+                  cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                  transition: 'all 0.2s',
+                }}>🔗 Share</button>
+              </div>}
               {model.tagline && <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.82rem', fontStyle: 'italic', marginBottom: '0.2rem' }}>"{model.tagline}"</div>}
               {model.location && <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem' }}>📍 {model.location}</div>}
             </div>
