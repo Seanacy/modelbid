@@ -15191,6 +15191,9 @@ REMEMBER:
       const verifySectionRef = React.useRef(null);
       const [portfolioImages, setPortfolioImages] = useState(profile?.gallery || []);
       const [uploadingPortfolio, setUploadingPortfolio] = useState(false);
+      const [emailInput, setEmailInput] = useState(currentUser?.email || '');
+      const [emailSaving, setEmailSaving] = useState(false);
+      const [emailStatus, setEmailStatus] = useState(null); // 'saved', 'error', message string
 
       // Fetch existing verification request
       useEffect(() => {
@@ -15889,13 +15892,40 @@ REMEMBER:
 
             <div className="form-group">
               <label>Email</label>
-              <input
-                type="email"
-                value={data.email || ''}
-                onChange={(e) => setData({ ...data, email: e.target.value })}
-              />
-              <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>
-                This is the email shown on your profile. To change your login email, update it in your account settings.
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="email"
+                  value={emailInput}
+                  onChange={(e) => { setEmailInput(e.target.value); setEmailStatus(null); }}
+                  placeholder="your@email.com"
+                  style={{ flex: 1 }}
+                />
+                <button onClick={async () => {
+                  const newEmail = emailInput.trim();
+                  if (!newEmail) return;
+                  if (newEmail === currentUser?.email) { setEmailStatus('That\'s already your current email.'); return; }
+                  setEmailSaving(true);
+                  setEmailStatus(null);
+                  try {
+                    const { error } = await supabase.auth.updateUser({ email: newEmail });
+                    if (error) throw error;
+                    // Also update email in profile table
+                    await supabase.from('profiles').update({ email: newEmail }).eq('id', currentUser.id);
+                    setData(prev => ({ ...prev, email: newEmail }));
+                    setEmailStatus('saved');
+                  } catch (err) {
+                    setEmailStatus(err.message || 'Failed to update email');
+                  }
+                  setEmailSaving(false);
+                }} disabled={emailSaving || !emailInput.trim()}
+                  style={{ padding: '10px 16px', borderRadius: '10px', border: 'none', background: emailStatus === 'saved' ? 'rgba(0,200,100,0.2)' : 'var(--accent-pink)', color: '#fff', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', flexShrink: 0, opacity: emailSaving ? 0.5 : 1 }}>
+                  {emailSaving ? '...' : emailStatus === 'saved' ? '✓' : 'Save'}
+                </button>
+              </div>
+              {emailStatus === 'saved' && <div style={{ fontSize: '0.75rem', color: '#00c864', marginTop: '4px' }}>Email updated! Check your new email inbox to confirm the change.</div>}
+              {emailStatus && emailStatus !== 'saved' && <div style={{ fontSize: '0.75rem', color: '#ff4444', marginTop: '4px' }}>{emailStatus}</div>}
+              <div style={{ fontSize: '0.72rem', color: '#666', marginTop: '4px', lineHeight: 1.4 }}>
+                This is your login email. If you change it, Supabase will send a confirmation link to your new email. You must click that link to finish the change.
               </div>
             </div>
 
