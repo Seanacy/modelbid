@@ -18675,8 +18675,13 @@ RULES
     function CreateCirclePage() {
       const auth = useContext(AuthContext);
 
+      // Wait for profile to load before checking role
+      if (!auth.profile || auth.profileLoading) {
+        return <div style={{ textAlign: 'center', padding: '2rem' }}><div className="loading-spinner"></div></div>;
+      }
+
       // Only clients can create circles
-      if (auth.profile?.role !== 'client') {
+      if (auth.profile.role !== 'client') {
         return (
           <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚫</div>
@@ -19358,13 +19363,18 @@ RULES
       useEffect(() => {
         if (!auth.currentUser) return;
         (async () => {
-          const [circlesRes, commissionsRes] = await Promise.all([
-            supabase.from('client_circles').select('*').eq('client_id', auth.currentUser.id).order('created_at', { ascending: false }),
-            supabase.from('circle_commissions').select('*').eq('client_id', auth.currentUser.id),
-          ]);
-          setCircles(circlesRes.data || []);
-          setCommissions(commissionsRes.data || []);
-          setLoading(false);
+          try {
+            const [circlesRes, commissionsRes] = await Promise.all([
+              supabase.from('client_circles').select('*').eq('client_id', auth.currentUser.id).order('created_at', { ascending: false }),
+              supabase.from('circle_commissions').select('*').eq('client_id', auth.currentUser.id),
+            ]);
+            setCircles(circlesRes.data || []);
+            setCommissions(commissionsRes.data || []);
+          } catch (e) {
+            console.error('CircleDashboard fetch error:', e);
+          } finally {
+            setLoading(false);
+          }
         })();
       }, [auth.currentUser]);
 
@@ -19824,7 +19834,7 @@ RULES
         if (page === 'edit-profile') return auth.currentUser ? <EditProfilePage /> : <LoginPage />;
         if (page === 'u' && params[0]) return <ProfilePage modelId={params[0]} isUsername={true} />;
         // Vanity URL fallback: if page doesn't match any route, check if it's a username
-        if (page && !['home','feed','wall','reputation','circle','circles','crew','browse','profile','client','formodels','westackr','contracts','login','signup','choose-role','model-demo','cherry-picker','team','bidboard','dashboard','messages','edit-profile','admin'].includes(page)) {
+        if (page && !['home','feed','wall','reputation','circle','circles','crew','browse','profile','client','formodels','westackr','contracts','login','signup','choose-role','model-demo','cherry-picker','team','bidboard','dashboard','messages','edit-profile','admin','create-circle','my-circle','circle-invite','circle-dashboard','circle-feed','circle-join','u'].includes(page)) {
           return <ProfilePage modelId={page} isUsername={true} />;
         }
         return !auth.currentUser ? <HomePage /> : <BrowseModelsPage />;
