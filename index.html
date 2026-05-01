@@ -6757,6 +6757,19 @@
             </div>
           </div>
 
+          {/* Create Circle — only visible to the profile owner */}
+          {auth.currentUser?.id === clientId && (
+            <div style={{ margin: '1.5rem 0 0', padding: '1.25rem', borderRadius: '12px', background: 'linear-gradient(135deg, rgba(0,210,180,0.08), rgba(0,102,255,0.08))', border: '1px solid rgba(0,210,180,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>🔒 Create an Inner Circle</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Invite 1–3 models, launch a shared subscription feed, and earn together.</div>
+              </div>
+              <button className="btn glow-btn" onClick={() => window.location.hash = 'create-circle'} style={{ whiteSpace: 'nowrap' }}>
+                + New Circle
+              </button>
+            </div>
+          )}
+
           {/* Tab Navigation */}
           <div style={{ display: 'flex', gap: '0.5rem', margin: '1.5rem 0', flexWrap: 'wrap' }}>
             {[
@@ -19899,24 +19912,28 @@ RULES
                   <a className="nav-dropdown-item" onClick={() => window.location.hash = 'bidboard'}>
                     <span className="dd-icon">📋</span> Bid Board
                   </a>
+                  {auth.profile?.role !== 'client' && (
                   <a className="nav-dropdown-item" onClick={() => window.location.hash = 'wall'}>
                     <span className="dd-icon">🏆</span> The Wall
                   </a>
+                  )}
                   <a className="nav-dropdown-item" onClick={() => window.location.hash = 'westackr'}>
                     <span className="dd-icon">⚡</span> WeStackr
                   </a>
                   <a className="nav-dropdown-item" onClick={() => window.location.hash = 'circle/' + (auth?.currentUser?.id || '')}>
                     <span className="dd-icon">👯‍♀️</span> Inner Circles
                   </a>
+                  {auth.profile?.role !== 'client' && (
                   <a className="nav-dropdown-item" onClick={() => window.location.hash = 'team'}>
                     <span className="dd-icon">💛</span> The Team
                   </a>
+                  )}
                   {auth.profile?.role === 'client' && (
                     <a className="nav-dropdown-item" onClick={() => window.location.hash = 'circle-dashboard'}>
                       <span className="dd-icon">🎯</span> My Circles
                     </a>
                   )}
-                  {auth.profile?.role === 'client' && (
+                  {auth.profile?.role !== 'client' && (
                     <a className="nav-dropdown-item" onClick={() => window.location.hash = 'reputation'}>
                       <span className="dd-icon">🛡️</span> Reputation
                     </a>
@@ -20024,18 +20041,22 @@ RULES
               <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'circle/' + (auth?.currentUser?.id || ''); }}>
                 <span className="mm-icon">👯‍♀️</span> Inner Circles
               </div>
+              {auth.profile?.role !== 'client' && (
               <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'team'; }}>
                 <span className="mm-icon">💛</span> The Team
               </div>
+              )}
+              {auth.profile?.role !== 'client' && (
               <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'wall'; }}>
                 <span className="mm-icon">🏆</span> The Wall
               </div>
+              )}
               {auth.profile?.role !== 'client' && (
                 <div className="mobile-menu-item accent" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'cherry-picker'; }}>
                   <span className="mm-icon">🍒</span> Cherry Picker
                 </div>
               )}
-              {auth.profile?.role === 'client' && (
+              {auth.profile?.role !== 'client' && (
                 <div className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); window.location.hash = 'reputation'; }}>
                   <span className="mm-icon">🛡️</span> Reputation
                 </div>
