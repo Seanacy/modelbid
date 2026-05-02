@@ -19422,6 +19422,10 @@ RULES
       const [saleSearch, setSaleSearch] = useState('');
       const [saleSearchResults, setSaleSearchResults] = useState([]);
       const [saleSearching, setSaleSearching] = useState(false);
+      const [buyoutNegotiations, setBuyoutNegotiations] = useState([]);
+      const [showBuyoutUI, setShowBuyoutUI] = useState(null); // creator_id to show buyout for
+      const [buyoutAmount, setBuyoutAmount] = useState('');
+      const [buyoutSending, setBuyoutSending] = useState(false);
 
       const fetchCircle = async () => {
         try {
@@ -19440,6 +19444,12 @@ RULES
           const { data: transferData, error: transferErr } = await supabase.from('circle_transfers').select('*').eq('circle_id', circleId).order('created_at', { ascending: false });
           if (!transferErr && transferData) setTransfers(transferData);
           else setTransfers([]);
+
+          // Fetch buyout negotiations
+          try {
+            const { data: buyouts } = await supabase.from('buyout_negotiations').select('*').eq('circle_id', circleId).order('created_at', { ascending: false });
+            setBuyoutNegotiations(buyouts || []);
+          } catch (e) { setBuyoutNegotiations([]); }
 
           // Fetch creator profiles
           const creatorIds = (invRes.data || []).map(i => i.creator_id);
@@ -19501,6 +19511,7 @@ RULES
         if (s === 'accepted') return '✅';
         if (s === 'declined') return '❌';
         if (s === 'retracted') return '↩️';
+        if (s === 'bought_out') return '💼';
         return '•';
       };
 
@@ -19510,6 +19521,7 @@ RULES
         if (s === 'accepted') return 'Accepted';
         if (s === 'declined') return 'Declined';
         if (s === 'retracted') return 'Retracted';
+        if (s === 'bought_out') return 'Bought Out';
         return s;
       };
 
@@ -19632,6 +19644,37 @@ RULES
         } catch (e) { auth.showToast('Failed to delete circle', 'error'); }
       };
 
+      // Send a buyout offer to a protected model
+      const sendBuyoutOffer = async (creatorId, creatorName) => {
+        const amount = parseFloat(buyoutAmount);
+        if (!amount || amount < 1) { auth.showToast('Enter a valid amount', 'error'); return; }
+        setBuyoutSending(true);
+        try {
+          const { data: neg } = await supabase.from('buyout_negotiations').insert({
+            circle_id: circleId, from_user_id: auth.currentUser.id, to_user_id: creatorId,
+            status: 'pending', current_offer: amount, last_offered_by: auth.currentUser.id,
+          }).select().single();
+          await supabase.from('buyout_messages').insert({
+            negotiation_id: neg.id, sender_id: auth.currentUser.id,
+            message_type: 'offer', amount: amount, note: `Initial buyout offer of $${amount}`,
+          });
+          await supabase.from('notifications').insert({
+            user_id: creatorId, type: 'buyout_offer',
+            title: '💼 Buyout Offer',
+            body: `The owner of "${circle?.name}" is offering you $${amount} to leave the circle.`,
+            link: '#buyout/' + neg.id,
+          });
+          await supabase.from('circle_activity').insert({
+            circle_id: circleId, actor_id: auth.currentUser.id,
+            action: 'buyout_offered', detail: `Buyout offer of $${amount} sent to ${creatorName}`,
+          });
+          auth.showToast(`Buyout offer of $${amount} sent to ${creatorName}!`, 'success');
+          setShowBuyoutUI(null); setBuyoutAmount('');
+          fetchCircle();
+        } catch (e) { auth.showToast('Failed to send offer: ' + e.message, 'error'); }
+        setBuyoutSending(false);
+      };
+
       if (loading) return <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>;
       if (!circle) return <div style={{ textAlign: 'center', padding: '2rem' }}>Circle not found.</div>;
 
@@ -19712,12 +19755,28 @@ RULES
                       {prof.profile_photo_url ? <img src={prof.profile_photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (prof.avatar_emoji || '👤')}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{prof.display_name || 'Creator'}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{prof.display_name || 'Creator'}</span>
+                        {inv.is_protected && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '1rem', background: 'rgba(100,200,255,0.12)', color: '#64c8ff', fontWeight: 700, border: '1px solid rgba(100,200,255,0.25)' }}>🛡️ Protected</span>
+                        )}
+                      </div>
                       <div style={{ fontSize: '0.75rem', color: inv.status === 'accepted' ? '#00c864' : inv.status === 'declined' ? '#ff5252' : '#ffa500' }}>
                         {statusIcon(inv.status)} {statusLabel(inv.status)}
                         {inv.opened_at && inv.status === 'opened' && <span style={{ color: 'var(--text-muted)' }}> · {new Date(inv.opened_at).toLocaleDateString()}</span>}
                       </div>
                     </div>
+                    {/* Protected models: show buyout button instead of remove */}
+                    {inv.is_protected && inv.status === 'accepted' && isOwner && (() => {
+                      const activeBuyout = buyoutNegotiations.find(b => b.to_user_id === inv.creator_id && (b.status === 'pending' || b.status === 'countered'));
+                      return activeBuyout ? (
+                        <button onClick={() => window.location.hash = 'buyout/' + activeBuyout.id}
+                          style={{ padding: '0.3rem 0.6rem', borderRadius: 6, border: '1px solid rgba(255,165,0,0.3)', background: 'rgba(255,165,0,0.08)', color: '#ffa500', fontSize: '0.72rem', cursor: 'pointer' }}>⏳ Negotiating</button>
+                      ) : (
+                        <button onClick={() => { setShowBuyoutUI(inv.creator_id); setBuyoutAmount(''); }}
+                          style={{ padding: '0.3rem 0.6rem', borderRadius: 6, border: '1px solid rgba(255,165,0,0.3)', background: 'rgba(255,165,0,0.08)', color: '#ffa500', fontSize: '0.72rem', cursor: 'pointer' }}>💼 Offer Buyout</button>
+                      );
+                    })()}
                     {(inv.status === 'pending' || inv.status === 'opened') && circle.status !== 'live' && (
                       <button onClick={() => retractInvite(inv.id, prof.display_name)} style={{ padding: '0.3rem 0.6rem', borderRadius: 6, border: '1px solid rgba(255,82,82,0.3)', background: 'rgba(255,82,82,0.08)', color: '#ff5252', fontSize: '0.72rem', cursor: 'pointer' }}>Retract</button>
                     )}
@@ -19725,6 +19784,22 @@ RULES
                       <button onClick={() => { setReplacingSlot(inv.id); setReplaceSearch(''); setReplaceResults([]); }} style={{ padding: '0.3rem 0.6rem', borderRadius: 6, border: '1px solid rgba(100,200,255,0.3)', background: 'rgba(100,200,255,0.08)', color: '#64c8ff', fontSize: '0.72rem', cursor: 'pointer' }}>Replace</button>
                     )}
                   </div>
+                  {/* Buyout offer input for this model */}
+                  {showBuyoutUI === inv.creator_id && (
+                    <div style={{ marginTop: '0.5rem', marginLeft: '3.25rem', background: 'rgba(255,165,0,0.06)', borderRadius: '0.5rem', padding: '0.75rem', border: '1px solid rgba(255,165,0,0.15)' }}>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#ffa500', marginBottom: '0.4rem' }}>Offer buyout to {prof.display_name}:</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem', lineHeight: 1.4 }}>This model is protected. You can offer money for them to voluntarily leave. They can accept, decline, or counter your offer.</div>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 700 }}>$</span>
+                        <input type="number" value={buyoutAmount} onChange={(e) => setBuyoutAmount(e.target.value)} placeholder="e.g. 200" min="1" style={{ flex: 1, fontSize: '0.85rem' }} />
+                        <button onClick={() => sendBuyoutOffer(inv.creator_id, prof.display_name)} disabled={buyoutSending}
+                          style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: 'none', background: '#ffa500', color: '#000', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', opacity: buyoutSending ? 0.5 : 1 }}>
+                          {buyoutSending ? '...' : 'Send Offer'}
+                        </button>
+                      </div>
+                      <button onClick={() => setShowBuyoutUI(null)} style={{ marginTop: '0.4rem', background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.75rem', cursor: 'pointer' }}>Cancel</button>
+                    </div>
+                  )}
                 );
               })}
             </div>
@@ -19865,6 +19940,16 @@ RULES
                 {circle.affiliate_enabled
                   ? '✅ Anyone can become an affiliate for this circle. They get a unique referral link and earn 5% commission on every subscriber they bring in (2.5% from the platform cut + 2.5% from creators).'
                   : 'When enabled, other users can share your circle and earn commission on subscribers they refer. You and your creators each give up 2.5% — affiliates earn 5% total.'}
+              </div>
+            </div>
+          )}
+
+          {/* Model Protection Clause banner — shown on acquired circles */}
+          {circle.is_acquired && circle.status === 'live' && isOwner && (
+            <div style={{ background: 'rgba(100,200,255,0.06)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid rgba(100,200,255,0.15)', marginBottom: '1rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#64c8ff' }}>🛡️ Model Protection Clause</div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                This circle was acquired through a sale. Models who were here at the time of sale are <strong>protected</strong> — they cannot be removed. They can only leave on their own or be bought out through negotiation.
               </div>
             </div>
           )}
@@ -20073,13 +20158,28 @@ RULES
           await supabase.from('circle_transfers').update({ status: newStatus, responded_at: new Date().toISOString() }).eq('id', transfer.id);
 
           if (accept) {
-            // Transfer ownership
-            await supabase.from('client_circles').update({ client_id: auth.currentUser.id }).eq('id', circleId);
+            // Transfer ownership — mark as acquired if it's a sale
+            const isSaleTransfer = transfer.transfer_type === 'sale';
+            await supabase.from('client_circles').update({
+              client_id: auth.currentUser.id,
+              is_acquired: isSaleTransfer ? true : undefined,
+            }).eq('id', circleId);
+
+            // If this is a sale, protect all current models (Model Protection Clause)
+            if (isSaleTransfer) {
+              const { data: currentInvites } = await supabase.from('circle_invites').select('id').eq('circle_id', circleId).eq('status', 'accepted');
+              if (currentInvites && currentInvites.length > 0) {
+                for (const inv of currentInvites) {
+                  await supabase.from('circle_invites').update({ is_protected: true }).eq('id', inv.id);
+                }
+              }
+            }
+
             await supabase.from('circle_activity').insert({
               circle_id: circleId, actor_id: auth.currentUser.id,
               action: transfer.transfer_type === 'sale' ? 'circle_sold' : 'ownership_transferred',
               detail: transfer.transfer_type === 'sale'
-                ? `Ownership sold to ${auth.profile?.display_name} for $${transfer.sale_price}`
+                ? `Ownership sold to ${auth.profile?.display_name} for $${transfer.sale_price}. Model Protection Clause activated.`
                 : `Ownership transferred to ${auth.profile?.display_name}`,
             });
             // Notify the old owner
@@ -20169,6 +20269,279 @@ RULES
               {responding ? '...' : isSale ? `Buy for $${transfer.sale_price}` : 'Accept Ownership'}
             </button>
           </div>
+        </div>
+      );
+    }
+
+    // --- Buyout Negotiation Page ---
+    function BuyoutNegotiationPage({ negotiationId }) {
+      const auth = useContext(AuthContext);
+      const [negotiation, setNegotiation] = useState(null);
+      const [messages, setMessages] = useState([]);
+      const [circle, setCircle] = useState(null);
+      const [otherProfile, setOtherProfile] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [counterAmount, setCounterAmount] = useState('');
+      const [responding, setResponding] = useState(false);
+      const [note, setNote] = useState('');
+
+      const fetchAll = async () => {
+        const { data: neg } = await supabase.from('buyout_negotiations').select('*').eq('id', negotiationId).single();
+        if (!neg) { setLoading(false); return; }
+        setNegotiation(neg);
+
+        const [msgRes, circleRes] = await Promise.all([
+          supabase.from('buyout_messages').select('*').eq('negotiation_id', negotiationId).order('created_at'),
+          supabase.from('client_circles').select('*').eq('id', neg.circle_id).single(),
+        ]);
+        setMessages(msgRes.data || []);
+        if (circleRes.data) setCircle(circleRes.data);
+
+        // Fetch the other person's profile
+        const otherId = neg.from_user_id === auth.currentUser?.id ? neg.to_user_id : neg.from_user_id;
+        const { data: prof } = await supabase.from('profiles').select('id, display_name, profile_photo_url, avatar_emoji').eq('id', otherId).single();
+        if (prof) setOtherProfile(prof);
+        setLoading(false);
+      };
+
+      useEffect(() => { if (auth.currentUser) fetchAll(); }, [negotiationId, auth.currentUser]);
+
+      const isOwner = auth.currentUser?.id === negotiation?.from_user_id;
+      const isModel = auth.currentUser?.id === negotiation?.to_user_id;
+      const isMyTurnToRespond = negotiation && negotiation.last_offered_by !== auth.currentUser?.id;
+      const isActive = negotiation && (negotiation.status === 'pending' || negotiation.status === 'countered');
+
+      const sendCounter = async () => {
+        const amount = parseFloat(counterAmount);
+        if (!amount || amount < 1) { auth.showToast('Enter a valid amount', 'error'); return; }
+        setResponding(true);
+        try {
+          await supabase.from('buyout_negotiations').update({
+            status: 'countered', current_offer: amount, last_offered_by: auth.currentUser.id, updated_at: new Date().toISOString(),
+          }).eq('id', negotiationId);
+          await supabase.from('buyout_messages').insert({
+            negotiation_id: negotiationId, sender_id: auth.currentUser.id,
+            message_type: 'counter', amount, note: note.trim() || `Counter offer: $${amount}`,
+          });
+          const otherId = isOwner ? negotiation.to_user_id : negotiation.from_user_id;
+          await supabase.from('notifications').insert({
+            user_id: otherId, type: 'buyout_counter',
+            title: '💬 Buyout Counter Offer',
+            body: `${auth.profile?.display_name} countered with $${amount} for "${circle?.name}".`,
+            link: '#buyout/' + negotiationId,
+          });
+          auth.showToast('Counter offer sent!', 'success');
+          setCounterAmount(''); setNote('');
+          fetchAll();
+        } catch (e) { auth.showToast('Failed: ' + e.message, 'error'); }
+        setResponding(false);
+      };
+
+      const acceptOffer = async () => {
+        if (!confirm(`Accept the buyout offer of $${negotiation.current_offer}?`)) return;
+        setResponding(true);
+        try {
+          await supabase.from('buyout_negotiations').update({
+            status: 'accepted', updated_at: new Date().toISOString(),
+          }).eq('id', negotiationId);
+          await supabase.from('buyout_messages').insert({
+            negotiation_id: negotiationId, sender_id: auth.currentUser.id,
+            message_type: 'accept', amount: negotiation.current_offer, note: 'Offer accepted',
+          });
+
+          // If the model accepted: remove them from the circle
+          if (isModel) {
+            await supabase.from('circle_invites').update({ status: 'bought_out', is_protected: false })
+              .eq('circle_id', negotiation.circle_id).eq('creator_id', auth.currentUser.id);
+          }
+          // If the owner accepted a counter: remove the model
+          if (isOwner) {
+            await supabase.from('circle_invites').update({ status: 'bought_out', is_protected: false })
+              .eq('circle_id', negotiation.circle_id).eq('creator_id', negotiation.to_user_id);
+          }
+
+          await supabase.from('circle_activity').insert({
+            circle_id: negotiation.circle_id, actor_id: auth.currentUser.id,
+            action: 'buyout_accepted', detail: `Buyout accepted at $${negotiation.current_offer}. Model leaving the circle.`,
+          });
+
+          const otherId = isOwner ? negotiation.to_user_id : negotiation.from_user_id;
+          await supabase.from('notifications').insert({
+            user_id: otherId, type: 'buyout_accepted',
+            title: '✅ Buyout Accepted',
+            body: `The buyout for "${circle?.name}" was accepted at $${negotiation.current_offer}.`,
+            link: '#buyout/' + negotiationId,
+          });
+          auth.showToast('Buyout accepted!', 'success');
+          fetchAll();
+        } catch (e) { auth.showToast('Failed: ' + e.message, 'error'); }
+        setResponding(false);
+      };
+
+      const declineOffer = async () => {
+        if (!confirm('Decline this buyout offer? The negotiation will end.')) return;
+        setResponding(true);
+        try {
+          await supabase.from('buyout_negotiations').update({
+            status: 'declined', updated_at: new Date().toISOString(),
+          }).eq('id', negotiationId);
+          await supabase.from('buyout_messages').insert({
+            negotiation_id: negotiationId, sender_id: auth.currentUser.id,
+            message_type: 'decline', note: 'Offer declined',
+          });
+          const otherId = isOwner ? negotiation.to_user_id : negotiation.from_user_id;
+          await supabase.from('notifications').insert({
+            user_id: otherId, type: 'buyout_declined',
+            title: '�� Buyout Declined',
+            body: `${auth.profile?.display_name} declined the buyout for "${circle?.name}".`,
+            link: '#buyout/' + negotiationId,
+          });
+          auth.showToast('Buyout declined', 'success');
+          fetchAll();
+        } catch (e) { auth.showToast('Failed: ' + e.message, 'error'); }
+        setResponding(false);
+      };
+
+      const withdrawOffer = async () => {
+        if (!confirm('Withdraw your buyout offer?')) return;
+        setResponding(true);
+        try {
+          await supabase.from('buyout_negotiations').update({
+            status: 'withdrawn', updated_at: new Date().toISOString(),
+          }).eq('id', negotiationId);
+          await supabase.from('buyout_messages').insert({
+            negotiation_id: negotiationId, sender_id: auth.currentUser.id,
+            message_type: 'withdraw', note: 'Offer withdrawn',
+          });
+          const otherId = isOwner ? negotiation.to_user_id : negotiation.from_user_id;
+          await supabase.from('notifications').insert({
+            user_id: otherId, type: 'buyout_withdrawn',
+            title: '↩️ Buyout Withdrawn',
+            body: `${auth.profile?.display_name} withdrew the buyout offer for "${circle?.name}".`,
+            link: '#buyout/' + negotiationId,
+          });
+          auth.showToast('Offer withdrawn', 'success');
+          fetchAll();
+        } catch (e) { auth.showToast('Failed: ' + e.message, 'error'); }
+        setResponding(false);
+      };
+
+      if (loading) return <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>;
+      if (!negotiation) return <div style={{ textAlign: 'center', padding: '2rem' }}>Negotiation not found.</div>;
+
+      const statusColors = { pending: '#ffa500', countered: '#64c8ff', accepted: '#00c864', declined: '#ff5252', withdrawn: '#888' };
+      const statusLabels = { pending: 'Pending', countered: 'Counter Offered', accepted: 'Accepted', declined: 'Declined', withdrawn: 'Withdrawn' };
+
+      return (
+        <div style={{ maxWidth: '550px', margin: '0 auto', padding: '1.5rem 1rem' }}>
+          <button className="btn btn-secondary" onClick={() => window.location.hash = negotiation.circle_id ? 'my-circle/' + negotiation.circle_id : 'dashboard'} style={{ marginBottom: '1rem', fontSize: '0.85rem' }}>← Back</button>
+
+          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>💼</div>
+            <h2 style={{ marginBottom: '0.25rem' }}>Buyout Negotiation</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+              {isOwner ? `You're negotiating a buyout with ${otherProfile?.display_name || 'a model'}` : `${otherProfile?.display_name || 'The owner'} wants to buy you out of this circle`}
+            </p>
+          </div>
+
+          {/* Circle info */}
+          {circle && (
+            <div className="card" style={{ marginBottom: '1rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.3rem' }}>{circle.name}</div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>💵 ${circle.price}/mo · 👥 {circle.subscriber_count || 0} subscribers</div>
+            </div>
+          )}
+
+          {/* Current status */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderRadius: '0.75rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)', marginBottom: '1rem' }}>
+            <div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Current Offer</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 800 }}>${negotiation.current_offer}</div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Status</div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: statusColors[negotiation.status] }}>{statusLabels[negotiation.status]}</div>
+            </div>
+          </div>
+
+          {/* Negotiation thread */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <h3 style={{ fontSize: '0.9rem', marginBottom: '0.75rem' }}>Negotiation History</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {messages.map(msg => {
+                const isMine = msg.sender_id === auth.currentUser?.id;
+                const typeIcons = { offer: '💰', counter: '��', accept: '✅', decline: '❌', withdraw: '↩️', note: '💬' };
+                return (
+                  <div key={msg.id} style={{ padding: '0.6rem 0.75rem', borderRadius: '0.75rem', background: isMine ? 'rgba(100,200,255,0.08)' : 'var(--bg-card)', border: `1px solid ${isMine ? 'rgba(100,200,255,0.2)' : 'var(--border-color)'}`, marginLeft: isMine ? '2rem' : 0, marginRight: isMine ? 0 : '2rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 700 }}>{typeIcons[msg.message_type] || '•'} {isMine ? 'You' : otherProfile?.display_name || 'Other'}</span>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{new Date(msg.created_at).toLocaleDateString()}</span>
+                    </div>
+                    {msg.amount && <div style={{ fontWeight: 800, fontSize: '1.05rem' }}>${msg.amount}</div>}
+                    {msg.note && <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>{msg.note}</div>}
+                  </div>
+                );
+              })}
+              {messages.length === 0 && <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1rem' }}>No messages yet.</div>}
+            </div>
+          </div>
+
+          {/* Action area — only if negotiation is active */}
+          {isActive && (
+            <div style={{ background: 'rgba(255,165,0,0.06)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid rgba(255,165,0,0.15)' }}>
+              {isMyTurnToRespond ? (
+                <>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.75rem' }}>Your turn to respond — ${negotiation.current_offer} on the table</div>
+
+                  {/* Counter offer */}
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.4rem' }}>Counter with a different amount:</div>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.4rem' }}>
+                      <span style={{ fontWeight: 700 }}>$</span>
+                      <input type="number" value={counterAmount} onChange={(e) => setCounterAmount(e.target.value)} placeholder="Your counter" min="1" style={{ flex: 1, fontSize: '0.85rem' }} />
+                    </div>
+                    <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add a note (optional)..." rows={2}
+                      style={{ width: '100%', fontSize: '0.82rem', borderRadius: '0.5rem', padding: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-primary)', resize: 'vertical', marginBottom: '0.5rem' }} />
+                    <button onClick={sendCounter} disabled={responding}
+                      style={{ width: '100%', padding: '0.6rem', borderRadius: 8, border: 'none', background: '#64c8ff', color: '#000', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', opacity: responding ? 0.5 : 1 }}>
+                      {responding ? '...' : '🔄 Send Counter Offer'}
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button onClick={acceptOffer} disabled={responding}
+                      style={{ flex: 1, padding: '0.65rem', borderRadius: 8, border: 'none', background: '#00c864', color: '#fff', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', opacity: responding ? 0.5 : 1 }}>
+                      ✅ Accept ${negotiation.current_offer}
+                    </button>
+                    <button onClick={declineOffer} disabled={responding}
+                      style={{ flex: 1, padding: '0.65rem', borderRadius: 8, border: '1px solid rgba(255,82,82,0.4)', background: 'rgba(255,82,82,0.1)', color: '#ff5252', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', opacity: responding ? 0.5 : 1 }}>
+                      ❌ Decline
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem' }}>⏳ Waiting for {otherProfile?.display_name || 'the other party'} to respond...</div>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>Your offer of ${negotiation.current_offer} is on the table.</div>
+                  <button onClick={withdrawOffer} disabled={responding}
+                    style={{ padding: '0.5rem 1.5rem', borderRadius: 8, border: '1px solid rgba(255,82,82,0.3)', background: 'rgba(255,82,82,0.08)', color: '#ff5252', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}>
+                    ↩️ Withdraw Offer
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Closed negotiation */}
+          {!isActive && (
+            <div style={{ textAlign: 'center', padding: '1.5rem', background: 'var(--bg-card)', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>
+              <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{negotiation.status === 'accepted' ? '🤝' : negotiation.status === 'declined' ? '❌' : '↩️'}</div>
+              <div style={{ fontWeight: 700, fontSize: '1rem', color: statusColors[negotiation.status] }}>{statusLabels[negotiation.status]}</div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>
+                {negotiation.status === 'accepted' ? `Buyout completed at $${negotiation.current_offer}. The model has been removed from the circle.` : negotiation.status === 'declined' ? 'This buyout was declined. The model stays in the circle.' : 'This offer was withdrawn.'}
+              </div>
+            </div>
+          )}
         </div>
       );
     }
@@ -21095,6 +21468,7 @@ RULES
         if (page === 'notifications') return auth.currentUser ? <NotificationsPage /> : <LoginPage />;
         if (page === 'circle-invite' && params[0]) return auth.currentUser ? <CircleInvitePage circleId={params[0]} /> : <LoginPage />;
         if (page === 'circle-transfer' && params[0]) return auth.currentUser ? <CircleTransferPage circleId={params[0]} /> : <LoginPage />;
+        if (page === 'buyout' && params[0]) return auth.currentUser ? <BuyoutNegotiationPage negotiationId={params[0]} /> : <LoginPage />;
         if (page === 'circle-dashboard') return auth.currentUser ? <CircleDashboardPage /> : <LoginPage />;
         if (page === 'circle-feed' && params[0]) return <CircleFeedPage circleId={params[0]} />;
         if (page === 'circle-join' && params[0]) return <CircleJoinPage circleId={params[0]} />;
@@ -21113,7 +21487,7 @@ RULES
         if (page === 'edit-profile') return auth.currentUser ? <EditProfilePage /> : <LoginPage />;
         if (page === 'u' && params[0]) return <ProfilePage modelId={params[0]} isUsername={true} />;
         // Vanity URL fallback: if page doesn't match any route, check if it's a username
-        if (page && !['home','feed','wall','reputation','circle','circles','crew','browse','profile','client','formodels','westackr','contracts','login','signup','choose-role','model-demo','cherry-picker','team','bidboard','dashboard','messages','edit-profile','admin','create-circle','my-circle','circle-invite','circle-transfer','circle-dashboard','circle-feed','circle-join','notifications','u'].includes(page)) {
+        if (page && !['home','feed','wall','reputation','circle','circles','crew','browse','profile','client','formodels','westackr','contracts','login','signup','choose-role','model-demo','cherry-picker','team','bidboard','dashboard','messages','edit-profile','admin','create-circle','my-circle','circle-invite','circle-transfer','circle-dashboard','circle-feed','circle-join','notifications','buyout','u'].includes(page)) {
           return <ProfilePage modelId={page} isUsername={true} />;
         }
         return !auth.currentUser ? <HomePage /> : <BrowseModelsPage />;
