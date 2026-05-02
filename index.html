@@ -4335,6 +4335,18 @@
       --text-muted: #999999;
       --border-color: #e0e0e5;
     }
+    /* Admin panel overrides — force dark theme regardless of role theme */
+    .admin-dark-override {
+      --bg-dark: #0a0a0f !important;
+      --bg-card: #16161f !important;
+      --bg-card-light: #1f1f2e !important;
+      --text-primary: #ffffff !important;
+      --text-secondary: #b0b0b8 !important;
+      --text-muted: #777 !important;
+      --border-color: rgba(255,255,255,0.08) !important;
+      background-color: #0a0a14 !important;
+      color: #ffffff !important;
+    }
     .theme-model body, .theme-client body,
     .theme-model, .theme-client {
       background-color: #ffffff;
@@ -11548,7 +11560,7 @@ REMEMBER:
       // Admin login screen
       if (!adminAuthed) {
         return (
-          <div style={{ minHeight: '100vh', background: '#0a0a14', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="admin-dark-override" style={{ minHeight: '100vh', background: '#0a0a14', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ maxWidth: '380px', width: '90%', background: '#12121e', borderRadius: '1rem', padding: '2.5rem', border: '1px solid rgba(255,110,199,0.2)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
               <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                 <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔒</div>
@@ -11574,7 +11586,7 @@ REMEMBER:
 
       // Admin panel (standalone, no ModelBid nav)
       return (
-        <div style={{ minHeight: '100vh', background: '#0a0a14' }}>
+        <div className="admin-dark-override" style={{ minHeight: '100vh', background: '#0a0a14' }}>
           {/* Admin toast */}
           {adminToast && (
             <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 99999, background: 'var(--bg-card)', border: '1px solid rgba(255,110,199,0.3)', color: '#fff', padding: '0.8rem 1.5rem', borderRadius: 10, fontWeight: 600, fontSize: '0.85rem', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
