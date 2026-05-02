@@ -4648,6 +4648,29 @@
       if (data.url) window.location.href = data.url;
     };
 
+    // ===== SMS NOTIFICATION HELPER =====
+    // Sends a notification AND triggers SMS if the user has it enabled
+    const sendNotificationWithSMS = async (notifData) => {
+      // Insert the notification row
+      await supabase.from('notifications').insert(notifData);
+
+      // Try to send SMS (non-blocking — don't let SMS failure break anything)
+      try {
+        const { data: recipient } = await supabase.from('profiles').select('phone_number, sms_notifications, display_name').eq('id', notifData.user_id).single();
+        if (recipient && recipient.sms_notifications && recipient.phone_number) {
+          const cleanPhone = recipient.phone_number.replace(/[^+\d]/g, '');
+          if (cleanPhone.length >= 10) {
+            const { data: { session: authSession } } = await supabase.auth.getSession();
+            fetch(`${SUPABASE_URL}/functions/v1/send-sms`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authSession?.access_token || SUPABASE_ANON_KEY}` },
+              body: JSON.stringify({ to: cleanPhone, body: `ModelBid: ${notifData.title} — ${notifData.body}` }),
+            }).catch(() => {}); // Silent fail — SMS is best-effort
+          }
+        }
+      } catch (e) { /* SMS is best-effort */ }
+    };
+
     // ===== AUTH CONTEXT =====
     const AuthContext = createContext();
 
@@ -17163,6 +17186,44 @@ REMEMBER:
                 )}
               </div>
             )}
+
+            {/* ===== SMS NOTIFICATION SETTINGS ===== */}
+            <div style={{ background: 'rgba(100,200,255,0.06)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid rgba(100,200,255,0.15)', marginBottom: '1.5rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem' }}>📱 Text Message Notifications</div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '0.75rem', lineHeight: 1.5 }}>
+                Get text alerts for important stuff — circle invites, new messages, buyout offers, and more.
+              </div>
+              <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                <label>Phone Number</label>
+                <input type="tel" placeholder="e.g. +1 (555) 123-4567"
+                  value={data.phone_number || ''}
+                  onChange={(e) => setData({ ...data, phone_number: e.target.value })}
+                  style={{ fontSize: '0.9rem' }} />
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>Include country code (e.g. +1 for US). Your number is private and never shown publicly.</div>
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                  <span>Enable SMS notifications</span>
+                  <button type="button"
+                    onClick={() => setData({ ...data, sms_notifications: !data.sms_notifications })}
+                    style={{
+                      width: '42px', height: '24px', borderRadius: '12px', border: 'none',
+                      background: data.sms_notifications ? '#00c864' : 'rgba(150,150,150,0.3)',
+                      cursor: 'pointer', position: 'relative', transition: 'background 0.3s',
+                    }}>
+                    <span style={{
+                      position: 'absolute', top: '3px',
+                      left: data.sms_notifications ? '21px' : '3px',
+                      width: '18px', height: '18px', borderRadius: '50%', background: '#fff',
+                      transition: 'left 0.3s',
+                    }} />
+                  </button>
+                </label>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  {data.sms_notifications ? '✅ You\'ll receive text alerts for important notifications' : 'Turn on to get text messages when something important happens'}
+                </div>
+              </div>
+            </div>
 
             <div style={{ display: 'flex', gap: '1rem' }}>
               <button className="btn glow-btn" onClick={handleSave} disabled={loading} style={{ opacity: loading ? 0.6 : 1 }}>
