@@ -19823,7 +19823,8 @@ RULES
               {invites.map(inv => {
                 const prof = profiles[inv.creator_id] || {};
                 return (
-                  <div key={inv.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', borderRadius: '0.75rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                  <React.Fragment key={inv.id}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', borderRadius: '0.75rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
                     <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--bg-card-light)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0 }}>
                       {prof.profile_photo_url ? <img src={prof.profile_photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (prof.avatar_emoji || '👤')}
                     </div>
@@ -19873,6 +19874,7 @@ RULES
                       <button onClick={() => setShowBuyoutUI(null)} style={{ marginTop: '0.4rem', background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.75rem', cursor: 'pointer' }}>Cancel</button>
                     </div>
                   )}
+                  </React.Fragment>
                 );
               })}
             </div>
