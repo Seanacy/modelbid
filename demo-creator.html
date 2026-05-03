@@ -983,15 +983,19 @@ buildGrowthChart('desktopGrowthChart');
     }
     #tour-next:hover { transform: scale(1.05); }
     #tour-next:active { transform: scale(0.97); }
-    #tour-start-btn {
-      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      z-index: 100000; padding: 1.5rem 3rem; border: none; border-radius: 2rem;
-      background: linear-gradient(135deg, #e8458b, #9d4edd);
-      color: #fff; font-size: 1.4rem; font-weight: 800;
+    #tour-start-btn, #tour-manual-btn {
+      padding: 1.2rem 2.5rem; border: none; border-radius: 2rem;
+      color: #fff; font-size: 1.2rem; font-weight: 800;
       cursor: pointer; box-shadow: 0 8px 40px rgba(232,69,139,0.4);
       transition: transform 0.15s;
     }
-    #tour-start-btn:hover { transform: translate(-50%, -50%) scale(1.05); }
+    #tour-start-btn {
+      background: linear-gradient(135deg, #e8458b, #9d4edd);
+    }
+    #tour-manual-btn {
+      background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.4);
+    }
+    #tour-start-btn:hover, #tour-manual-btn:hover { transform: scale(1.05); }
     #tour-start-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.6); z-index: 99998;
@@ -1008,9 +1012,10 @@ buildGrowthChart('desktopGrowthChart');
   startOverlay.id = 'tour-start-overlay';
   startOverlay.innerHTML = `
     <p style="font-size:1.6rem;font-weight:800;color:#e8458b;">Inner Circle Guided Tour</p>
-    <p>Press <strong>Start</strong> then hit <strong>Next →</strong> to advance each highlight in sync with your voiceover.</p>
-    <button id="tour-start-btn">▶ Start Tour</button>
-    <p style="font-size:0.8rem;opacity:0.6;">${steps.length} stops · ~60 seconds</p>
+    <p style="margin-bottom:0.5rem;">Choose your mode:</p>
+    <button id="tour-start-btn" style="margin-bottom:0.5rem;">▶ Auto-Play (runs itself on the timer)</button>
+    <button id="tour-manual-btn">🎮 Manual (you press Next)</button>
+    <p style="font-size:0.8rem;opacity:0.6;margin-top:0.75rem;">${steps.length} stops · ~60 seconds</p>
   `;
   document.body.appendChild(startOverlay);
 
@@ -1063,7 +1068,44 @@ buildGrowthChart('desktopGrowthChart');
     }, 450);
   }
 
+  // Parse "M:SS" time string to seconds
+  function timeToSeconds(t) {
+    const parts = t.split(':');
+    return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+  }
+
+  let autoPlayMode = false;
+  let autoPlayTimer = null;
+
+  function scheduleNextStep(idx) {
+    if (!autoPlayMode || idx >= steps.length) return;
+    if (idx === steps.length - 1) {
+      // Last step — hold for 5 seconds then finish
+      autoPlayTimer = setTimeout(() => goToStep(idx + 1), 5000);
+      return;
+    }
+    const currentTime = timeToSeconds(steps[idx].time);
+    const nextTime = timeToSeconds(steps[idx + 1].time);
+    const delay = (nextTime - currentTime) * 1000;
+    autoPlayTimer = setTimeout(() => {
+      goToStep(idx + 1);
+      scheduleNextStep(idx + 1);
+    }, delay);
+  }
+
+  // Auto-play: runs itself on the timer
   document.getElementById('tour-start-btn').addEventListener('click', () => {
+    autoPlayMode = true;
+    startOverlay.remove();
+    overlay.classList.add('active');
+    overlay.style.display = 'block';
+    goToStep(0);
+    scheduleNextStep(0);
+  });
+
+  // Manual: you press Next
+  document.getElementById('tour-manual-btn').addEventListener('click', () => {
+    autoPlayMode = false;
     startOverlay.remove();
     overlay.classList.add('active');
     overlay.style.display = 'block';
@@ -1071,7 +1113,9 @@ buildGrowthChart('desktopGrowthChart');
   });
 
   document.getElementById('tour-next').addEventListener('click', () => {
+    if (autoPlayMode && autoPlayTimer) clearTimeout(autoPlayTimer);
     goToStep(currentStep + 1);
+    if (autoPlayMode) scheduleNextStep(currentStep);
   });
 
   // Keyboard: spacebar or right arrow to advance
@@ -1079,7 +1123,9 @@ buildGrowthChart('desktopGrowthChart');
     if (currentStep < 0) return;
     if (e.code === 'Space' || e.code === 'ArrowRight') {
       e.preventDefault();
+      if (autoPlayMode && autoPlayTimer) clearTimeout(autoPlayTimer);
       goToStep(currentStep + 1);
+      if (autoPlayMode) scheduleNextStep(currentStep);
     }
   });
 })();
