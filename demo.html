@@ -8,45 +8,45 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #0a0a14; color: #fff; line-height: 1.5;
+    background: #fffbfd; color: #000; line-height: 1.5;
   }
-  a { color: #e91e8c; text-decoration: none; }
+  a { color: #e8458b; text-decoration: none; }
 
   /* ===== Page Layout ===== */
   .page-header {
     text-align: center; padding: 3rem 1.5rem 2rem;
-    background: linear-gradient(135deg, #0a0a14 0%, #1a0a2e 50%, #0a0a14 100%);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: linear-gradient(135deg, #fff5f9 0%, #ffeff5 50%, #fff5f9 100%);
+    border-bottom: 1px solid #f0d6e4;
   }
-  .page-header h1 { font-size: 2rem; margin-bottom: 0.5rem; }
-  .page-header h1 span { color: #e91e8c; }
-  .page-header p { color: #888; font-size: 1rem; max-width: 600px; margin: 0 auto; }
+  .page-header h1 { font-size: 2rem; margin-bottom: 0.5rem; color: #000; }
+  .page-header h1 span { color: #e8458b; }
+  .page-header p { color: #444; font-size: 1rem; max-width: 600px; margin: 0 auto; }
 
   .section-divider {
     text-align: center; padding: 2.5rem 1rem 1.5rem;
-    border-top: 1px solid rgba(255,255,255,0.06);
+    border-top: 1px solid #f0d6e4;
     margin-top: 2rem;
   }
-  .section-divider h2 { font-size: 1.4rem; margin-bottom: 0.3rem; }
+  .section-divider h2 { font-size: 1.4rem; margin-bottom: 0.3rem; color: #000; }
   .section-divider .badge {
     display: inline-block; padding: 0.25rem 0.75rem; border-radius: 2rem;
     font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
   }
-  .badge-mobile { background: rgba(233,30,140,0.15); color: #e91e8c; }
-  .badge-desktop { background: rgba(100,200,255,0.15); color: #64c8ff; }
-  .section-divider p { color: #777; font-size: 0.85rem; margin-top: 0.5rem; }
+  .badge-mobile { background: rgba(232,69,139,0.1); color: #e8458b; }
+  .badge-desktop { background: rgba(157,78,221,0.1); color: #9d4edd; }
+  .section-divider p { color: #444; font-size: 0.85rem; margin-top: 0.5rem; }
 
   /* ===== Shared Feed Styles ===== */
   .circle-header {
-    background: #16161f; border-radius: 1rem; padding: 1.25rem;
-    border: 1px solid rgba(255,255,255,0.08); margin-bottom: 1.5rem;
+    background: #fff5f9; border-radius: 1rem; padding: 1.25rem;
+    border: 1px solid #f0d6e4; margin-bottom: 1.5rem;
   }
-  .circle-header h2 { margin-bottom: 0.25rem; font-size: 1.3rem; }
-  .circle-meta { display: flex; gap: 1rem; font-size: 0.85rem; color: #888; margin-bottom: 0.75rem; flex-wrap: wrap; }
+  .circle-header h2 { margin-bottom: 0.25rem; font-size: 1.3rem; color: #000; }
+  .circle-meta { display: flex; gap: 1rem; font-size: 0.85rem; color: #444; margin-bottom: 0.75rem; flex-wrap: wrap; }
   .creator-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
   .creator-chip {
     display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.6rem;
-    border-radius: 2rem; background: rgba(255,255,255,0.04); font-size: 0.78rem; cursor: default;
+    border-radius: 2rem; background: rgba(232,69,139,0.06); font-size: 0.78rem; cursor: default; color: #222;
   }
   .avatar {
     width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center;
@@ -60,27 +60,27 @@
   .filter-row { display: flex; gap: 0.35rem; flex-wrap: wrap; }
   .filter-btn {
     padding: 0.35rem 0.75rem; border-radius: 2rem; font-size: 0.78rem; font-weight: 500;
-    border: 1px solid rgba(255,255,255,0.08); background: #16161f; color: #b0b0b8;
+    border: 1px solid #f0d6e4; background: #fff; color: #555;
     cursor: pointer; white-space: nowrap; transition: all 0.15s;
   }
-  .filter-btn:hover { border-color: rgba(233,30,140,0.3); }
+  .filter-btn:hover { border-color: #e8458b; }
   .filter-btn.active {
-    font-weight: 700; border: 1.5px solid #e91e8c;
-    background: rgba(233,30,140,0.1); color: #e91e8c;
+    font-weight: 700; border: 1.5px solid #e8458b;
+    background: rgba(232,69,139,0.08); color: #e8458b;
   }
 
   /* Post card */
   .post-card {
-    background: #16161f; border-radius: 1rem; padding: 1rem;
-    border: 1px solid rgba(255,255,255,0.08);
+    background: #fff5f9; border-radius: 1rem; padding: 1rem;
+    border: 1px solid #f0d6e4;
   }
   .post-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
   .post-header .avatar { width: 32px; height: 32px; font-size: 0.9rem; }
-  .post-author { font-weight: 700; font-size: 0.85rem; }
-  .post-date { font-size: 0.7rem; color: #777; }
-  .post-views { font-size: 0.7rem; color: #777; margin-left: auto; }
-  .post-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.4rem; }
-  .post-content { font-size: 0.9rem; color: #b0b0b8; margin-bottom: 0.5rem; line-height: 1.5; }
+  .post-author { font-weight: 700; font-size: 0.85rem; color: #000; }
+  .post-date { font-size: 0.7rem; color: #999; }
+  .post-views { font-size: 0.7rem; color: #999; margin-left: auto; }
+  .post-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.4rem; color: #000; }
+  .post-content { font-size: 0.9rem; color: #222; margin-bottom: 0.5rem; line-height: 1.5; }
   .post-image {
     width: 100%; border-radius: 0.5rem; max-height: 300px; object-fit: cover; cursor: pointer;
   }
@@ -103,36 +103,36 @@
   }
   .desktop-col { display: flex; flex-direction: column; gap: 0.75rem; }
   .col-header {
-    background: #16161f; border-radius: 1rem; padding: 0.75rem;
-    border: 1px solid rgba(255,255,255,0.08); text-align: center;
+    background: #fff5f9; border-radius: 1rem; padding: 0.75rem;
+    border: 1px solid #f0d6e4; text-align: center;
   }
   .col-header .avatar-lg { margin: 0 auto 0.4rem; }
-  .col-name { font-weight: 700; font-size: 0.88rem; }
-  .col-stats { font-size: 0.7rem; color: #777; margin-bottom: 0.5rem; }
+  .col-name { font-weight: 700; font-size: 0.88rem; color: #000; }
+  .col-stats { font-size: 0.7rem; color: #999; margin-bottom: 0.5rem; }
   .col-filters { display: flex; gap: 0.35rem; justify-content: center; }
 
   /* ===== Phone Mockup ===== */
   .phone-wrapper { display: flex; justify-content: center; padding-bottom: 2rem; }
   .phone-bezel {
-    width: 410px; background: #1a1a2e; border-radius: 2.5rem; padding: 1rem 0.5rem;
-    border: 2px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    width: 410px; background: #f8e8f0; border-radius: 2.5rem; padding: 1rem 0.5rem;
+    border: 2px solid #f0d6e4; box-shadow: 0 20px 60px rgba(232,69,139,0.1);
     position: relative;
   }
   .phone-notch {
-    width: 120px; height: 24px; background: #0a0a14; border-radius: 0 0 1rem 1rem;
+    width: 120px; height: 24px; background: #e8458b; border-radius: 0 0 1rem 1rem;
     margin: 0 auto 0.75rem; position: relative; z-index: 2;
   }
   .phone-screen {
-    background: #0a0a14; border-radius: 1.5rem; padding: 1rem; overflow-y: auto;
+    background: #fffbfd; border-radius: 1.5rem; padding: 1rem; overflow-y: auto;
     max-height: 700px;
   }
   .phone-screen::-webkit-scrollbar { width: 3px; }
-  .phone-screen::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+  .phone-screen::-webkit-scrollbar-thumb { background: rgba(232,69,139,0.2); border-radius: 3px; }
 
   /* ===== Fullscreen Image Modal ===== */
   .image-modal {
     display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999;
-    background: rgba(0,0,0,0.92); align-items: center; justify-content: center; cursor: pointer;
+    background: rgba(0,0,0,0.85); align-items: center; justify-content: center; cursor: pointer;
   }
   .image-modal.open { display: flex; }
   .image-modal img { max-width: 95%; max-height: 95%; border-radius: 0.5rem; }
@@ -140,7 +140,7 @@
   /* Gradient overlays */
   .gradient-img {
     width: 100%; height: 180px; border-radius: 0.5rem; display: flex;
-    align-items: flex-end; padding: 0.75rem; font-size: 0.7rem; color: rgba(255,255,255,0.5);
+    align-items: flex-end; padding: 0.75rem; font-size: 0.7rem; color: rgba(0,0,0,0.4);
   }
 </style>
 </head>
@@ -225,9 +225,9 @@
   <img id="modalImg" src="" alt="" />
 </div>
 
-<div style="text-align:center;padding:3rem 1rem;border-top:1px solid rgba(255,255,255,0.06);margin-top:2rem;">
-  <div style="font-size:0.9rem;color:#888;margin-bottom:0.5rem;">Ready to start posting?</div>
-  <a href="https://modelbid.tech" style="font-size:1.1rem;font-weight:700;color:#e91e8c;">Join ModelBid →</a>
+<div style="text-align:center;padding:3rem 1rem;border-top:1px solid #f0d6e4;margin-top:2rem;">
+  <div style="font-size:0.9rem;color:#444;margin-bottom:0.5rem;">Ready to start posting?</div>
+  <a href="https://modelbid.tech" style="font-size:1.1rem;font-weight:700;color:#e8458b;">Join ModelBid →</a>
 </div>
 
 <script>
