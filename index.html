@@ -21413,14 +21413,14 @@ RULES
                     <div style={{ ...statValue, color: 'var(--accent, #e8458b)' }}>${myEarnings.toLocaleString()}</div>
                   </div>
                   <div style={statBoxStyle}>
-                    <div style={statLabel}>Next Payout</div>
-                    <div style={{ ...statValue, color: '#1D9E75' }}>${myEarnings.toLocaleString()}</div>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{payoutStr} · {daysUntilPayout} days</div>
+                    <div style={statLabel}>Year To Date</div>
+                    <div style={{ ...statValue, color: '#1D9E75' }}>${ytdEarnings.toLocaleString()}</div>
                   </div>
                 </div>
                 <div style={{ marginTop: '0.75rem', background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '0.75rem', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-                  <div style={statLabel}>Year To Date</div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1D9E75' }}>${ytdEarnings.toLocaleString()}</div>
+                  <div style={statLabel}>Next Payout</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1D9E75' }}>${myEarnings.toLocaleString()}</div>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{payoutStr} · {daysUntilPayout} days</div>
                 </div>
               </div>
             );
