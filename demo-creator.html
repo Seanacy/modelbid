@@ -13,7 +13,7 @@
   a { color: #e8458b; text-decoration: none; }
 
   .page-header {
-    text-align: center; padding: 3rem 1.5rem 2rem;
+    text-align: center; padding: 2rem 1.5rem 1.5rem;
     background: linear-gradient(135deg, #fff5f9 0%, #ffeff5 50%, #fff5f9 100%);
     border-bottom: 1px solid #f0d6e4;
   }
@@ -25,6 +25,20 @@
     background: rgba(232,69,139,0.1); border: 1px solid rgba(232,69,139,0.3);
     font-size: 0.85rem; color: #e8458b; font-weight: 700;
   }
+
+  .toggle-row {
+    display: flex; gap: 1rem; justify-content: center; margin-top: 1.25rem; flex-wrap: wrap;
+  }
+  .toggle-box {
+    padding: 1.25rem 2rem; border-radius: 1rem; font-size: 1rem; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; min-width: 220px; text-align: center;
+    border: 2px solid #f0d6e4; background: #fff; color: #444;
+  }
+  .toggle-box:hover { border-color: #e8458b; color: #e8458b; }
+  .toggle-box.active {
+    background: #e8458b; color: #fff; border-color: #e8458b; box-shadow: 0 4px 16px rgba(232,69,139,0.25);
+  }
+  .toggle-box .toggle-sub { font-size: 0.75rem; font-weight: 400; margin-top: 0.25rem; opacity: 0.8; }
 
   .section-divider {
     text-align: center; padding: 2.5rem 1rem 1.5rem;
@@ -197,9 +211,19 @@
 
 <!-- Page Header -->
 <div class="page-header">
-  <h1>Creator <span>View Preview</span></h1>
-  <p>This is what YOU see as a model in the Inner Circle. Post content, see your stats, and watch your views grow.</p>
-  <div class="you-are">👁 You are viewing as: Jasmine Rivera</div>
+  <h1>Inner Circle <span>Preview</span></h1>
+  <p>See exactly how the Inner Circle works — for subscribers and creators.</p>
+  <div class="toggle-row">
+    <div class="toggle-box" onclick="window.location.href='demo.html'">
+      Inner Circle Feed Preview
+      <div class="toggle-sub">What subscribers see</div>
+    </div>
+    <div class="toggle-box active">
+      Creator View Preview
+      <div class="toggle-sub">What models see</div>
+    </div>
+  </div>
+  <div class="you-are" style="margin-top:1.25rem;">👁 You are viewing as: Jasmine Rivera</div>
 </div>
 
 <!-- ==================== MOBILE SECTION ==================== -->
