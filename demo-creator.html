@@ -800,5 +800,281 @@ function buildGrowthChart(canvasId, heightHint) {
 buildGrowthChart('mobileGrowthChart');
 buildGrowthChart('desktopGrowthChart');
 </script>
+
+<!-- ========== GUIDED TOUR MODE ========== -->
+<script>
+(function() {
+  if (!new URLSearchParams(window.location.search).has('tour')) return;
+
+  // ===== IDENTIFY ELEMENTS =====
+  const phoneScreen = document.getElementById('mobile-screen');
+  const phoneChildren = Array.from(phoneScreen.children);
+  // phoneChildren: [0]=circle-header, [1]=earnings block, [2]=post-form, [3]=mobile-filters, [4]=mobile-feed
+  const earningsBlock = phoneChildren[1];
+  const earningsGrid = earningsBlock.querySelector('[style*="display:grid"]');
+  const gridBoxes = earningsGrid.children; // 0=subscribers, 1=circle earnings, 2=your earnings, 3=ytd
+  const nextPayoutBox = earningsGrid.nextElementSibling;
+  const chartBox = nextPayoutBox.nextElementSibling;
+  const postForm = phoneChildren[2];
+  const filterRows = phoneChildren[3];
+
+  // Find posts in the mobile feed
+  function findYourPost() {
+    const posts = document.querySelectorAll('#mobile-feed .post-card.my-post');
+    return posts[0] || null;
+  }
+  function findLockedPost() {
+    const locked = document.querySelector('#mobile-feed .locked-content');
+    return locked ? locked.closest('.post-card') : null;
+  }
+
+  // ===== TOUR STEPS =====
+  const steps = [
+    {
+      target: () => document.querySelector('.page-header'),
+      time: '0:00', section: 'HOOK',
+      line: 'What if you could multiply your audience overnight — without buying a single ad?'
+    },
+    {
+      target: () => phoneScreen.querySelector('.circle-header'),
+      time: '0:04', section: 'INTRO',
+      line: 'You team up with three other models. One shared feed. Four audiences combined.'
+    },
+    {
+      target: () => phoneScreen.querySelector('.circle-meta'),
+      time: '0:08', section: 'INTRO',
+      line: 'And every single subscriber pays to be there.'
+    },
+    {
+      target: () => earningsBlock,
+      time: '0:14', section: 'THE MONEY',
+      line: 'You see your earnings in real time.'
+    },
+    {
+      target: () => gridBoxes[0],
+      time: '0:17', section: 'THE MONEY',
+      line: 'Subscriber count.'
+    },
+    {
+      target: () => gridBoxes[1],
+      time: '0:19', section: 'THE MONEY',
+      line: 'Circle revenue.'
+    },
+    {
+      target: () => gridBoxes[2],
+      time: '0:21', section: 'THE MONEY',
+      line: 'Your personal split.'
+    },
+    {
+      target: () => nextPayoutBox,
+      time: '0:23', section: 'THE MONEY',
+      line: 'Your next payout.'
+    },
+    {
+      target: () => gridBoxes[3],
+      time: '0:25', section: 'THE MONEY',
+      line: 'Year-to-date total — you always know where you stand.'
+    },
+    {
+      target: () => postForm,
+      time: '0:26', section: 'THE CONTENT',
+      line: 'Post photos, videos, behind-the-scenes — whatever you want.'
+    },
+    {
+      target: () => findYourPost(),
+      time: '0:30', section: 'THE CONTENT',
+      line: 'Your content stays yours.'
+    },
+    {
+      target: () => findLockedPost(),
+      time: '0:33', section: 'THE CONTENT',
+      line: 'Other creators can only see titles and view counts. Your actual posts? Locked. Privacy is built in.'
+    },
+    {
+      target: () => filterRows,
+      time: '0:38', section: 'THE GROWTH',
+      line: 'Subscribers filter by model. They sort by most viewed. They discover you through someone else\'s audience.'
+    },
+    {
+      target: () => chartBox,
+      time: '0:44', section: 'THE PROOF',
+      line: 'One model went from $200/month solo to almost $2,000/month after joining. Same content. Same effort. Bigger audience.'
+    },
+    {
+      target: () => document.querySelector('.page-header h1'),
+      time: '0:55', section: 'CTA',
+      line: 'Stop growing alone. Join an Inner Circle on ModelBid.'
+    }
+  ];
+
+  // ===== BUILD TOUR UI =====
+  const overlay = document.createElement('div');
+  overlay.id = 'tour-overlay';
+  overlay.innerHTML = `
+    <div id="tour-spotlight"></div>
+    <div id="tour-card">
+      <div id="tour-card-top">
+        <span id="tour-section"></span>
+        <span id="tour-time"></span>
+      </div>
+      <div id="tour-line"></div>
+      <div id="tour-nav">
+        <span id="tour-counter"></span>
+        <button id="tour-next">Next →</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  // ===== TOUR CSS =====
+  const style = document.createElement('style');
+  style.textContent = `
+    #tour-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 99999; pointer-events: none;
+    }
+    #tour-overlay.active { pointer-events: auto; }
+    #tour-overlay::before {
+      content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.55); z-index: 1;
+    }
+    #tour-spotlight {
+      position: absolute; z-index: 2;
+      border-radius: 12px;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.55), 0 0 30px rgba(232,69,139,0.5);
+      border: 3px solid #e8458b;
+      transition: all 0.4s ease;
+      pointer-events: none;
+    }
+    #tour-card {
+      position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+      background: #fff; border-radius: 1rem; padding: 1.25rem 1.5rem;
+      max-width: 520px; width: 90%; z-index: 3;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+      border: 2px solid #e8458b;
+    }
+    #tour-card-top {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    #tour-section {
+      font-size: 0.7rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.1em; color: #fff; background: #e8458b;
+      padding: 0.2rem 0.6rem; border-radius: 1rem;
+    }
+    #tour-time {
+      font-size: 0.75rem; font-weight: 700; color: #999;
+      font-family: 'Courier New', monospace;
+    }
+    #tour-line {
+      font-size: 1rem; color: #222; line-height: 1.5;
+      font-style: italic; margin-bottom: 1rem;
+    }
+    #tour-nav {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    #tour-counter { font-size: 0.8rem; color: #999; font-weight: 600; }
+    #tour-next {
+      padding: 0.6rem 1.5rem; border: none; border-radius: 2rem;
+      background: linear-gradient(135deg, #e8458b, #9d4edd);
+      color: #fff; font-weight: 800; font-size: 0.95rem;
+      cursor: pointer; transition: transform 0.15s, opacity 0.15s;
+    }
+    #tour-next:hover { transform: scale(1.05); }
+    #tour-next:active { transform: scale(0.97); }
+    #tour-start-btn {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      z-index: 100000; padding: 1.5rem 3rem; border: none; border-radius: 2rem;
+      background: linear-gradient(135deg, #e8458b, #9d4edd);
+      color: #fff; font-size: 1.4rem; font-weight: 800;
+      cursor: pointer; box-shadow: 0 8px 40px rgba(232,69,139,0.4);
+      transition: transform 0.15s;
+    }
+    #tour-start-btn:hover { transform: translate(-50%, -50%) scale(1.05); }
+    #tour-start-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6); z-index: 99998;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+    }
+    #tour-start-overlay p {
+      color: #fff; font-size: 1rem; max-width: 400px; text-align: center; line-height: 1.5;
+    }
+  `;
+  document.head.appendChild(style);
+
+  // ===== START SCREEN =====
+  const startOverlay = document.createElement('div');
+  startOverlay.id = 'tour-start-overlay';
+  startOverlay.innerHTML = `
+    <p style="font-size:1.6rem;font-weight:800;color:#e8458b;">Inner Circle Guided Tour</p>
+    <p>Press <strong>Start</strong> then hit <strong>Next →</strong> to advance each highlight in sync with your voiceover.</p>
+    <button id="tour-start-btn">▶ Start Tour</button>
+    <p style="font-size:0.8rem;opacity:0.6;">${steps.length} stops · ~60 seconds</p>
+  `;
+  document.body.appendChild(startOverlay);
+
+  let currentStep = -1;
+
+  function goToStep(idx) {
+    if (idx >= steps.length) {
+      // Tour finished
+      overlay.classList.remove('active');
+      overlay.style.display = 'none';
+      const done = document.createElement('div');
+      done.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100000;text-align:center;';
+      done.innerHTML = '<div style="font-size:2rem;font-weight:800;color:#e8458b;margin-bottom:0.5rem;">Tour Complete!</div><div style="color:#666;">Stop your screen recording now.</div>';
+      document.body.appendChild(done);
+      setTimeout(() => done.remove(), 4000);
+      return;
+    }
+
+    currentStep = idx;
+    const step = steps[idx];
+    const el = step.target();
+
+    if (!el) { goToStep(idx + 1); return; }
+
+    // Scroll element into view
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Wait for scroll, then position spotlight
+    setTimeout(() => {
+      const rect = el.getBoundingClientRect();
+      const pad = 8;
+      const spot = document.getElementById('tour-spotlight');
+      spot.style.top = (rect.top - pad) + 'px';
+      spot.style.left = (rect.left - pad) + 'px';
+      spot.style.width = (rect.width + pad * 2) + 'px';
+      spot.style.height = (rect.height + pad * 2) + 'px';
+
+      document.getElementById('tour-section').textContent = step.section;
+      document.getElementById('tour-time').textContent = step.time;
+      document.getElementById('tour-line').textContent = step.line;
+      document.getElementById('tour-counter').textContent = (idx + 1) + ' of ' + steps.length;
+      document.getElementById('tour-next').textContent = idx === steps.length - 1 ? 'Finish' : 'Next →';
+    }, 450);
+  }
+
+  document.getElementById('tour-start-btn').addEventListener('click', () => {
+    startOverlay.remove();
+    overlay.classList.add('active');
+    overlay.style.display = 'block';
+    goToStep(0);
+  });
+
+  document.getElementById('tour-next').addEventListener('click', () => {
+    goToStep(currentStep + 1);
+  });
+
+  // Keyboard: spacebar or right arrow to advance
+  document.addEventListener('keydown', (e) => {
+    if (currentStep < 0) return;
+    if (e.code === 'Space' || e.code === 'ArrowRight') {
+      e.preventDefault();
+      goToStep(currentStep + 1);
+    }
+  });
+})();
+</script>
 </body>
 </html>
