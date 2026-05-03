@@ -21129,6 +21129,21 @@ RULES
       const [uploading, setUploading] = useState(false);
       const [posting, setPosting] = useState(false);
       const [selectedImage, setSelectedImage] = useState(null);
+      // Desktop: per-column filters keyed by creator_id
+      const [columnFilters, setColumnFilters] = useState({});
+      // Mobile: filter state
+      const [mobileCreatorFilter, setMobileCreatorFilter] = useState('all');
+      const [mobileSortFilter, setMobileSortFilter] = useState('none'); // 'none' | 'recent' | 'views'
+      // Track which posts we've already counted a view for this session
+      const viewedPostsRef = React.useRef(new Set());
+      // Responsive: detect desktop vs mobile
+      const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 900);
+
+      useEffect(() => {
+        const handleResize = () => setIsDesktop(window.innerWidth >= 900);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+      }, []);
 
       const fetchAll = async () => {
         const { data: c } = await supabase.from('client_circles').select('*').eq('id', circleId).single();
@@ -21147,7 +21162,6 @@ RULES
         setIsSubscribed((subRes.data || []).length > 0);
         setIsCreator((invRes.data || []).some(i => i.creator_id === auth.currentUser?.id));
 
-        // Fetch creator profiles
         const creatorIds = (invRes.data || []).map(i => i.creator_id);
         if (creatorIds.length > 0) {
           const { data: profs } = await supabase.from('profiles').select('id, display_name, profile_photo_url, avatar_emoji, username').in('id', creatorIds);
@@ -21161,13 +21175,29 @@ RULES
       useEffect(() => {
         const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
         if (params.get('checkout') === 'success') {
-          // Give Stripe webhook a moment to process, then fetch
           auth.showToast('Payment successful! Loading your content...', 'success');
           const timer = setTimeout(() => { fetchAll(); }, 1000);
           return () => clearTimeout(timer);
         }
         fetchAll();
       }, [circleId]);
+
+      // Track post views — increment once per post per session
+      const trackView = async (postId) => {
+        if (viewedPostsRef.current.has(postId)) return;
+        viewedPostsRef.current.add(postId);
+        try {
+          await supabase.rpc('increment_post_view_count', { post_id: postId });
+        } catch (e) { /* best effort */ }
+      };
+
+      // Track views for visible posts
+      useEffect(() => {
+        if (!posts.length) return;
+        const canView = isSubscribed || isCreator || isOwner;
+        if (!canView) return;
+        posts.forEach(p => trackView(p.id));
+      }, [posts, isSubscribed, isCreator, isOwner]);
 
       const handleMediaUpload = async (file) => {
         if (!file || newMedia.length >= 6) return;
@@ -21211,13 +21241,73 @@ RULES
         } catch (e) { auth.showToast(e.message, 'error'); }
       };
 
+      // Helper: sort posts by filter value
+      const sortPosts = (arr, filter) => {
+        if (filter === 'recent') return [...arr].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        if (filter === 'views') return [...arr].sort((a, b) => (b.view_count || 0) - (a.view_count || 0));
+        return arr; // 'none' = original order (already sorted by created_at desc from DB)
+      };
+
+      // Helper: render a single post card
+      const renderPostCard = (post, hideContent) => {
+        const creator = creatorProfiles[post.creator_id] || {};
+        const mediaUrls = post.media_urls || [];
+        return (
+          <div key={post.id} style={{ background: 'var(--bg-card)', borderRadius: '1rem', padding: '1rem', border: '1px solid var(--border-color)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bg-card-light)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', flexShrink: 0 }}>
+                {creator.profile_photo_url ? <img src={creator.profile_photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (creator.avatar_emoji || '👤')}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{creator.display_name || 'Creator'}</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{new Date(post.created_at).toLocaleString()}</div>
+              </div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>👁 {post.view_count || 0}</div>
+            </div>
+            <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.4rem' }}>{post.title}</div>
+            {hideContent ? (
+              <div style={{ padding: '1.5rem', textAlign: 'center', borderRadius: '0.75rem', background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                🔒 Content hidden — creators can only see titles, dates, and views from other creators.
+              </div>
+            ) : (
+              <React.Fragment>
+                {post.content && <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', lineHeight: 1.5 }}>{post.content}</div>}
+                {mediaUrls.length > 0 && (
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {mediaUrls.map((url, i) => (
+                      <img key={i} src={url} alt="" onClick={() => setSelectedImage(url)}
+                        style={{ maxWidth: mediaUrls.length === 1 ? '100%' : 'calc(50% - 0.25rem)', borderRadius: '0.5rem', cursor: 'pointer', maxHeight: '300px', objectFit: 'cover' }} />
+                    ))}
+                  </div>
+                )}
+              </React.Fragment>
+            )}
+          </div>
+        );
+      };
+
+      // Filter toggle button style helper
+      const filterBtnStyle = (active) => ({
+        padding: '0.35rem 0.75rem', borderRadius: '2rem', fontSize: '0.78rem', fontWeight: active ? 700 : 500,
+        border: active ? '1.5px solid var(--accent, #e91e8c)' : '1px solid var(--border-color)',
+        background: active ? 'rgba(233,30,140,0.1)' : 'var(--bg-card)',
+        color: active ? 'var(--accent, #e91e8c)' : 'var(--text-secondary)',
+        cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
+      });
+
       if (loading) return <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>;
       if (!circle) return <div style={{ textAlign: 'center', padding: '2rem' }}>Circle not found.</div>;
 
       const canViewContent = isSubscribed || isCreator || isOwner;
 
+      // Sort creators by total views for desktop column ordering
+      const creatorsByPopularity = invites.map(inv => {
+        const totalViews = posts.filter(p => p.creator_id === inv.creator_id).reduce((sum, p) => sum + (p.view_count || 0), 0);
+        return { ...inv, totalViews };
+      }).sort((a, b) => b.totalViews - a.totalViews);
+
       return (
-        <div style={{ maxWidth: '650px', margin: '0 auto', padding: '1rem' }}>
+        <div style={{ maxWidth: isDesktop ? '1400px' : '650px', margin: '0 auto', padding: '1rem' }}>
           <button className="btn btn-secondary" onClick={() => window.history.back()} style={{ marginBottom: '1rem', fontSize: '0.85rem' }}>← Back</button>
 
           {/* Circle Header */}
@@ -21246,7 +21336,6 @@ RULES
               })}
             </div>
 
-            {/* Subscribe Button */}
             {!canViewContent && (
               <button className="btn glow-btn" onClick={handleSubscribe} style={{ width: '100%', padding: '0.85rem', fontSize: '1rem' }}>
                 Subscribe — ${circle.price}/month
@@ -21254,7 +21343,6 @@ RULES
             )}
             {isSubscribed && <div style={{ fontSize: '0.82rem', color: '#00c864', fontWeight: 700 }}>✅ You're subscribed</div>}
 
-            {/* ===== Affiliate Program Section ===== */}
             {circle.affiliate_enabled && auth.currentUser && !isOwner && (
               <div style={{ marginTop: '1rem', padding: '1rem', borderRadius: '0.75rem', background: 'rgba(100,200,255,0.06)', border: '1px solid rgba(100,200,255,0.15)' }}>
                 <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.4rem' }}>🤝 Become an Affiliate</div>
@@ -21283,8 +21371,6 @@ RULES
               <h3 style={{ fontSize: '0.95rem', marginBottom: '0.75rem' }}>New Post</h3>
               <input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Post title" style={{ width: '100%', marginBottom: '0.5rem' }} />
               <textarea value={newContent} onChange={(e) => setNewContent(e.target.value)} placeholder="Write something..." rows={3} style={{ width: '100%', marginBottom: '0.5rem' }} />
-
-              {/* Media Previews */}
               {newMedia.length > 0 && (
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
                   {newMedia.map((url, i) => (
@@ -21298,7 +21384,6 @@ RULES
                   ))}
                 </div>
               )}
-
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <label style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.03)', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer' }}>
                   📷 {uploading ? '...' : 'Add Photo'}
@@ -21312,57 +21397,105 @@ RULES
             </div>
           )}
 
-          {/* Posts Feed */}
-          {canViewContent ? (
-            posts.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No posts yet. {isCreator ? 'Be the first to post!' : 'Check back soon.'}</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {posts.map(post => {
-                  const creator = creatorProfiles[post.creator_id] || {};
-                  // Creators can only see other creators' titles and timestamps, not content
-                  const isMyPost = post.creator_id === auth.currentUser?.id;
-                  const hideContent = isCreator && !isMyPost && !isSubscribed && !isOwner;
-                  const mediaUrls = post.media_urls || [];
+          {/* ========== DESKTOP: Column Layout ========== */}
+          {isDesktop && canViewContent && (
+            <React.Fragment>
+              {posts.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No posts yet. {isCreator ? 'Be the first to post!' : 'Check back soon.'}</div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(creatorsByPopularity.length, 5)}, 1fr)`, gap: '1rem', alignItems: 'start' }}>
+                  {creatorsByPopularity.map(inv => {
+                    const prof = creatorProfiles[inv.creator_id] || {};
+                    const colFilter = columnFilters[inv.creator_id] || 'recent';
+                    const creatorPosts = posts.filter(p => p.creator_id === inv.creator_id);
+                    const isMyPost = inv.creator_id === auth.currentUser?.id;
+                    const hideContent = isCreator && !isMyPost && !isSubscribed && !isOwner;
+                    const sortedPosts = sortPosts(creatorPosts, colFilter);
 
-                  return (
-                    <div key={post.id} style={{ background: 'var(--bg-card)', borderRadius: '1rem', padding: '1rem', border: '1px solid var(--border-color)' }}>
-                      {/* Post Header */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bg-card-light)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', flexShrink: 0 }}>
-                          {creator.profile_photo_url ? <img src={creator.profile_photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (creator.avatar_emoji || '👤')}
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{creator.display_name || 'Creator'}</div>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{new Date(post.created_at).toLocaleString()}</div>
-                        </div>
-                      </div>
-
-                      <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.4rem' }}>{post.title}</div>
-
-                      {hideContent ? (
-                        <div style={{ padding: '1.5rem', textAlign: 'center', borderRadius: '0.75rem', background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-                          🔒 Content hidden — creators can only see titles and post times from other creators.
-                        </div>
-                      ) : (
-                        <>
-                          {post.content && <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', lineHeight: 1.5 }}>{post.content}</div>}
-                          {mediaUrls.length > 0 && (
-                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                              {mediaUrls.map((url, i) => (
-                                <img key={i} src={url} alt="" onClick={() => setSelectedImage(url)}
-                                  style={{ maxWidth: mediaUrls.length === 1 ? '100%' : 'calc(50% - 0.25rem)', borderRadius: '0.5rem', cursor: 'pointer', maxHeight: '300px', objectFit: 'cover' }} />
-                              ))}
+                    return (
+                      <div key={inv.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {/* Column Header: Creator info */}
+                        <div style={{ background: 'var(--bg-card)', borderRadius: '1rem', padding: '0.75rem', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                          <div onClick={() => window.location.hash = 'profile/' + inv.creator_id}
+                            style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--bg-card-light)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', flexShrink: 0 }}>
+                              {prof.profile_photo_url ? <img src={prof.profile_photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (prof.avatar_emoji || '👤')}
                             </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
+                            <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>{prof.display_name || 'Creator'}</div>
+                          </div>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                            {creatorPosts.length} posts · {inv.totalViews} views
+                          </div>
+                          {/* Per-column filter */}
+                          <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
+                            <button onClick={() => setColumnFilters(prev => ({ ...prev, [inv.creator_id]: 'recent' }))}
+                              style={filterBtnStyle(colFilter === 'recent')}>Most Recent</button>
+                            <button onClick={() => setColumnFilters(prev => ({ ...prev, [inv.creator_id]: 'views' }))}
+                              style={filterBtnStyle(colFilter === 'views')}>Most Viewed</button>
+                          </div>
+                        </div>
+                        {/* Column Posts */}
+                        {sortedPosts.length === 0 ? (
+                          <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>No posts yet</div>
+                        ) : (
+                          sortedPosts.map(post => renderPostCard(post, hideContent))
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </React.Fragment>
+          )}
+
+          {/* ========== MOBILE: Single Feed with Filters ========== */}
+          {!isDesktop && canViewContent && (
+            <React.Fragment>
+              {/* Mobile Filter Bar */}
+              <div style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {/* Creator filter row */}
+                <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
+                  <button onClick={() => setMobileCreatorFilter('all')} style={filterBtnStyle(mobileCreatorFilter === 'all')}>All</button>
+                  {invites.map(inv => {
+                    const prof = creatorProfiles[inv.creator_id] || {};
+                    return (
+                      <button key={inv.id} onClick={() => setMobileCreatorFilter(inv.creator_id)}
+                        style={filterBtnStyle(mobileCreatorFilter === inv.creator_id)}>
+                        {prof.display_name || 'Creator'}
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Sort filter row */}
+                <div style={{ display: 'flex', gap: '0.35rem' }}>
+                  <button onClick={() => setMobileSortFilter('none')} style={filterBtnStyle(mobileSortFilter === 'none')}>No Filter</button>
+                  <button onClick={() => setMobileSortFilter('recent')} style={filterBtnStyle(mobileSortFilter === 'recent')}>Most Recent</button>
+                  <button onClick={() => setMobileSortFilter('views')} style={filterBtnStyle(mobileSortFilter === 'views')}>Most Viewed</button>
+                </div>
               </div>
-            )
-          ) : (
+              {/* Mobile Posts */}
+              {(() => {
+                let filtered = posts;
+                if (mobileCreatorFilter !== 'all') filtered = filtered.filter(p => p.creator_id === mobileCreatorFilter);
+                filtered = sortPosts(filtered, mobileSortFilter);
+                if (filtered.length === 0) {
+                  return <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No posts yet. {isCreator ? 'Be the first to post!' : 'Check back soon.'}</div>;
+                }
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {filtered.map(post => {
+                      const isMyPost = post.creator_id === auth.currentUser?.id;
+                      const hideContent = isCreator && !isMyPost && !isSubscribed && !isOwner;
+                      return renderPostCard(post, hideContent);
+                    })}
+                  </div>
+                );
+              })()}
+            </React.Fragment>
+          )}
+
+          {/* Not subscribed message */}
+          {!canViewContent && (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
               Subscribe to see the content from this circle.
             </div>
