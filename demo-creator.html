@@ -931,20 +931,20 @@ buildGrowthChart('desktopGrowthChart');
   style.textContent = `
     #tour-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      z-index: 99999; pointer-events: none;
+      z-index: 99990; pointer-events: none;
     }
     #tour-overlay.active { pointer-events: auto; }
-    #tour-overlay::before {
-      content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.55); z-index: 1;
-    }
     #tour-spotlight {
-      position: absolute; z-index: 2;
+      position: fixed; z-index: 99991;
       border-radius: 12px;
-      box-shadow: 0 0 0 9999px rgba(0,0,0,0.55), 0 0 30px rgba(232,69,139,0.5);
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.6), 0 0 30px rgba(232,69,139,0.5);
       border: 3px solid #e8458b;
       transition: all 0.4s ease;
       pointer-events: none;
+    }
+    .tour-highlight {
+      position: relative !important;
+      z-index: 99992 !important;
     }
     #tour-card {
       position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
@@ -1033,6 +1033,13 @@ buildGrowthChart('desktopGrowthChart');
     const el = step.target();
 
     if (!el) { goToStep(idx + 1); return; }
+
+    // Remove highlight from previous element
+    const prev = document.querySelector('.tour-highlight');
+    if (prev) prev.classList.remove('tour-highlight');
+
+    // Add highlight to current element
+    el.classList.add('tour-highlight');
 
     // Scroll element into view
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
