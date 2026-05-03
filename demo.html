@@ -284,8 +284,18 @@ const postContents = [
 
 let postId = 0;
 const now = Date.now();
+// Spread posts across the last 30 days so filters show real differences
+const dayMs = 86400000;
+const postDayOffsets = [
+  [0, 3, 7, 14, 25],   // Jasmine: today, 3 days ago, 1 week, 2 weeks, 25 days
+  [1, 5, 10, 18, 28],  // Aria: yesterday, 5 days, 10 days, 18 days, 28 days
+  [2, 6, 12, 20, 30],  // Lexi: 2 days, 6 days, 12 days, 20 days, 30 days
+  [1, 4, 9, 16, 22],   // Sofia: yesterday, 4 days, 9 days, 16 days, 22 days
+];
 models.forEach((model, mi) => {
   postTitles[mi].forEach((title, pi) => {
+    const daysAgo = postDayOffsets[mi][pi];
+    const hourOffset = Math.floor(Math.random() * 12); // random hour within the day
     allPosts.push({
       id: 'p' + (postId++),
       creator_id: model.id,
@@ -293,7 +303,7 @@ models.forEach((model, mi) => {
       content: postContents[(mi + pi) % postContents.length],
       media_urls: pi % 2 === 0 ? [postImages[(mi * 3 + pi) % postImages.length].url] : [],
       view_count: Math.floor(Math.random() * 800) + 50,
-      created_at: new Date(now - (mi * 4 + pi) * 3600000 * (6 + Math.random() * 12)).toISOString(),
+      created_at: new Date(now - daysAgo * dayMs - hourOffset * 3600000).toISOString(),
     });
   });
 });
