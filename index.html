@@ -21204,8 +21204,8 @@ RULES
       const handleMediaUpload = async (file) => {
         if (!file || newMedia.length >= 6) return;
         const isVideo = file.type.startsWith('video/');
-        const maxSize = isVideo ? 500 * 1024 * 1024 : 10 * 1024 * 1024;
-        if (file.size > maxSize) { auth.showToast(isVideo ? 'Max 500MB per video' : 'Max 10MB per image', 'error'); return; }
+        const maxSize = isVideo ? 2 * 1024 * 1024 * 1024 : 10 * 1024 * 1024;
+        if (file.size > maxSize) { auth.showToast(isVideo ? 'Max 2GB per video' : 'Max 10MB per image', 'error'); return; }
         setUploading(true);
         try {
           const ext = file.name.split('.').pop();
