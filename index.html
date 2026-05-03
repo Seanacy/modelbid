@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ModelBid - Social Media for Photo Sessions</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2ZmZDcwMCIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNmZmFhMDAiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgcng9IjE0IiBmaWxsPSJ1cmwoI2JnKSIvPgogIDx0ZXh0IHg9IjMyIiB5PSI0NCIgZm9udC1mYW1pbHk9IkFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMzYiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjMWExYTJlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5NPC90ZXh0PgogIDxjaXJjbGUgY3g9IjQ4IiBjeT0iMTQiIHI9IjYiIGZpbGw9IiMxYTFhMmUiIG9wYWNpdHk9IjAuOCIvPgogIDxwYXRoIGQ9Ik00OCAxMCBsMS41IDMgMy4zLjUtMi40IDIuMy42IDMuM0w0OCAxNy41bC0zIDEuNi42LTMuMy0yLjQtMi4zIDMuMy0uNXoiIGZpbGw9IiNmZmQ3MDAiIG9wYWNpdHk9IjAuOSIgdHJhbnNmb3JtPSJzY2FsZSgwLjcpIHRyYW5zbGF0ZSgyMCw1KSIvPgo8L3N2Zz4K">
-  <meta name="theme-color" content="#0a0a1a">
+  <meta name="theme-color" content="#e8458b">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ModelBid">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Vanity URL redirect: convert /username path to #username hash route -->
@@ -22026,6 +22031,77 @@ RULES
         <App />
       </AuthProvider>
     );
+  </script>
+
+  <!-- PWA: Service Worker + Install Banner -->
+  <script>
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+
+    // Install prompt
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      showInstallBanner();
+    });
+
+    function showInstallBanner() {
+      if (document.getElementById('pwa-install-banner')) return;
+      const banner = document.createElement('div');
+      banner.id = 'pwa-install-banner';
+      banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#fff;border-top:2px solid #e8458b;padding:1rem 1.25rem;display:flex;align-items:center;gap:0.75rem;box-shadow:0 -4px 20px rgba(0,0,0,0.1);font-family:-apple-system,BlinkMacSystemFont,sans-serif;';
+      banner.innerHTML = `
+        <img src="/icon-192.png" alt="ModelBid" style="width:44px;height:44px;border-radius:10px;flex-shrink:0;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:0.95rem;color:#000;">Get the ModelBid App</div>
+          <div style="font-size:0.78rem;color:#666;">Install for a faster, app-like experience</div>
+        </div>
+        <button id="pwa-install-btn" style="padding:0.6rem 1.25rem;border-radius:2rem;border:none;background:#e8458b;color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;white-space:nowrap;">Install</button>
+        <button id="pwa-dismiss-btn" style="background:none;border:none;font-size:1.2rem;color:#999;cursor:pointer;padding:0.25rem;">✕</button>
+      `;
+      document.body.appendChild(banner);
+
+      document.getElementById('pwa-install-btn').addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const result = await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        banner.remove();
+      });
+
+      document.getElementById('pwa-dismiss-btn').addEventListener('click', () => {
+        banner.remove();
+        sessionStorage.setItem('pwa-dismissed', '1');
+      });
+    }
+
+    // iOS Safari: show a manual install hint
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.navigator.standalone === true;
+    if (isIOS && !isStandalone && !sessionStorage.getItem('pwa-dismissed')) {
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          if (document.getElementById('pwa-install-banner')) return;
+          const banner = document.createElement('div');
+          banner.id = 'pwa-install-banner';
+          banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#fff;border-top:2px solid #e8458b;padding:1rem 1.25rem;display:flex;align-items:center;gap:0.75rem;box-shadow:0 -4px 20px rgba(0,0,0,0.1);font-family:-apple-system,BlinkMacSystemFont,sans-serif;';
+          banner.innerHTML = `
+            <img src="/icon-192.png" alt="ModelBid" style="width:44px;height:44px;border-radius:10px;flex-shrink:0;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:700;font-size:0.95rem;color:#000;">Install ModelBid</div>
+              <div style="font-size:0.78rem;color:#666;">Tap <strong>Share</strong> ↑ then <strong>"Add to Home Screen"</strong></div>
+            </div>
+            <button onclick="this.parentElement.remove();sessionStorage.setItem('pwa-dismissed','1');" style="background:none;border:none;font-size:1.2rem;color:#999;cursor:pointer;padding:0.25rem;">✕</button>
+          `;
+          document.body.appendChild(banner);
+        }, 3000);
+      });
+    }
   </script>
 </body>
 </html>
