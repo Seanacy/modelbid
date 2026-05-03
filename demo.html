@@ -295,10 +295,10 @@ const postDayOffsets = [
 // Intentional view counts so "Most Viewed" produces a VERY different order than "Most Recent"
 // Older posts have high views, newer posts have low views — toggling filters shuffles the deck
 const postViewCounts = [
-  [45, 120, 780, 950, 1200, 30, 410],   // Jasmine: newest=low views, oldest=high views
-  [60, 95, 620, 380, 1050, 25, 540],    // Aria
-  [70, 210, 430, 890, 1100, 15, 670],   // Lexi
-  [55, 150, 510, 720, 960, 40, 300],    // Sofia
+  [12400, 18700, 31200, 47800, 63500, 10800, 24600],   // Jasmine
+  [14200, 19500, 28900, 35100, 58200, 11300, 26700],   // Aria
+  [15800, 22400, 33600, 44200, 61800, 10200, 29300],   // Lexi
+  [13600, 17900, 27400, 39800, 52100, 11900, 21500],   // Sofia
 ];
 models.forEach((model, mi) => {
   postTitles[mi].forEach((title, pi) => {
