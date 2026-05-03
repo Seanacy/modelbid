@@ -949,7 +949,7 @@ buildGrowthChart('desktopGrowthChart');
     #tour-card {
       position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
       background: #fff; border-radius: 1rem; padding: 1.25rem 1.5rem;
-      max-width: 520px; width: 90%; z-index: 3;
+      max-width: 520px; width: 90%; z-index: 99993;
       box-shadow: 0 8px 40px rgba(0,0,0,0.3);
       border: 2px solid #e8458b;
     }
@@ -1023,14 +1023,11 @@ buildGrowthChart('desktopGrowthChart');
 
   function goToStep(idx) {
     if (idx >= steps.length) {
-      // Tour finished
+      // Tour finished — just clean up quietly
       overlay.classList.remove('active');
       overlay.style.display = 'none';
-      const done = document.createElement('div');
-      done.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100000;text-align:center;';
-      done.innerHTML = '<div style="font-size:2rem;font-weight:800;color:#e8458b;margin-bottom:0.5rem;">Tour Complete!</div><div style="color:#666;">Stop your screen recording now.</div>';
-      document.body.appendChild(done);
-      setTimeout(() => done.remove(), 4000);
+      const prev = document.querySelector('.tour-highlight');
+      if (prev) prev.classList.remove('tour-highlight');
       return;
     }
 
