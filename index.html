@@ -21199,9 +21199,13 @@ RULES
         posts.forEach(p => trackView(p.id));
       }, [posts, isSubscribed, isCreator, isOwner]);
 
+      const isVideoFile = (url) => /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(url);
+
       const handleMediaUpload = async (file) => {
         if (!file || newMedia.length >= 6) return;
-        if (file.size > 10 * 1024 * 1024) { auth.showToast('Max 10MB per file', 'error'); return; }
+        const isVideo = file.type.startsWith('video/');
+        const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+        if (file.size > maxSize) { auth.showToast(isVideo ? 'Max 100MB per video' : 'Max 10MB per image', 'error'); return; }
         setUploading(true);
         try {
           const ext = file.name.split('.').pop();
@@ -21275,8 +21279,11 @@ RULES
                 {mediaUrls.length > 0 && (
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     {mediaUrls.map((url, i) => (
-                      <img key={i} src={url} alt="" onClick={() => setSelectedImage(url)}
-                        style={{ maxWidth: mediaUrls.length === 1 ? '100%' : 'calc(50% - 0.25rem)', borderRadius: '0.5rem', cursor: 'pointer', maxHeight: '300px', objectFit: 'cover' }} />
+                      isVideoFile(url)
+                        ? <video key={i} src={url} controls playsInline preload="metadata"
+                            style={{ maxWidth: mediaUrls.length === 1 ? '100%' : 'calc(50% - 0.25rem)', borderRadius: '0.5rem', maxHeight: '400px', background: '#000' }} />
+                        : <img key={i} src={url} alt="" onClick={() => setSelectedImage(url)}
+                            style={{ maxWidth: mediaUrls.length === 1 ? '100%' : 'calc(50% - 0.25rem)', borderRadius: '0.5rem', cursor: 'pointer', maxHeight: '300px', objectFit: 'cover' }} />
                     ))}
                   </div>
                 )}
@@ -21421,7 +21428,10 @@ RULES
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
                   {newMedia.map((url, i) => (
                     <div key={i} style={{ position: 'relative', width: 60, height: 60, borderRadius: 8, overflow: 'hidden' }}>
-                      <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      {isVideoFile(url)
+                        ? <div style={{ width: '100%', height: '100%', background: 'var(--bg-card-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>🎬</div>
+                        : <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      }
                       <button onClick={() => setNewMedia(prev => prev.filter((_, j) => j !== i))} style={{
                         position: 'absolute', top: 2, right: 2, width: 18, height: 18, borderRadius: '50%',
                         background: 'rgba(0,0,0,0.7)', border: 'none', color: '#fff', fontSize: '0.6rem', cursor: 'pointer',
@@ -21432,8 +21442,8 @@ RULES
               )}
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <label style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.03)', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer' }}>
-                  📷 {uploading ? '...' : 'Add Photo'}
-                  <input type="file" accept="image/*" hidden onChange={(e) => handleMediaUpload(e.target.files[0])} />
+                  {uploading ? '...' : '📷 Photo / 🎬 Video'}
+                  <input type="file" accept="image/*,video/*" hidden onChange={(e) => handleMediaUpload(e.target.files[0])} />
                 </label>
                 <div style={{ flex: 1 }} />
                 <button className="btn glow-btn" onClick={handlePost} disabled={posting || !newTitle.trim()} style={{ fontSize: '0.85rem', opacity: posting ? 0.5 : 1 }}>
