@@ -1093,7 +1093,11 @@ buildGrowthChart('desktopGrowthChart');
     }, delay);
   }
 
-  // Auto-play: countdown 3-2-1 then go
+  // Preload voiceover audio
+  const voiceoverAudio = new Audio('voiceover.mp3');
+  voiceoverAudio.preload = 'auto';
+
+  // Auto-play: countdown 3-2-1 then go with audio
   document.getElementById('tour-start-btn').addEventListener('click', () => {
     autoPlayMode = true;
     // Replace overlay content with countdown
@@ -1104,7 +1108,7 @@ buildGrowthChart('desktopGrowthChart');
     countdownEl.style.cssText = 'font-size:12rem;font-weight:900;color:#e8458b;text-shadow:0 0 60px rgba(232,69,139,0.5);font-family:Arial,sans-serif;transition:transform 0.3s ease;';
     const subtextEl = document.createElement('div');
     subtextEl.style.cssText = 'font-size:1.2rem;color:#fff;opacity:0.7;margin-top:1rem;';
-    subtextEl.textContent = 'Press play on your audio at 1';
+    subtextEl.textContent = 'Audio + tour start together at GO';
     startOverlay.appendChild(countdownEl);
     startOverlay.appendChild(subtextEl);
 
@@ -1121,6 +1125,8 @@ buildGrowthChart('desktopGrowthChart');
         startOverlay.remove();
         overlay.classList.add('active');
         overlay.style.display = 'block';
+        // Start audio and tour at the same time
+        voiceoverAudio.play();
         goToStep(0);
         scheduleNextStep(0);
       }
