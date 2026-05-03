@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ModelBid — Inner Circle Feed Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0a0a14; color: #fff; line-height: 1.5;
+  }
+  a { color: #e91e8c; text-decoration: none; }
+
+  /* ===== Page Layout ===== */
+  .page-header {
+    text-align: center; padding: 3rem 1.5rem 2rem;
+    background: linear-gradient(135deg, #0a0a14 0%, #1a0a2e 50%, #0a0a14 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .page-header h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+  .page-header h1 span { color: #e91e8c; }
+  .page-header p { color: #888; font-size: 1rem; max-width: 600px; margin: 0 auto; }
+
+  .section-divider {
+    text-align: center; padding: 2.5rem 1rem 1.5rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    margin-top: 2rem;
+  }
+  .section-divider h2 { font-size: 1.4rem; margin-bottom: 0.3rem; }
+  .section-divider .badge {
+    display: inline-block; padding: 0.25rem 0.75rem; border-radius: 2rem;
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .badge-mobile { background: rgba(233,30,140,0.15); color: #e91e8c; }
+  .badge-desktop { background: rgba(100,200,255,0.15); color: #64c8ff; }
+  .section-divider p { color: #777; font-size: 0.85rem; margin-top: 0.5rem; }
+
+  /* ===== Shared Feed Styles ===== */
+  .circle-header {
+    background: #16161f; border-radius: 1rem; padding: 1.25rem;
+    border: 1px solid rgba(255,255,255,0.08); margin-bottom: 1.5rem;
+  }
+  .circle-header h2 { margin-bottom: 0.25rem; font-size: 1.3rem; }
+  .circle-meta { display: flex; gap: 1rem; font-size: 0.85rem; color: #888; margin-bottom: 0.75rem; flex-wrap: wrap; }
+  .creator-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .creator-chip {
+    display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.6rem;
+    border-radius: 2rem; background: rgba(255,255,255,0.04); font-size: 0.78rem; cursor: default;
+  }
+  .avatar {
+    width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: 0.85rem; flex-shrink: 0; overflow: hidden;
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .avatar-lg { width: 48px; height: 48px; font-size: 1.4rem; }
+  .subscribed-badge { font-size: 0.82rem; color: #00c864; font-weight: 700; }
+
+  /* Filter buttons */
+  .filter-row { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 0.35rem 0.75rem; border-radius: 2rem; font-size: 0.78rem; font-weight: 500;
+    border: 1px solid rgba(255,255,255,0.08); background: #16161f; color: #b0b0b8;
+    cursor: pointer; white-space: nowrap; transition: all 0.15s;
+  }
+  .filter-btn:hover { border-color: rgba(233,30,140,0.3); }
+  .filter-btn.active {
+    font-weight: 700; border: 1.5px solid #e91e8c;
+    background: rgba(233,30,140,0.1); color: #e91e8c;
+  }
+
+  /* Post card */
+  .post-card {
+    background: #16161f; border-radius: 1rem; padding: 1rem;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .post-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+  .post-header .avatar { width: 32px; height: 32px; font-size: 0.9rem; }
+  .post-author { font-weight: 700; font-size: 0.85rem; }
+  .post-date { font-size: 0.7rem; color: #777; }
+  .post-views { font-size: 0.7rem; color: #777; margin-left: auto; }
+  .post-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.4rem; }
+  .post-content { font-size: 0.9rem; color: #b0b0b8; margin-bottom: 0.5rem; line-height: 1.5; }
+  .post-image {
+    width: 100%; border-radius: 0.5rem; max-height: 300px; object-fit: cover; cursor: pointer;
+  }
+  .post-images { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .post-images img { max-width: calc(50% - 0.25rem); border-radius: 0.5rem; max-height: 200px; object-fit: cover; }
+
+  /* ===== Mobile Preview ===== */
+  .mobile-frame {
+    max-width: 390px; margin: 0 auto; padding: 0 1rem 2rem;
+  }
+  .mobile-filters { margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .mobile-feed { display: flex; flex-direction: column; gap: 1rem; }
+
+  /* ===== Desktop Preview ===== */
+  .desktop-frame {
+    max-width: 1300px; margin: 0 auto; padding: 0 1.5rem 3rem;
+  }
+  .desktop-columns {
+    display: grid; gap: 1rem; align-items: start;
+  }
+  .desktop-col { display: flex; flex-direction: column; gap: 0.75rem; }
+  .col-header {
+    background: #16161f; border-radius: 1rem; padding: 0.75rem;
+    border: 1px solid rgba(255,255,255,0.08); text-align: center;
+  }
+  .col-header .avatar-lg { margin: 0 auto 0.4rem; }
+  .col-name { font-weight: 700; font-size: 0.88rem; }
+  .col-stats { font-size: 0.7rem; color: #777; margin-bottom: 0.5rem; }
+  .col-filters { display: flex; gap: 0.35rem; justify-content: center; }
+
+  /* ===== Phone Mockup ===== */
+  .phone-wrapper { display: flex; justify-content: center; padding-bottom: 2rem; }
+  .phone-bezel {
+    width: 410px; background: #1a1a2e; border-radius: 2.5rem; padding: 1rem 0.5rem;
+    border: 2px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    position: relative;
+  }
+  .phone-notch {
+    width: 120px; height: 24px; background: #0a0a14; border-radius: 0 0 1rem 1rem;
+    margin: 0 auto 0.75rem; position: relative; z-index: 2;
+  }
+  .phone-screen {
+    background: #0a0a14; border-radius: 1.5rem; padding: 1rem; overflow-y: auto;
+    max-height: 700px;
+  }
+  .phone-screen::-webkit-scrollbar { width: 3px; }
+  .phone-screen::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+  /* ===== Fullscreen Image Modal ===== */
+  .image-modal {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999;
+    background: rgba(0,0,0,0.92); align-items: center; justify-content: center; cursor: pointer;
+  }
+  .image-modal.open { display: flex; }
+  .image-modal img { max-width: 95%; max-height: 95%; border-radius: 0.5rem; }
+
+  /* Gradient overlays */
+  .gradient-img {
+    width: 100%; height: 180px; border-radius: 0.5rem; display: flex;
+    align-items: flex-end; padding: 0.75rem; font-size: 0.7rem; color: rgba(255,255,255,0.5);
+  }
+</style>
+</head>
+<body>
+
+<!-- Page Header -->
+<div class="page-header">
+  <h1>Inner Circle <span>Feed Preview</span></h1>
+  <p>This is what subscribers see when they open your Inner Circle. Scroll down to see both mobile and desktop versions.</p>
+</div>
+
+<!-- ==================== MOBILE SECTION ==================== -->
+<div class="section-divider">
+  <span class="badge badge-mobile">Mobile View</span>
+  <h2>What subscribers see on their phone</h2>
+  <p>One scrolling feed with filters to sort by creator, most recent, or most viewed</p>
+</div>
+
+<div class="phone-wrapper">
+<div class="phone-bezel">
+<div class="phone-notch"></div>
+<div class="phone-screen" id="mobile-screen">
+
+  <!-- Circle Header -->
+  <div class="circle-header">
+    <h2 style="font-size:1.1rem;">The A-List Circle</h2>
+    <div style="color:#777;font-size:0.8rem;margin-bottom:0.5rem;font-style:italic;">"Exclusive content from the top 4"</div>
+    <div class="circle-meta">
+      <span>$25/month</span>
+      <span>4 creators</span>
+      <span>312 subscribers</span>
+    </div>
+    <div class="creator-chips" id="mobile-header-chips"></div>
+    <div class="subscribed-badge">✅ You're subscribed</div>
+  </div>
+
+  <!-- Mobile Filters -->
+  <div class="mobile-filters">
+    <div class="filter-row" id="mobile-creator-filters"></div>
+    <div class="filter-row" id="mobile-sort-filters">
+      <button class="filter-btn active" onclick="setMobileSort('none')">No Filter</button>
+      <button class="filter-btn" onclick="setMobileSort('recent')">Most Recent</button>
+      <button class="filter-btn" onclick="setMobileSort('views')">Most Viewed</button>
+    </div>
+  </div>
+
+  <!-- Mobile Feed -->
+  <div class="mobile-feed" id="mobile-feed"></div>
+
+</div>
+</div>
+</div>
+
+
+<!-- ==================== DESKTOP SECTION ==================== -->
+<div class="section-divider">
+  <span class="badge badge-desktop">Desktop View</span>
+  <h2>What subscribers see on a computer</h2>
+  <p>Each creator gets their own column, ordered by popularity. Each column has its own filters.</p>
+</div>
+
+<div class="desktop-frame">
+  <!-- Circle Header -->
+  <div class="circle-header" style="max-width:900px;margin:0 auto 1.5rem;">
+    <h2>The A-List Circle</h2>
+    <div style="color:#777;font-size:0.85rem;margin-bottom:0.5rem;font-style:italic;">"Exclusive content from the top 4"</div>
+    <div class="circle-meta">
+      <span>$25/month</span>
+      <span>4 creators</span>
+      <span>312 subscribers</span>
+    </div>
+    <div class="creator-chips" id="desktop-header-chips"></div>
+    <div class="subscribed-badge">✅ You're subscribed</div>
+  </div>
+
+  <!-- Desktop Columns -->
+  <div class="desktop-columns" id="desktop-columns" style="grid-template-columns: repeat(4, 1fr);"></div>
+</div>
+
+<!-- Fullscreen Image Modal -->
+<div class="image-modal" id="imageModal" onclick="this.classList.remove('open')">
+  <img id="modalImg" src="" alt="" />
+</div>
+
+<div style="text-align:center;padding:3rem 1rem;border-top:1px solid rgba(255,255,255,0.06);margin-top:2rem;">
+  <div style="font-size:0.9rem;color:#888;margin-bottom:0.5rem;">Ready to start posting?</div>
+  <a href="https://modelbid.tech" style="font-size:1.1rem;font-weight:700;color:#e91e8c;">Join ModelBid →</a>
+</div>
+
+<script>
+// ===== FAKE DATA =====
+const models = [
+  {
+    id: 'm1', name: 'Jasmine Rivera', emoji: '',
+    photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face',
+    gradient: 'linear-gradient(135deg, #ff6b9d 0%, #c44dff 100%)',
+  },
+  {
+    id: 'm2', name: 'Aria Chen', emoji: '',
+    photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face',
+    gradient: 'linear-gradient(135deg, #64c8ff 0%, #6c5ce7 100%)',
+  },
+  {
+    id: 'm3', name: 'Lexi Monroe', emoji: '',
+    photo: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop&crop=face',
+    gradient: 'linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)',
+  },
+  {
+    id: 'm4', name: 'Sofia Morales', emoji: '',
+    photo: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100&h=100&fit=crop&crop=face',
+    gradient: 'linear-gradient(135deg, #00c864 0%, #00b4d8 100%)',
+  },
+];
+
+const postImages = [
+  { url: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=500&h=350&fit=crop', caption: 'Behind the scenes' },
+  { url: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500&h=350&fit=crop', caption: 'New editorial' },
+  { url: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=500&h=350&fit=crop', caption: 'Location shoot' },
+  { url: 'https://images.unsplash.com/photo-1496440737103-cd596325d314?w=500&h=350&fit=crop', caption: 'Golden hour' },
+  { url: 'https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=500&h=350&fit=crop', caption: 'Studio vibes' },
+  { url: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=500&h=350&fit=crop', caption: 'Street style' },
+  { url: 'https://images.unsplash.com/photo-1492106087820-71f1a00d2b11?w=500&h=350&fit=crop', caption: 'Sunset session' },
+  { url: 'https://images.unsplash.com/photo-1504703395950-b89145a5425b?w=500&h=350&fit=crop', caption: 'Candid moments' },
+];
+
+// Generate fake posts
+const allPosts = [];
+const postTitles = [
+  ['Behind the scenes from my Vogue audition', 'New portfolio shots — what do you think?', 'My morning routine before a shoot', 'Exclusive: outfit reveal for next week', 'Travel diary — Miami edition'],
+  ['Studio day with the team', 'Unfiltered: no makeup, no filter', 'My skincare routine breakdown', 'New collab announcement coming soon', 'BTS from the rooftop shoot'],
+  ['Weekend vibes in NYC', 'My workout routine for shoot prep', 'Hair transformation — before & after', 'Exclusive look at my new campaign', 'Day in my life as a model'],
+  ['Beach shoot wrap-up', 'My favorite looks from Fashion Week', 'Cooking vlog — my pre-shoot meals', 'First look at my jewelry collab', 'Q&A: your questions answered'],
+];
+const postContents = [
+  'This was such an incredible experience. I can\'t wait to share more with you all. The energy on set was unmatched.',
+  'Spent the whole day working on this and I\'m so happy with how it turned out. More exclusive content coming soon.',
+  'You guys have been asking for this forever so here it is. Drop a comment and let me know what you think!',
+  'One of my favorite shoots this year. The team was amazing and we got some stunning shots.',
+  'Real talk — this is the content I\'m most proud of. Unfiltered and authentic, just for you.',
+];
+
+let postId = 0;
+const now = Date.now();
+models.forEach((model, mi) => {
+  postTitles[mi].forEach((title, pi) => {
+    allPosts.push({
+      id: 'p' + (postId++),
+      creator_id: model.id,
+      title: title,
+      content: postContents[(mi + pi) % postContents.length],
+      media_urls: pi % 2 === 0 ? [postImages[(mi * 3 + pi) % postImages.length].url] : [],
+      view_count: Math.floor(Math.random() * 800) + 50,
+      created_at: new Date(now - (mi * 4 + pi) * 3600000 * (6 + Math.random() * 12)).toISOString(),
+    });
+  });
+});
+
+// Sort by total views for column ordering
+const modelsByPopularity = [...models].map(m => {
+  const totalViews = allPosts.filter(p => p.creator_id === m.id).reduce((s, p) => s + p.view_count, 0);
+  return { ...m, totalViews };
+}).sort((a, b) => b.totalViews - a.totalViews);
+
+// ===== RENDER HELPERS =====
+function avatarHTML(model, size) {
+  const cls = size === 'lg' ? 'avatar avatar-lg' : 'avatar';
+  if (model.photo) {
+    return `<div class="${cls}"><img src="${model.photo}" alt="${model.name}"></div>`;
+  }
+  return `<div class="${cls}" style="background:${model.gradient}">${model.emoji || '👤'}</div>`;
+}
+
+function postCardHTML(post) {
+  const model = models.find(m => m.id === post.creator_id);
+  const mediaUrls = post.media_urls || [];
+  let mediaHTML = '';
+  if (mediaUrls.length === 1) {
+    mediaHTML = `<img src="${mediaUrls[0]}" class="post-image" onclick="openImage('${mediaUrls[0]}')" alt="">`;
+  } else if (mediaUrls.length > 1) {
+    mediaHTML = '<div class="post-images">' + mediaUrls.map(u => `<img src="${u}" onclick="openImage('${u}')" alt="">`).join('') + '</div>';
+  }
+  return `
+    <div class="post-card">
+      <div class="post-header">
+        ${avatarHTML(model, 'sm')}
+        <div>
+          <div class="post-author">${model.name}</div>
+          <div class="post-date">${new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>
+        </div>
+        <div class="post-views">👁 ${post.view_count.toLocaleString()}</div>
+      </div>
+      <div class="post-title">${post.title}</div>
+      <div class="post-content">${post.content}</div>
+      ${mediaHTML}
+    </div>
+  `;
+}
+
+function openImage(url) {
+  document.getElementById('modalImg').src = url;
+  document.getElementById('imageModal').classList.add('open');
+}
+
+// ===== MOBILE =====
+let mobileCreator = 'all';
+let mobileSort = 'none';
+
+function renderMobileHeaderChips() {
+  document.getElementById('mobile-header-chips').innerHTML = models.map(m =>
+    `<div class="creator-chip">${avatarHTML(m, 'sm')}<span>${m.name}</span></div>`
+  ).join('');
+}
+
+function renderMobileCreatorFilters() {
+  const btns = [`<button class="filter-btn ${mobileCreator === 'all' ? 'active' : ''}" onclick="setMobileCreator('all')">All</button>`];
+  models.forEach(m => {
+    btns.push(`<button class="filter-btn ${mobileCreator === m.id ? 'active' : ''}" onclick="setMobileCreator('${m.id}')">${m.name.split(' ')[0]}</button>`);
+  });
+  document.getElementById('mobile-creator-filters').innerHTML = btns.join('');
+}
+
+function renderMobileSortFilters() {
+  document.getElementById('mobile-sort-filters').innerHTML = [
+    `<button class="filter-btn ${mobileSort === 'none' ? 'active' : ''}" onclick="setMobileSort('none')">No Filter</button>`,
+    `<button class="filter-btn ${mobileSort === 'recent' ? 'active' : ''}" onclick="setMobileSort('recent')">Most Recent</button>`,
+    `<button class="filter-btn ${mobileSort === 'views' ? 'active' : ''}" onclick="setMobileSort('views')">Most Viewed</button>`,
+  ].join('');
+}
+
+function sortPosts(arr, filter) {
+  if (filter === 'recent') return [...arr].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  if (filter === 'views') return [...arr].sort((a, b) => b.view_count - a.view_count);
+  return [...arr].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // default chronological
+}
+
+function renderMobileFeed() {
+  let filtered = allPosts;
+  if (mobileCreator !== 'all') filtered = filtered.filter(p => p.creator_id === mobileCreator);
+  filtered = sortPosts(filtered, mobileSort);
+  document.getElementById('mobile-feed').innerHTML = filtered.length === 0
+    ? '<div style="text-align:center;padding:2rem;color:#777;">No posts yet.</div>'
+    : filtered.map(p => postCardHTML(p)).join('');
+}
+
+function setMobileCreator(id) {
+  mobileCreator = id;
+  renderMobileCreatorFilters();
+  renderMobileFeed();
+}
+
+function setMobileSort(val) {
+  mobileSort = val;
+  renderMobileSortFilters();
+  renderMobileFeed();
+}
+
+// ===== DESKTOP =====
+const desktopFilters = {};
+modelsByPopularity.forEach(m => { desktopFilters[m.id] = 'recent'; });
+
+function renderDesktopHeaderChips() {
+  document.getElementById('desktop-header-chips').innerHTML = models.map(m =>
+    `<div class="creator-chip">${avatarHTML(m, 'sm')}<span>${m.name}</span></div>`
+  ).join('');
+}
+
+function renderDesktopColumns() {
+  document.getElementById('desktop-columns').innerHTML = modelsByPopularity.map(m => {
+    const filter = desktopFilters[m.id] || 'recent';
+    const creatorPosts = allPosts.filter(p => p.creator_id === m.id);
+    const sorted = sortPosts(creatorPosts, filter);
+
+    return `
+      <div class="desktop-col">
+        <div class="col-header">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0.4rem;margin-bottom:0.5rem;">
+            ${avatarHTML(m, 'lg')}
+            <div class="col-name">${m.name}</div>
+          </div>
+          <div class="col-stats">${creatorPosts.length} posts · ${m.totalViews.toLocaleString()} views</div>
+          <div class="col-filters">
+            <button class="filter-btn ${filter === 'recent' ? 'active' : ''}" onclick="setDesktopFilter('${m.id}','recent')">Most Recent</button>
+            <button class="filter-btn ${filter === 'views' ? 'active' : ''}" onclick="setDesktopFilter('${m.id}','views')">Most Viewed</button>
+          </div>
+        </div>
+        ${sorted.map(p => postCardHTML(p)).join('')}
+      </div>
+    `;
+  }).join('');
+}
+
+function setDesktopFilter(modelId, val) {
+  desktopFilters[modelId] = val;
+  renderDesktopColumns();
+}
+
+// ===== INIT =====
+renderMobileHeaderChips();
+renderMobileCreatorFilters();
+renderMobileSortFilters();
+renderMobileFeed();
+renderDesktopHeaderChips();
+renderDesktopColumns();
+</script>
+</body>
+</html>
