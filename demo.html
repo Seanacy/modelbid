@@ -269,10 +269,10 @@ const postImages = [
 // Generate fake posts
 const allPosts = [];
 const postTitles = [
-  ['Behind the scenes from my Vogue audition', 'New portfolio shots — what do you think?', 'My morning routine before a shoot', 'Exclusive: outfit reveal for next week', 'Travel diary — Miami edition'],
-  ['Studio day with the team', 'Unfiltered: no makeup, no filter', 'My skincare routine breakdown', 'New collab announcement coming soon', 'BTS from the rooftop shoot'],
-  ['Weekend vibes in NYC', 'My workout routine for shoot prep', 'Hair transformation — before & after', 'Exclusive look at my new campaign', 'Day in my life as a model'],
-  ['Beach shoot wrap-up', 'My favorite looks from Fashion Week', 'Cooking vlog — my pre-shoot meals', 'First look at my jewelry collab', 'Q&A: your questions answered'],
+  ['Behind the scenes from my Vogue audition', 'New portfolio shots — what do you think?', 'My morning routine before a shoot', 'Exclusive: outfit reveal for next week', 'Travel diary — Miami edition', 'Just booked my first runway show!', 'Late night thoughts on this industry'],
+  ['Studio day with the team', 'Unfiltered: no makeup, no filter', 'My skincare routine breakdown', 'New collab announcement coming soon', 'BTS from the rooftop shoot', 'My agent just called — big news', 'Polaroid dump from last weekend'],
+  ['Weekend vibes in NYC', 'My workout routine for shoot prep', 'Hair transformation — before & after', 'Exclusive look at my new campaign', 'Day in my life as a model', 'Trying on 10 looks for you to pick', 'Most requested: my diet breakdown'],
+  ['Beach shoot wrap-up', 'My favorite looks from Fashion Week', 'Cooking vlog — my pre-shoot meals', 'First look at my jewelry collab', 'Q&A: your questions answered', 'Pack with me for my LA trip', 'Secret project reveal — finally!'],
 ];
 const postContents = [
   'This was such an incredible experience. I can\'t wait to share more with you all. The energy on set was unmatched.',
@@ -287,22 +287,30 @@ const now = Date.now();
 // Spread posts across the last 30 days so filters show real differences
 const dayMs = 86400000;
 const postDayOffsets = [
-  [0, 3, 7, 14, 25],   // Jasmine: today, 3 days ago, 1 week, 2 weeks, 25 days
-  [1, 5, 10, 18, 28],  // Aria: yesterday, 5 days, 10 days, 18 days, 28 days
-  [2, 6, 12, 20, 30],  // Lexi: 2 days, 6 days, 12 days, 20 days, 30 days
-  [1, 4, 9, 16, 22],   // Sofia: yesterday, 4 days, 9 days, 16 days, 22 days
+  [0, 3, 7, 14, 25, 1, 11],   // Jasmine: today, 3d, 1wk, 2wk, 25d, yesterday, 11d
+  [1, 5, 10, 18, 28, 2, 8],   // Aria: 1d, 5d, 10d, 18d, 28d, 2d, 8d
+  [2, 6, 12, 20, 30, 0, 15],  // Lexi: 2d, 6d, 12d, 20d, 30d, today, 15d
+  [1, 4, 9, 16, 22, 3, 13],   // Sofia: 1d, 4d, 9d, 16d, 22d, 3d, 13d
+];
+// Intentional view counts so "Most Viewed" produces a VERY different order than "Most Recent"
+// Older posts have high views, newer posts have low views — toggling filters shuffles the deck
+const postViewCounts = [
+  [45, 120, 780, 950, 1200, 30, 410],   // Jasmine: newest=low views, oldest=high views
+  [60, 95, 620, 380, 1050, 25, 540],    // Aria
+  [70, 210, 430, 890, 1100, 15, 670],   // Lexi
+  [55, 150, 510, 720, 960, 40, 300],    // Sofia
 ];
 models.forEach((model, mi) => {
   postTitles[mi].forEach((title, pi) => {
     const daysAgo = postDayOffsets[mi][pi];
-    const hourOffset = Math.floor(Math.random() * 12); // random hour within the day
+    const hourOffset = Math.floor(Math.random() * 12);
     allPosts.push({
       id: 'p' + (postId++),
       creator_id: model.id,
       title: title,
       content: postContents[(mi + pi) % postContents.length],
-      media_urls: pi % 2 === 0 ? [postImages[(mi * 3 + pi) % postImages.length].url] : [],
-      view_count: Math.floor(Math.random() * 800) + 50,
+      media_urls: pi % 3 === 0 ? [postImages[(mi * 3 + pi) % postImages.length].url] : [],
+      view_count: postViewCounts[mi][pi],
       created_at: new Date(now - daysAgo * dayMs - hourOffset * 3600000).toISOString(),
     });
   });
