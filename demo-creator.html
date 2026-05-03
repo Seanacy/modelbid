@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ModelBid — Creator View Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0a0a14; color: #fff; line-height: 1.5;
+  }
+  a { color: #e91e8c; text-decoration: none; }
+
+  .page-header {
+    text-align: center; padding: 3rem 1.5rem 2rem;
+    background: linear-gradient(135deg, #0a0a14 0%, #1a0a2e 50%, #0a0a14 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .page-header h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+  .page-header h1 span { color: #e91e8c; }
+  .page-header p { color: #888; font-size: 1rem; max-width: 620px; margin: 0 auto; }
+  .page-header .you-are {
+    display: inline-block; margin-top: 1rem; padding: 0.4rem 1rem; border-radius: 2rem;
+    background: rgba(233,30,140,0.12); border: 1px solid rgba(233,30,140,0.3);
+    font-size: 0.85rem; color: #e91e8c; font-weight: 700;
+  }
+
+  .section-divider {
+    text-align: center; padding: 2.5rem 1rem 1.5rem;
+    border-top: 1px solid rgba(255,255,255,0.06); margin-top: 2rem;
+  }
+  .section-divider h2 { font-size: 1.4rem; margin-bottom: 0.3rem; }
+  .section-divider .badge {
+    display: inline-block; padding: 0.25rem 0.75rem; border-radius: 2rem;
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .badge-mobile { background: rgba(233,30,140,0.15); color: #e91e8c; }
+  .badge-desktop { background: rgba(100,200,255,0.15); color: #64c8ff; }
+  .section-divider p { color: #777; font-size: 0.85rem; margin-top: 0.5rem; }
+
+  /* Shared */
+  .circle-header {
+    background: #16161f; border-radius: 1rem; padding: 1.25rem;
+    border: 1px solid rgba(255,255,255,0.08); margin-bottom: 1.5rem;
+  }
+  .circle-header h2 { margin-bottom: 0.25rem; font-size: 1.3rem; }
+  .circle-meta { display: flex; gap: 1rem; font-size: 0.85rem; color: #888; margin-bottom: 0.75rem; flex-wrap: wrap; }
+  .creator-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .creator-chip {
+    display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.6rem;
+    border-radius: 2rem; background: rgba(255,255,255,0.04); font-size: 0.78rem; cursor: default;
+  }
+  .creator-chip.you {
+    border: 1px solid rgba(233,30,140,0.3); background: rgba(233,30,140,0.08);
+  }
+  .avatar {
+    width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: 0.85rem; flex-shrink: 0; overflow: hidden;
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .avatar-lg { width: 48px; height: 48px; font-size: 1.4rem; }
+  .member-badge { font-size: 0.82rem; color: #e91e8c; font-weight: 700; }
+
+  /* Post form */
+  .post-form {
+    background: #16161f; border-radius: 1rem; padding: 1rem;
+    border: 1px solid rgba(255,255,255,0.08); margin-bottom: 1.5rem;
+  }
+  .post-form h3 { font-size: 0.95rem; margin-bottom: 0.75rem; }
+  .post-form input[type="text"], .post-form textarea {
+    width: 100%; padding: 0.6rem 0.75rem; border-radius: 0.5rem;
+    border: 1px solid rgba(255,255,255,0.1); background: #0d0d18;
+    color: #fff; font-size: 0.88rem; font-family: inherit; margin-bottom: 0.5rem;
+    outline: none; transition: border-color 0.15s;
+  }
+  .post-form input[type="text"]:focus, .post-form textarea:focus {
+    border-color: rgba(233,30,140,0.4);
+  }
+  .post-form textarea { resize: vertical; min-height: 80px; }
+  .form-actions { display: flex; gap: 0.5rem; align-items: center; }
+  .photo-btn {
+    padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03); color: #888; font-size: 0.8rem; cursor: pointer;
+  }
+  .post-btn {
+    padding: 0.5rem 1.25rem; border-radius: 8px; border: none;
+    background: linear-gradient(135deg, #e91e8c, #c44dff); color: #fff;
+    font-weight: 700; font-size: 0.85rem; cursor: pointer; margin-left: auto;
+    transition: opacity 0.15s;
+  }
+  .post-btn:hover { opacity: 0.9; }
+  .upload-preview {
+    display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;
+  }
+  .upload-thumb {
+    width: 60px; height: 60px; border-radius: 8px; overflow: hidden; position: relative;
+  }
+  .upload-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .upload-remove {
+    position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%;
+    background: rgba(0,0,0,0.7); border: none; color: #fff; font-size: 0.6rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Filter buttons */
+  .filter-row { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 0.35rem 0.75rem; border-radius: 2rem; font-size: 0.78rem; font-weight: 500;
+    border: 1px solid rgba(255,255,255,0.08); background: #16161f; color: #b0b0b8;
+    cursor: pointer; white-space: nowrap; transition: all 0.15s;
+  }
+  .filter-btn:hover { border-color: rgba(233,30,140,0.3); }
+  .filter-btn.active {
+    font-weight: 700; border: 1.5px solid #e91e8c;
+    background: rgba(233,30,140,0.1); color: #e91e8c;
+  }
+
+  /* Post card */
+  .post-card {
+    background: #16161f; border-radius: 1rem; padding: 1rem;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .post-card.my-post { border-color: rgba(233,30,140,0.15); }
+  .post-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+  .post-header .avatar { width: 32px; height: 32px; font-size: 0.9rem; }
+  .post-author { font-weight: 700; font-size: 0.85rem; }
+  .post-date { font-size: 0.7rem; color: #777; }
+  .post-views { font-size: 0.7rem; color: #777; margin-left: auto; }
+  .post-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.4rem; }
+  .post-content { font-size: 0.9rem; color: #b0b0b8; margin-bottom: 0.5rem; line-height: 1.5; }
+  .post-image { width: 100%; border-radius: 0.5rem; max-height: 300px; object-fit: cover; cursor: pointer; }
+  .post-images { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .post-images img { max-width: calc(50% - 0.25rem); border-radius: 0.5rem; max-height: 200px; object-fit: cover; }
+  .locked-content {
+    padding: 1.5rem; text-align: center; border-radius: 0.75rem;
+    background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1);
+    color: #777; font-size: 0.82rem;
+  }
+  .you-tag {
+    font-size: 0.65rem; background: rgba(233,30,140,0.15); color: #e91e8c;
+    padding: 0.1rem 0.4rem; border-radius: 1rem; font-weight: 700; margin-left: 0.4rem;
+  }
+
+  /* Phone mockup */
+  .phone-wrapper { display: flex; justify-content: center; padding-bottom: 2rem; }
+  .phone-bezel {
+    width: 410px; background: #1a1a2e; border-radius: 2.5rem; padding: 1rem 0.5rem;
+    border: 2px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .phone-notch {
+    width: 120px; height: 24px; background: #0a0a14; border-radius: 0 0 1rem 1rem;
+    margin: 0 auto 0.75rem;
+  }
+  .phone-screen {
+    background: #0a0a14; border-radius: 1.5rem; padding: 1rem; overflow-y: auto; max-height: 750px;
+  }
+  .phone-screen::-webkit-scrollbar { width: 3px; }
+  .phone-screen::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+  /* Desktop frame */
+  .desktop-frame { max-width: 1300px; margin: 0 auto; padding: 0 1.5rem 3rem; }
+  .desktop-columns { display: grid; gap: 1rem; align-items: start; }
+  .desktop-col { display: flex; flex-direction: column; gap: 0.75rem; }
+  .col-header {
+    background: #16161f; border-radius: 1rem; padding: 0.75rem;
+    border: 1px solid rgba(255,255,255,0.08); text-align: center;
+  }
+  .col-header .avatar-lg { margin: 0 auto 0.4rem; }
+  .col-name { font-weight: 700; font-size: 0.88rem; }
+  .col-stats { font-size: 0.7rem; color: #777; margin-bottom: 0.5rem; }
+  .col-filters { display: flex; gap: 0.35rem; justify-content: center; }
+
+  /* Toast demo */
+  .toast-demo {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    background: #00c864; color: #fff; padding: 0.6rem 1.5rem; border-radius: 2rem;
+    font-weight: 700; font-size: 0.85rem; z-index: 9999; opacity: 0;
+    transition: opacity 0.3s; pointer-events: none;
+  }
+  .toast-demo.show { opacity: 1; }
+
+  /* Image modal */
+  .image-modal {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999;
+    background: rgba(0,0,0,0.92); align-items: center; justify-content: center; cursor: pointer;
+  }
+  .image-modal.open { display: flex; }
+  .image-modal img { max-width: 95%; max-height: 95%; border-radius: 0.5rem; }
+
+  /* Mobile filters container */
+  .mobile-filters { margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .mobile-feed { display: flex; flex-direction: column; gap: 1rem; }
+</style>
+</head>
+<body>
+
+<!-- Page Header -->
+<div class="page-header">
+  <h1>Creator <span>View Preview</span></h1>
+  <p>This is what YOU see as a model in the Inner Circle. Post content, see your stats, and watch your views grow.</p>
+  <div class="you-are">👁 You are viewing as: Jasmine Rivera</div>
+</div>
+
+<!-- ==================== MOBILE SECTION ==================== -->
+<div class="section-divider">
+  <span class="badge badge-mobile">Mobile View</span>
+  <h2>Your feed on mobile</h2>
+  <p>Post content, see your own posts, and peek at what others are posting (titles only)</p>
+</div>
+
+<div class="phone-wrapper">
+<div class="phone-bezel">
+<div class="phone-notch"></div>
+<div class="phone-screen" id="mobile-screen">
+
+  <!-- Circle Header -->
+  <div class="circle-header">
+    <h2 style="font-size:1.1rem;">Midwest Baddies</h2>
+    <div style="color:#777;font-size:0.8rem;margin-bottom:0.5rem;font-style:italic;">"Exclusive content from the top 4"</div>
+    <div class="circle-meta">
+      <span>$25/month</span>
+      <span>4 creators</span>
+      <span>312 subscribers</span>
+    </div>
+    <div class="creator-chips" id="mobile-header-chips"></div>
+    <div class="member-badge">🎤 You're a creator in this circle</div>
+  </div>
+
+  <!-- Post Form -->
+  <div class="post-form">
+    <h3>New Post</h3>
+    <div class="upload-preview" id="mobile-upload-preview"></div>
+    <input type="text" id="mobile-post-title" placeholder="Post title" />
+    <textarea id="mobile-post-text" placeholder="Write something for your subscribers..." rows="3"></textarea>
+    <div class="form-actions">
+      <label class="photo-btn">
+        📷 Add Photo
+        <input type="file" accept="image/*" hidden onchange="handleDemoUpload(this, 'mobile')" />
+      </label>
+      <button class="post-btn" onclick="demoPost('mobile')">Post</button>
+    </div>
+  </div>
+
+  <!-- Mobile Filters -->
+  <div class="mobile-filters">
+    <div class="filter-row" id="mobile-creator-filters"></div>
+    <div class="filter-row" id="mobile-sort-filters"></div>
+  </div>
+
+  <!-- Mobile Feed -->
+  <div class="mobile-feed" id="mobile-feed"></div>
+
+</div>
+</div>
+</div>
+
+<!-- ==================== DESKTOP SECTION ==================== -->
+<div class="section-divider">
+  <span class="badge badge-desktop">Desktop View</span>
+  <h2>Your feed on desktop</h2>
+  <p>Columns for each creator — your column shows full posts, others show titles only</p>
+</div>
+
+<div class="desktop-frame">
+  <div class="circle-header" style="max-width:900px;margin:0 auto 1.5rem;">
+    <h2>Midwest Baddies</h2>
+    <div style="color:#777;font-size:0.85rem;margin-bottom:0.5rem;font-style:italic;">"Exclusive content from the top 4"</div>
+    <div class="circle-meta">
+      <span>$25/month</span>
+      <span>4 creators</span>
+      <span>312 subscribers</span>
+    </div>
+    <div class="creator-chips" id="desktop-header-chips"></div>
+    <div class="member-badge">🎤 You're a creator in this circle</div>
+  </div>
+
+  <!-- Post Form (Desktop) -->
+  <div class="post-form" style="max-width:700px;margin:0 auto 1.5rem;">
+    <h3>New Post</h3>
+    <div class="upload-preview" id="desktop-upload-preview"></div>
+    <input type="text" id="desktop-post-title" placeholder="Post title" />
+    <textarea id="desktop-post-text" placeholder="Write something for your subscribers..." rows="3"></textarea>
+    <div class="form-actions">
+      <label class="photo-btn">
+        📷 Add Photo
+        <input type="file" accept="image/*" hidden onchange="handleDemoUpload(this, 'desktop')" />
+      </label>
+      <button class="post-btn" onclick="demoPost('desktop')">Post</button>
+    </div>
+  </div>
+
+  <div class="desktop-columns" id="desktop-columns" style="grid-template-columns: repeat(4, 1fr);"></div>
+</div>
+
+<!-- Image Modal -->
+<div class="image-modal" id="imageModal" onclick="this.classList.remove('open')">
+  <img id="modalImg" src="" alt="" />
+</div>
+
+<!-- Toast -->
+<div class="toast-demo" id="toast">Posted!</div>
+
+<div style="text-align:center;padding:3rem 1rem;border-top:1px solid rgba(255,255,255,0.06);margin-top:2rem;">
+  <div style="font-size:0.9rem;color:#888;margin-bottom:0.5rem;">Ready to start posting?</div>
+  <a href="https://modelbid.tech" style="font-size:1.1rem;font-weight:700;color:#e91e8c;">Join ModelBid →</a>
+</div>
+
+<script>
+// ===== DATA =====
+const YOU = 'm1'; // Jasmine is "you"
+
+const models = [
+  { id: 'm1', name: 'Jasmine Rivera', photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face', gradient: 'linear-gradient(135deg, #ff6b9d 0%, #c44dff 100%)' },
+  { id: 'm2', name: 'Aria Chen', photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face', gradient: 'linear-gradient(135deg, #64c8ff 0%, #6c5ce7 100%)' },
+  { id: 'm3', name: 'Lexi Monroe', photo: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop&crop=face', gradient: 'linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)' },
+  { id: 'm4', name: 'Sofia Morales', photo: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100&h=100&fit=crop&crop=face', gradient: 'linear-gradient(135deg, #00c864 0%, #00b4d8 100%)' },
+];
+
+const postImages = [
+  'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=500&h=350&fit=crop',
+  'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500&h=350&fit=crop',
+  'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=500&h=350&fit=crop',
+  'https://images.unsplash.com/photo-1496440737103-cd596325d314?w=500&h=350&fit=crop',
+  'https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=500&h=350&fit=crop',
+  'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=500&h=350&fit=crop',
+  'https://images.unsplash.com/photo-1492106087820-71f1a00d2b11?w=500&h=350&fit=crop',
+  'https://images.unsplash.com/photo-1504703395950-b89145a5425b?w=500&h=350&fit=crop',
+];
+
+const postTitles = [
+  ['Behind the scenes from my Vogue audition', 'New portfolio shots — what do you think?', 'My morning routine before a shoot', 'Exclusive: outfit reveal for next week', 'Travel diary — Miami edition', 'Just booked my first runway show!', 'Late night thoughts on this industry'],
+  ['Studio day with the team', 'Unfiltered: no makeup, no filter', 'My skincare routine breakdown', 'New collab announcement coming soon', 'BTS from the rooftop shoot', 'My agent just called — big news', 'Polaroid dump from last weekend'],
+  ['Weekend vibes in NYC', 'My workout routine for shoot prep', 'Hair transformation — before & after', 'Exclusive look at my new campaign', 'Day in my life as a model', 'Trying on 10 looks for you to pick', 'Most requested: my diet breakdown'],
+  ['Beach shoot wrap-up', 'My favorite looks from Fashion Week', 'Cooking vlog — my pre-shoot meals', 'First look at my jewelry collab', 'Q&A: your questions answered', 'Pack with me for my LA trip', 'Secret project reveal — finally!'],
+];
+const postContents = [
+  'This was such an incredible experience. I can\'t wait to share more with you all. The energy on set was unmatched.',
+  'Spent the whole day working on this and I\'m so happy with how it turned out. More exclusive content coming soon.',
+  'You guys have been asking for this forever so here it is. Drop a comment and let me know what you think!',
+  'One of my favorite shoots this year. The team was amazing and we got some stunning shots.',
+  'Real talk — this is the content I\'m most proud of. Unfiltered and authentic, just for you.',
+];
+
+const dayMs = 86400000;
+const now = Date.now();
+const postDayOffsets = [
+  [0, 3, 7, 14, 25, 1, 11],
+  [1, 5, 10, 18, 28, 2, 8],
+  [2, 6, 12, 20, 30, 0, 15],
+  [1, 4, 9, 16, 22, 3, 13],
+];
+const postViewCounts = [
+  [12400, 18700, 31200, 47800, 63500, 10800, 24600],
+  [14200, 19500, 28900, 35100, 58200, 11300, 26700],
+  [15800, 22400, 33600, 44200, 61800, 10200, 29300],
+  [13600, 17900, 27400, 39800, 52100, 11900, 21500],
+];
+
+let allPosts = [];
+let postId = 0;
+models.forEach((model, mi) => {
+  postTitles[mi].forEach((title, pi) => {
+    const daysAgo = postDayOffsets[mi][pi];
+    const hourOffset = Math.floor(Math.random() * 12);
+    allPosts.push({
+      id: 'p' + (postId++),
+      creator_id: model.id,
+      title: title,
+      content: postContents[(mi + pi) % postContents.length],
+      media_urls: pi % 3 === 0 ? [postImages[(mi * 3 + pi) % postImages.length]] : [],
+      view_count: postViewCounts[mi][pi],
+      created_at: new Date(now - daysAgo * dayMs - hourOffset * 3600000).toISOString(),
+    });
+  });
+});
+
+// Sort by popularity for column order
+const modelsByPopularity = [...models].map(m => {
+  const totalViews = allPosts.filter(p => p.creator_id === m.id).reduce((s, p) => s + p.view_count, 0);
+  return { ...m, totalViews };
+}).sort((a, b) => b.totalViews - a.totalViews);
+
+// ===== HELPERS =====
+function avatarHTML(model, size) {
+  const cls = size === 'lg' ? 'avatar avatar-lg' : 'avatar';
+  return model.photo
+    ? `<div class="${cls}"><img src="${model.photo}" alt="${model.name}"></div>`
+    : `<div class="${cls}" style="background:${model.gradient}">👤</div>`;
+}
+
+function postCardHTML(post, isCreatorView) {
+  const model = models.find(m => m.id === post.creator_id);
+  const isYours = post.creator_id === YOU;
+  const hideContent = isCreatorView && !isYours;
+  const mediaUrls = post.media_urls || [];
+  let mediaHTML = '';
+  if (!hideContent) {
+    if (mediaUrls.length === 1) {
+      mediaHTML = `<img src="${mediaUrls[0]}" class="post-image" onclick="openImage('${mediaUrls[0]}')" alt="">`;
+    } else if (mediaUrls.length > 1) {
+      mediaHTML = '<div class="post-images">' + mediaUrls.map(u => `<img src="${u}" onclick="openImage('${u}')" alt="">`).join('') + '</div>';
+    }
+  }
+
+  return `
+    <div class="post-card ${isYours ? 'my-post' : ''}">
+      <div class="post-header">
+        ${avatarHTML(model, 'sm')}
+        <div>
+          <div class="post-author">${model.name}${isYours ? '<span class="you-tag">YOU</span>' : ''}</div>
+          <div class="post-date">${new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>
+        </div>
+        <div class="post-views">👁 ${post.view_count.toLocaleString()}</div>
+      </div>
+      <div class="post-title">${post.title}</div>
+      ${hideContent ? `
+        <div class="locked-content">
+          🔒 Content hidden — creators can only see titles, dates, and views from other creators.
+        </div>
+      ` : `
+        <div class="post-content">${post.content}</div>
+        ${mediaHTML}
+      `}
+    </div>
+  `;
+}
+
+function openImage(url) {
+  document.getElementById('modalImg').src = url;
+  document.getElementById('imageModal').classList.add('open');
+}
+
+function sortPosts(arr, filter) {
+  if (filter === 'recent') return [...arr].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  if (filter === 'views') return [...arr].sort((a, b) => b.view_count - a.view_count);
+  return [...arr].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ===== DEMO POST =====
+let demoUploads = { mobile: [], desktop: [] };
+
+function handleDemoUpload(input, target) {
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    demoUploads[target].push(e.target.result);
+    renderUploadPreviews(target);
+  };
+  reader.readAsDataURL(input.files[0]);
+  input.value = '';
+}
+
+function removeDemoUpload(target, idx) {
+  demoUploads[target].splice(idx, 1);
+  renderUploadPreviews(target);
+}
+
+function renderUploadPreviews(target) {
+  const el = document.getElementById(target + '-upload-preview');
+  el.innerHTML = demoUploads[target].map((url, i) => `
+    <div class="upload-thumb">
+      <img src="${url}" alt="">
+      <button class="upload-remove" onclick="removeDemoUpload('${target}', ${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function demoPost(target) {
+  const titleEl = document.getElementById(target + '-post-title');
+  const textEl = document.getElementById(target + '-post-text');
+  const title = titleEl.value.trim();
+  const content = textEl.value.trim();
+  if (!title) return;
+
+  const newPost = {
+    id: 'p' + (postId++),
+    creator_id: YOU,
+    title: title,
+    content: content,
+    media_urls: [...demoUploads[target]],
+    view_count: 0,
+    created_at: new Date().toISOString(),
+  };
+  allPosts.unshift(newPost);
+  titleEl.value = '';
+  textEl.value = '';
+  demoUploads[target] = [];
+  renderUploadPreviews(target);
+  showToast('Posted! 🎉');
+  renderMobileFeed();
+  renderDesktopColumns();
+}
+
+// ===== MOBILE =====
+let mobileCreator = 'all';
+let mobileSort = 'none';
+
+function renderMobileHeaderChips() {
+  document.getElementById('mobile-header-chips').innerHTML = models.map(m =>
+    `<div class="creator-chip ${m.id === YOU ? 'you' : ''}">${avatarHTML(m, 'sm')}<span>${m.name}${m.id === YOU ? ' (You)' : ''}</span></div>`
+  ).join('');
+}
+
+function renderMobileCreatorFilters() {
+  const btns = [`<button class="filter-btn ${mobileCreator === 'all' ? 'active' : ''}" onclick="setMobileCreator('all')">All</button>`];
+  models.forEach(m => {
+    const label = m.id === YOU ? 'My Posts' : m.name.split(' ')[0];
+    btns.push(`<button class="filter-btn ${mobileCreator === m.id ? 'active' : ''}" onclick="setMobileCreator('${m.id}')">${label}</button>`);
+  });
+  document.getElementById('mobile-creator-filters').innerHTML = btns.join('');
+}
+
+function renderMobileSortFilters() {
+  document.getElementById('mobile-sort-filters').innerHTML = [
+    `<button class="filter-btn ${mobileSort === 'none' ? 'active' : ''}" onclick="setMobileSort('none')">No Filter</button>`,
+    `<button class="filter-btn ${mobileSort === 'recent' ? 'active' : ''}" onclick="setMobileSort('recent')">Most Recent</button>`,
+    `<button class="filter-btn ${mobileSort === 'views' ? 'active' : ''}" onclick="setMobileSort('views')">Most Viewed</button>`,
+  ].join('');
+}
+
+function renderMobileFeed() {
+  let filtered = allPosts;
+  if (mobileCreator !== 'all') filtered = filtered.filter(p => p.creator_id === mobileCreator);
+  filtered = sortPosts(filtered, mobileSort);
+  document.getElementById('mobile-feed').innerHTML = filtered.length === 0
+    ? '<div style="text-align:center;padding:2rem;color:#777;">No posts yet. Be the first to post!</div>'
+    : filtered.map(p => postCardHTML(p, true)).join('');
+}
+
+function setMobileCreator(id) { mobileCreator = id; renderMobileCreatorFilters(); renderMobileFeed(); }
+function setMobileSort(val) { mobileSort = val; renderMobileSortFilters(); renderMobileFeed(); }
+
+// ===== DESKTOP =====
+const desktopFilters = {};
+modelsByPopularity.forEach(m => { desktopFilters[m.id] = 'recent'; });
+
+function renderDesktopHeaderChips() {
+  document.getElementById('desktop-header-chips').innerHTML = models.map(m =>
+    `<div class="creator-chip ${m.id === YOU ? 'you' : ''}">${avatarHTML(m, 'sm')}<span>${m.name}${m.id === YOU ? ' (You)' : ''}</span></div>`
+  ).join('');
+}
+
+function renderDesktopColumns() {
+  document.getElementById('desktop-columns').innerHTML = modelsByPopularity.map(m => {
+    const filter = desktopFilters[m.id] || 'recent';
+    const creatorPosts = allPosts.filter(p => p.creator_id === m.id);
+    const sorted = sortPosts(creatorPosts, filter);
+    const isYou = m.id === YOU;
+
+    return `
+      <div class="desktop-col">
+        <div class="col-header" style="${isYou ? 'border-color:rgba(233,30,140,0.25);' : ''}">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0.4rem;margin-bottom:0.5rem;">
+            ${avatarHTML(m, 'lg')}
+            <div class="col-name">${m.name}${isYou ? '<span class="you-tag">YOU</span>' : ''}</div>
+          </div>
+          <div class="col-stats">${creatorPosts.length} posts · ${m.totalViews.toLocaleString()} views</div>
+          <div class="col-filters">
+            <button class="filter-btn ${filter === 'recent' ? 'active' : ''}" onclick="setDesktopFilter('${m.id}','recent')">Most Recent</button>
+            <button class="filter-btn ${filter === 'views' ? 'active' : ''}" onclick="setDesktopFilter('${m.id}','views')">Most Viewed</button>
+          </div>
+        </div>
+        ${sorted.length === 0
+          ? '<div style="text-align:center;padding:1rem;color:#777;font-size:0.8rem;">No posts yet</div>'
+          : sorted.map(p => postCardHTML(p, true)).join('')
+        }
+      </div>
+    `;
+  }).join('');
+}
+
+function setDesktopFilter(modelId, val) { desktopFilters[modelId] = val; renderDesktopColumns(); }
+
+// ===== INIT =====
+renderMobileHeaderChips();
+renderMobileCreatorFilters();
+renderMobileSortFilters();
+renderMobileFeed();
+renderDesktopHeaderChips();
+renderDesktopColumns();
+</script>
+</body>
+</html>
