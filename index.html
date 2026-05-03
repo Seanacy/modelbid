@@ -21365,6 +21365,52 @@ RULES
             )}
           </div>
 
+          {/* Creator Earnings/Stats Block */}
+          {isCreator && (() => {
+            const subs = circle.subscriber_count || 0;
+            const totalRevenue = subs * Number(circle.price);
+            const creatorPool = totalRevenue * 0.85;
+            const myPosts = posts.filter(p => p.creator_id === auth.currentUser?.id).length;
+            const totalPosts = posts.length || 1;
+            const myEarnings = Math.round(creatorPool * (myPosts / totalPosts));
+            const now = new Date();
+            const nextPayout = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+            const payoutStr = nextPayout.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+            const statBoxStyle = {
+              background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '0.75rem',
+              border: '1px solid var(--border-color)', textAlign: 'center', flex: 1, minWidth: '120px'
+            };
+            const statLabel = { fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.25rem' };
+            const statValue = { fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' };
+
+            return (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={isDesktop
+                  ? { display: 'flex', gap: '0.75rem' }
+                  : { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }
+                }>
+                  <div style={statBoxStyle}>
+                    <div style={statLabel}>Subscribers</div>
+                    <div style={statValue}>{subs.toLocaleString()}</div>
+                  </div>
+                  <div style={statBoxStyle}>
+                    <div style={statLabel}>Circle Earnings</div>
+                    <div style={statValue}>${totalRevenue.toLocaleString()}/mo</div>
+                  </div>
+                  <div style={statBoxStyle}>
+                    <div style={statLabel}>Your Earnings</div>
+                    <div style={{ ...statValue, color: 'var(--accent, #e8458b)' }}>${myEarnings.toLocaleString()}</div>
+                  </div>
+                  <div style={statBoxStyle}>
+                    <div style={statLabel}>Next Payout</div>
+                    <div style={statValue}>{payoutStr}</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Creator Post Form */}
           {isCreator && (
             <div style={{ background: 'var(--bg-card)', borderRadius: '1rem', padding: '1rem', border: '1px solid var(--border-color)', marginBottom: '1.5rem' }}>
