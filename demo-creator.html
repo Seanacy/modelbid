@@ -250,6 +250,17 @@
         <div style="font-size:0.65rem;color:#999;">28 days</div>
       </div>
     </div>
+    <!-- Growth Chart -->
+    <div style="margin-top:1rem;background:#fff;border-radius:0.75rem;padding:0.75rem 0.75rem 0.5rem;border:1px solid #f0d6e4;">
+      <div style="font-size:0.8rem;font-weight:700;color:#000;margin-bottom:0.5rem;">Your earnings growth</div>
+      <div style="display:flex;gap:0.75rem;margin-bottom:0.5rem;">
+        <div style="font-size:0.65rem;color:#999;display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:#ccc;display:inline-block;"></span>Solo</div>
+        <div style="font-size:0.65rem;color:#999;display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:#e8458b;display:inline-block;"></span>Inner Circle</div>
+      </div>
+      <div style="position:relative;width:100%;height:160px;">
+        <canvas id="mobileGrowthChart"></canvas>
+      </div>
+    </div>
   </div>
 
   <!-- Post Form -->
@@ -323,6 +334,20 @@
         <div style="font-size:0.65rem;color:#999;">28 days</div>
       </div>
     </div>
+    <!-- Growth Chart (Desktop) -->
+    <div style="margin-top:1rem;background:#fff;border-radius:0.75rem;padding:1rem;border:1px solid #f0d6e4;">
+      <div style="display:flex;align-items:center;gap:1.5rem;margin-bottom:0.5rem;">
+        <div style="font-size:0.85rem;font-weight:700;color:#000;">Your earnings growth</div>
+        <div style="display:flex;gap:0.75rem;">
+          <div style="font-size:0.7rem;color:#999;display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:#ccc;display:inline-block;"></span>Solo</div>
+          <div style="font-size:0.7rem;color:#999;display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:#e8458b;display:inline-block;"></span>Inner Circle</div>
+        </div>
+        <div style="margin-left:auto;font-size:0.85rem;font-weight:800;color:#1D9E75;">+875%</div>
+      </div>
+      <div style="position:relative;width:100%;height:200px;">
+        <canvas id="desktopGrowthChart"></canvas>
+      </div>
+    </div>
   </div>
 
   <!-- Post Form (Desktop) -->
@@ -356,6 +381,7 @@
   <a href="https://modelbid.tech" style="font-size:1.1rem;font-weight:700;color:#e8458b;">Join ModelBid →</a>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 // ===== DATA =====
 const YOU = 'm1'; // Jasmine is "you"
@@ -636,6 +662,110 @@ renderMobileSortFilters();
 renderMobileFeed();
 renderDesktopHeaderChips();
 renderDesktopColumns();
+
+// ===== GROWTH CHART =====
+const growthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const soloData    = [180, 210, 190, 220, 200, null, null, null, null, null, null, null];
+const circleData  = [null, null, null, null, 200, 580, 890, 1240, 1520, 1720, 1860, 1950];
+
+// Custom plugin: dashed vertical annotation at "Joined Inner Circle"
+const annotationPlugin = {
+  id: 'joinedLine',
+  afterDraw(chart) {
+    const xScale = chart.scales.x;
+    const yScale = chart.scales.y;
+    const ctx = chart.ctx;
+    const idx = 4; // May index
+    const x = xScale.getPixelForValue(idx);
+    ctx.save();
+    ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = '#e8458b';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x, yScale.top);
+    ctx.lineTo(x, yScale.bottom);
+    ctx.stroke();
+    // label
+    ctx.setLineDash([]);
+    ctx.font = 'bold 9px -apple-system, sans-serif';
+    ctx.fillStyle = '#e8458b';
+    ctx.textAlign = 'center';
+    ctx.fillText('Joined Inner Circle', x, yScale.top - 6);
+    ctx.restore();
+  }
+};
+
+function buildGrowthChart(canvasId, heightHint) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: growthLabels,
+      datasets: [
+        {
+          label: 'Solo',
+          data: soloData,
+          borderColor: '#ccc',
+          backgroundColor: 'rgba(200,200,200,0.08)',
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: '#ccc',
+          fill: true,
+          tension: 0.3,
+          spanGaps: false
+        },
+        {
+          label: 'Inner Circle',
+          data: circleData,
+          borderColor: '#e8458b',
+          backgroundColor: 'rgba(232,69,139,0.10)',
+          borderWidth: 2.5,
+          pointRadius: 3,
+          pointBackgroundColor: '#e8458b',
+          fill: true,
+          tension: 0.3,
+          spanGaps: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { top: 18 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return context.dataset.label + ': $' + context.parsed.y.toLocaleString();
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 10 }, color: '#999' }
+        },
+        y: {
+          beginAtZero: true,
+          max: 2200,
+          ticks: {
+            font: { size: 10 },
+            color: '#999',
+            callback: function(v) { return '$' + v.toLocaleString(); }
+          },
+          grid: { color: 'rgba(0,0,0,0.04)' }
+        }
+      }
+    },
+    plugins: [annotationPlugin]
+  });
+}
+
+buildGrowthChart('mobileGrowthChart');
+buildGrowthChart('desktopGrowthChart');
 </script>
 </body>
 </html>
