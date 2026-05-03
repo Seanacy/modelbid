@@ -1108,9 +1108,13 @@ buildGrowthChart('desktopGrowthChart');
     countdownEl.style.cssText = 'font-size:12rem;font-weight:900;color:#e8458b;text-shadow:0 0 60px rgba(232,69,139,0.5);font-family:Arial,sans-serif;transition:transform 0.3s ease;';
     const subtextEl = document.createElement('div');
     subtextEl.style.cssText = 'font-size:1.2rem;color:#fff;opacity:0.7;margin-top:1rem;';
-    subtextEl.textContent = 'Audio + tour start together at GO';
+    subtextEl.textContent = 'Listen for the beeps';
     startOverlay.appendChild(countdownEl);
     startOverlay.appendChild(subtextEl);
+
+    // Start audio immediately — beeps in the audio match the visual countdown
+    voiceoverAudio.currentTime = 0;
+    voiceoverAudio.play();
 
     let count = 3;
     countdownEl.textContent = count;
@@ -1125,8 +1129,7 @@ buildGrowthChart('desktopGrowthChart');
         startOverlay.remove();
         overlay.classList.add('active');
         overlay.style.display = 'block';
-        // Start audio and tour at the same time
-        voiceoverAudio.play();
+        // Tour starts — audio voiceover is already playing in sync
         goToStep(0);
         scheduleNextStep(0);
       }
