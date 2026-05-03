@@ -21383,6 +21383,9 @@ RULES
             const now = new Date();
             const nextPayout = new Date(now.getFullYear(), now.getMonth() + 1, 1);
             const payoutStr = nextPayout.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const daysUntilPayout = Math.ceil((nextPayout - now) / (1000 * 60 * 60 * 24));
+            const currentMonth = now.getMonth();
+            const ytdEarnings = Math.round(myEarnings * (currentMonth + 1));
 
             const statBoxStyle = {
               background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '0.75rem',
@@ -21411,8 +21414,13 @@ RULES
                   </div>
                   <div style={statBoxStyle}>
                     <div style={statLabel}>Next Payout</div>
-                    <div style={statValue}>{payoutStr}</div>
+                    <div style={{ ...statValue, color: '#1D9E75' }}>${myEarnings.toLocaleString()}</div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{payoutStr} · {daysUntilPayout} days</div>
                   </div>
+                </div>
+                <div style={{ marginTop: '0.75rem', background: 'var(--bg-card)', borderRadius: '0.75rem', padding: '0.75rem', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                  <div style={statLabel}>Year To Date</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1D9E75' }}>${ytdEarnings.toLocaleString()}</div>
                 </div>
               </div>
             );
