@@ -6598,7 +6598,7 @@
                 }}>✓</span>}
               </h1>
               {model.username && <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
-                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>@{model.username}</span>
+                <span style={{ color: 'var(--text-secondary, #888)', fontSize: '0.85rem' }}>@{model.username}</span>
                 <button onClick={(e) => {
                   e.stopPropagation();
                   const shareUrl = model.username
@@ -6611,19 +6611,19 @@
                       const btn = e.currentTarget;
                       btn.textContent = '✓ Copied!';
                       btn.style.color = '#22c55e';
-                      setTimeout(() => { btn.textContent = '🔗 Share'; btn.style.color = 'rgba(255,255,255,0.5)'; }, 2000);
+                      setTimeout(() => { btn.textContent = '🔗 Share'; btn.style.color = 'var(--text-secondary, #888)'; }, 2000);
                     });
                   }
                 }} style={{
                   background: 'none', border: '1px solid var(--border-color)', borderRadius: '1rem',
-                  color: 'rgba(255,255,255,0.5)', fontSize: '0.72rem', padding: '0.15rem 0.6rem',
+                  color: 'var(--text-secondary, #888)', fontSize: '0.72rem', padding: '0.15rem 0.6rem',
                   cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
                   transition: 'all 0.2s',
                 }}>🔗 Share</button>
               </div>}
-              {model.tagline && <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.82rem', fontStyle: 'italic', marginBottom: '0.2rem' }}>"{model.tagline}"</div>}
+              {model.tagline && <div style={{ color: 'var(--text-secondary, #888)', fontSize: '0.82rem', fontStyle: 'italic', marginBottom: '0.2rem' }}>"{model.tagline}"</div>}
               {(model.location || (model.age && model.show_age !== false)) && (
-                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <div style={{ color: 'var(--text-secondary, #888)', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                   {model.location && <span>📍 {model.location}</span>}
                   {model.age && model.show_age !== false && <span>🎂 {model.age} years old</span>}
                 </div>
@@ -10848,14 +10848,7 @@ REMEMBER:
       );
     }
 
-    // ===== MODEL DEMO PAGE — preview of what a model sees =====
-    function ModelDemoPage() {
-      // No more demo page — redirect to real dashboard or signup
-      useEffect(() => {
-        window.location.hash = 'dashboard';
-      }, []);
-      return <div className="text-center" style={{ padding: '2rem' }}>Redirecting to dashboard...</div>;
-    }
+    // ModelDemoPage removed — demo pages deleted
 
     class AdminErrorBoundary extends React.Component {
       constructor(props) { super(props); this.state = { error: null }; }
@@ -21753,7 +21746,7 @@ RULES
         if (page === 'login') return <LoginPage />;
         if (page === 'signup') return <SignupPage />;
         if (page === 'choose-role') return auth.currentUser ? <ChooseRolePage /> : <LoginPage />;
-        if (page === 'model-demo') return <ModelDemoPage />;
+        // model-demo route removed — demo pages deleted
         if (page === 'cherry-picker') return auth.profile?.role === 'client' ? <FeedPage /> : requiresSub(<CherryPickerPage />);
         if (page === 'team') return auth.currentUser ? <TeamFamSaucePage /> : <LoginPage />;
         if (page === 'bidboard') return <BidBoardPage />;
@@ -21764,7 +21757,7 @@ RULES
         if (page === 'edit-profile') return auth.currentUser ? <EditProfilePage /> : <LoginPage />;
         if (page === 'u' && params[0]) return <ProfilePage modelId={params[0]} isUsername={true} />;
         // Vanity URL fallback: if page doesn't match any route, check if it's a username
-        if (page && !['home','feed','wall','reputation','circle','circles','crew','browse','profile','client','formodels','westackr','contracts','login','signup','choose-role','model-demo','cherry-picker','team','bidboard','dashboard','messages','edit-profile','admin','create-circle','my-circle','circle-invite','circle-transfer','circle-dashboard','circle-feed','circle-join','notifications','buyout','u'].includes(page)) {
+        if (page && !['home','feed','wall','reputation','circle','circles','crew','browse','profile','client','formodels','westackr','contracts','login','signup','choose-role','cherry-picker','team','bidboard','dashboard','messages','edit-profile','admin','create-circle','my-circle','circle-invite','circle-transfer','circle-dashboard','circle-feed','circle-join','notifications','buyout','u'].includes(page)) {
           return <ProfilePage modelId={page} isUsername={true} />;
         }
         return !auth.currentUser ? <HomePage /> : <BrowseModelsPage />;
