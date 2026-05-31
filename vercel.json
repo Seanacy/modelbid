@@ -1,5 +1,6 @@
 {
     "rewrites": [
+          { "source": "/demo", "destination": "/demo-creator.html" },
           { "source": "/join", "destination": "/join.html" },
           { "source": "/app", "destination": "/index.html" },
           { "source": "/:username", "destination": "/index.html" }
