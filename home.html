@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#e8458b" />
+<title>ModelBid — Inner Circle</title>
+<link rel="manifest" href="/manifest.json" />
+<style>
+  :root{
+    --bg:#0a0010;
+    --panel:#1b0a2e;
+    --panel2:#241038;
+    --border:#3a1d57;
+    --text:#ffffff;
+    --text2:#d9cdec;      /* brighter subtitle — fixes the "too dark" problem */
+    --muted:#b9a8d6;
+    --magenta:#e8458b;
+    --purple:#c44dff;
+    --cyan:#27e0ff;
+    --grad:linear-gradient(135deg,#c44dff 0%,#e8458b 100%);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(1200px 600px at 70% -10%, #2a0b45 0%, var(--bg) 55%) , var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+  }
+  a{color:inherit;text-decoration:none;}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 20px;}
+
+  /* ---------- NAV ---------- */
+  header.nav{position:sticky;top:0;z-index:50;background:rgba(10,0,16,0.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);}
+  .nav-inner{display:flex;align-items:center;justify-content:space-between;height:60px;}
+  .brand{font-size:20px;font-weight:800;letter-spacing:-.3px;}
+  .brand span{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .nav-links{display:flex;align-items:center;gap:24px;}
+  .nav-links a{font-size:14px;font-weight:600;color:var(--text2);}
+  .nav-links a:hover{color:#fff;}
+  .nav-links a.signin{color:var(--cyan);}
+  .btn{display:inline-block;border:none;cursor:pointer;font-weight:700;border-radius:999px;}
+  .btn-grad{background:var(--grad);color:#fff;padding:10px 18px;font-size:14px;}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:#fff;padding:10px 18px;font-size:14px;}
+  .menu-btn{display:none;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;}
+
+  /* ---------- HERO (two columns) ---------- */
+  .hero{padding:46px 0 36px;}
+  .hero-grid{display:grid;grid-template-columns:minmax(0,410px) 1fr;gap:40px;align-items:center;}
+  .eyebrow{font-size:12px;font-weight:800;letter-spacing:2px;color:var(--purple);margin-bottom:14px;}
+  .hero h1{font-size:54px;line-height:1.02;font-weight:800;margin:0 0 18px;letter-spacing:-1.5px;}
+  .hero h1 .g{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .hero p.sub{font-size:18px;color:var(--text2);margin:0 0 26px;max-width:400px;}
+  .hero-cta{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:18px;}
+  .btn-lg{padding:14px 24px;font-size:16px;}
+  .hero-links{display:flex;gap:22px;font-size:14px;font-weight:600;}
+  .hero-links a.browse{color:var(--cyan);}
+  .hero-links a.signin{color:#fff;}
+
+  /* ---------- THE PHONE COLUMN ---------- */
+  .phone-col{display:flex;flex-direction:column;align-items:center;}
+  .phone-caption{text-align:center;margin-bottom:16px;}
+  .phone-caption .pc-badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:2rem;font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;background:rgba(232,69,139,0.18);color:#ff8fc4;border:1px solid rgba(232,69,139,0.4);}
+  .phone-caption h3{font-size:22px;font-weight:800;color:#fff;margin:10px 0 4px;}
+  .phone-caption p{font-size:13px;color:var(--text2);margin:0;max-width:330px;margin-left:auto;margin-right:auto;}
+
+  /* ===== Ported demo phone (matches /demo) — scoped under .mb-phone ===== */
+  .mb-phone *{box-sizing:border-box;}
+  .mb-phone h1,.mb-phone h2,.mb-phone h3,.mb-phone h4{margin:0;}
+  .mb-phone{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.5;}
+
+  .phone-wrapper{display:flex;justify-content:center;}
+  .phone-bezel{width:410px;max-width:100%;background:#f8e8f0;border-radius:2.5rem;padding:1rem 0.5rem;border:2px solid #f0d6e4;box-shadow:0 26px 70px rgba(232,69,139,0.28);}
+  .phone-notch{width:120px;height:24px;background:#e8458b;border-radius:0 0 1rem 1rem;margin:0 auto 0.75rem;}
+  .phone-screen{background:#fffbfd;border-radius:1.5rem;padding:1rem;overflow-y:auto;max-height:640px;color:#000;}
+  .phone-screen::-webkit-scrollbar{width:3px;}
+  .phone-screen::-webkit-scrollbar-thumb{background:rgba(232,69,139,0.2);border-radius:3px;}
+
+  .circle-header{background:#fff5f9;border-radius:1rem;padding:1.25rem;border:1px solid #f0d6e4;margin-bottom:1.5rem;}
+  .circle-header h2{margin-bottom:0.25rem;font-size:1.3rem;color:#000;}
+  .circle-meta{display:flex;gap:1rem;font-size:0.85rem;color:#444;margin-bottom:0.75rem;flex-wrap:wrap;}
+  .creator-chips{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.75rem;}
+  .creator-chip{display:flex;align-items:center;gap:0.4rem;padding:0.3rem 0.6rem;border-radius:2rem;background:rgba(232,69,139,0.06);font-size:0.78rem;cursor:default;color:#222;}
+  .creator-chip.you{border:1px solid rgba(232,69,139,0.3);background:rgba(232,69,139,0.1);}
+  .avatar{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;overflow:hidden;}
+  .avatar img{width:100%;height:100%;object-fit:cover;}
+  .member-badge{font-size:0.82rem;color:#e8458b;font-weight:700;}
+
+  .post-form{background:#fff5f9;border-radius:1rem;padding:1rem;border:1px solid #f0d6e4;margin-bottom:1.5rem;}
+  .post-form h3{font-size:0.95rem;margin-bottom:0.75rem;color:#000;}
+  .post-form input[type="text"],.post-form textarea{width:100%;padding:0.6rem 0.75rem;border-radius:0.5rem;border:1px solid #e0d0d8;background:#fff;color:#111;font-size:0.88rem;font-family:inherit;margin-bottom:0.5rem;outline:none;transition:border-color 0.15s;}
+  .post-form input[type="text"]:focus,.post-form textarea:focus{border-color:#e8458b;}
+  .post-form textarea{resize:vertical;min-height:80px;}
+  .form-actions{display:flex;gap:0.5rem;align-items:center;}
+  .photo-btn{padding:0.5rem 0.75rem;border-radius:8px;border:1px solid #e0d0d8;background:#fff;color:#555;font-size:0.8rem;cursor:pointer;}
+  .post-btn{padding:0.5rem 1.25rem;border-radius:8px;border:none;background:linear-gradient(135deg,#e8458b,#9d4edd);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;margin-left:auto;transition:opacity 0.15s;}
+  .post-btn:hover{opacity:0.9;}
+  .upload-preview{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;}
+  .upload-thumb{width:60px;height:60px;border-radius:8px;overflow:hidden;position:relative;}
+  .upload-thumb img{width:100%;height:100%;object-fit:cover;}
+  .upload-remove{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,0.7);border:none;color:#fff;font-size:0.6rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+  .filter-row{display:flex;gap:0.35rem;flex-wrap:wrap;}
+  .filter-btn{padding:0.35rem 0.75rem;border-radius:2rem;font-size:0.78rem;font-weight:500;border:1px solid #f0d6e4;background:#fff;color:#555;cursor:pointer;white-space:nowrap;transition:all 0.15s;}
+  .filter-btn:hover{border-color:#e8458b;}
+  .filter-btn.active{font-weight:700;border:1.5px solid #e8458b;background:rgba(232,69,139,0.08);color:#e8458b;}
+
+  .post-card{background:#fff5f9;border-radius:1rem;padding:1rem;border:1px solid #f0d6e4;}
+  .post-card.my-post{border-color:rgba(232,69,139,0.3);}
+  .post-header{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem;}
+  .post-header .avatar{width:32px;height:32px;font-size:0.9rem;}
+  .post-author{font-weight:700;font-size:0.85rem;color:#000;}
+  .post-date{font-size:0.7rem;color:#999;}
+  .post-views{font-size:0.7rem;color:#999;margin-left:auto;}
+  .post-title{font-weight:700;font-size:1rem;margin-bottom:0.4rem;color:#000;}
+  .post-content{font-size:0.9rem;color:#222;margin-bottom:0.5rem;line-height:1.5;}
+  .post-image{width:100%;border-radius:0.5rem;max-height:300px;object-fit:cover;cursor:pointer;}
+  .post-images{display:flex;gap:0.5rem;flex-wrap:wrap;}
+  .post-images img{max-width:calc(50% - 0.25rem);border-radius:0.5rem;max-height:200px;object-fit:cover;}
+  .locked-content{padding:1.5rem;text-align:center;border-radius:0.75rem;background:rgba(232,69,139,0.04);border:1px dashed #f0d6e4;color:#999;font-size:0.82rem;}
+  .you-tag{font-size:0.65rem;background:rgba(232,69,139,0.12);color:#e8458b;padding:0.1rem 0.4rem;border-radius:1rem;font-weight:700;margin-left:0.4rem;}
+
+  .mobile-filters{margin-bottom:1rem;display:flex;flex-direction:column;gap:0.5rem;}
+  .mobile-feed{display:flex;flex-direction:column;gap:1rem;}
+
+  .image-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;cursor:pointer;}
+  .image-modal.open{display:flex;}
+  .image-modal img{max-width:95%;max-height:95%;border-radius:0.5rem;}
+  .toast-demo{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#e8458b,#9d4edd);color:#fff;padding:0.6rem 1.5rem;border-radius:2rem;font-weight:700;font-size:0.85rem;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none;}
+  .toast-demo.show{opacity:1;}
+
+  /* ---------- SECTION SHELL ---------- */
+  section{padding:50px 0;}
+  .sec-eyebrow{text-align:center;font-size:12px;font-weight:800;letter-spacing:2px;color:var(--magenta);margin-bottom:10px;}
+  .sec-title{text-align:center;font-size:34px;font-weight:800;letter-spacing:-1px;margin:0 0 36px;}
+
+  .cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  .feat{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:24px;}
+  .feat .ic{font-size:30px;margin-bottom:12px;}
+  .feat h3{margin:0 0 8px;font-size:18px;font-weight:800;}
+  .feat p{margin:0;font-size:14px;color:var(--text2);}
+
+  .chips{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .chip{background:var(--panel2);border:1px solid var(--border);border-radius:14px;padding:16px 18px;display:flex;gap:12px;align-items:flex-start;}
+  .chip .ic{font-size:22px;}
+  .chip h4{margin:0 0 2px;font-size:15px;font-weight:800;}
+  .chip p{margin:0;font-size:12px;color:var(--muted);}
+
+  .cards2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .aud{background:linear-gradient(160deg,var(--panel) 0%,#160826 100%);border:1px solid var(--border);border-radius:18px;padding:26px;}
+  .aud .ic{font-size:26px;margin-bottom:10px;}
+  .aud h3{margin:0 0 8px;font-size:20px;font-weight:800;}
+  .aud p{margin:0;font-size:14px;color:var(--text2);}
+
+  .final{text-align:center;background:radial-gradient(700px 300px at 50% 0%, #3a1060 0%, transparent 70%);border-radius:24px;padding:48px 20px;border:1px solid var(--border);}
+  .final h2{font-size:32px;font-weight:800;margin:0 0 10px;letter-spacing:-1px;}
+  .final p{color:var(--text2);margin:0 0 22px;}
+
+  footer{border-top:1px solid var(--border);padding:30px 0;margin-top:40px;}
+  .foot-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;}
+  .foot-links{display:flex;gap:20px;font-size:13px;color:var(--muted);}
+
+  @media (max-width:860px){
+    .nav-links{display:none;}
+    .menu-btn{display:block;}
+    .hero-grid{grid-template-columns:1fr;gap:30px;justify-items:center;}
+    .hero{padding:28px 0 12px;}
+    .hero-text{text-align:center;}
+    .hero h1{font-size:42px;}
+    .hero p.sub{margin-left:auto;margin-right:auto;}
+    .hero-cta,.hero-links{justify-content:center;}
+    .phone-col{order:2;}
+    .cards3,.chips{grid-template-columns:1fr;}
+    .cards2{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<header class="nav">
+  <div class="wrap nav-inner">
+    <div class="brand">🎀 Model<span>Bid</span></div>
+    <nav class="nav-links">
+      <a href="/app">Browse</a>
+      <a href="/app">Circles</a>
+      <a href="/app">For Models</a>
+      <a href="/app" class="signin">Sign In</a>
+      <a href="/join" class="btn btn-grad">Sign Up</a>
+    </nav>
+    <button class="menu-btn" aria-label="Menu" onclick="location.href='/app'">☰</button>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero wrap">
+  <div class="hero-grid">
+    <div class="hero-text">
+      <div class="eyebrow">INTRODUCING</div>
+      <h1>Inner <span class="g">Circle</span></h1>
+      <p class="sub">2–4 models. One exclusive feed. Split the work, share the audience, grow faster together.</p>
+      <div class="hero-cta">
+        <a href="/join" class="btn btn-grad btn-lg">Start your circle</a>
+        <a href="/demo" class="btn btn-ghost btn-lg">See how it works</a>
+      </div>
+      <div class="hero-links">
+        <a href="/app" class="browse">Browse Models →</a>
+        <a href="/app" class="signin">Sign In</a>
+      </div>
+    </div>
+
+    <!-- THE PHONE (built right into the page) -->
+    <div class="phone-col">
+      <div class="phone-caption">
+        <span class="pc-badge">Mobile View</span>
+        <h3>Your feed on mobile</h3>
+        <p>Post content, see your own posts, and peek at what others are posting (titles only)</p>
+      </div>
+
+      <div class="mb-phone">
+        <div class="phone-wrapper">
+          <div class="phone-bezel">
+            <div class="phone-notch"></div>
+            <div class="phone-screen" id="mobile-screen">
+
+              <!-- Circle Header -->
+              <div class="circle-header">
+                <h2 style="font-size:1.1rem;">Midwest Baddies</h2>
+                <div style="color:#777;font-size:0.8rem;margin-bottom:0.5rem;font-style:italic;">"Exclusive content from the top 4"</div>
+                <div class="circle-meta">
+                  <span>$25/month</span>
+                  <span>4 creators</span>
+                  <span>312 subscribers</span>
+                </div>
+                <div class="creator-chips" id="mobile-header-chips"></div>
+                <div class="member-badge">🎤 You're a creator in this circle</div>
+              </div>
+
+              <!-- Earnings & Stats -->
+              <div style="background:#fff5f9;border-radius:1rem;padding:1rem;border:1px solid #f0d6e4;margin-bottom:1.5rem;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                  <div style="background:#fff;border-radius:0.75rem;padding:0.75rem;border:1px solid #f0d6e4;text-align:center;">
+                    <div style="font-size:0.7rem;color:#999;margin-bottom:0.2rem;">Subscribers</div>
+                    <div style="font-size:1.3rem;font-weight:800;color:#000;">312</div>
+                  </div>
+                  <div style="background:#fff;border-radius:0.75rem;padding:0.75rem;border:1px solid #f0d6e4;text-align:center;">
+                    <div style="font-size:0.7rem;color:#999;margin-bottom:0.2rem;">Circle Earnings</div>
+                    <div style="font-size:1.3rem;font-weight:800;color:#000;">$7,800</div>
+                    <div style="font-size:0.65rem;color:#999;">this month</div>
+                  </div>
+                  <div style="background:#fff;border-radius:0.75rem;padding:0.75rem;border:1px solid #f0d6e4;text-align:center;">
+                    <div style="font-size:0.7rem;color:#999;margin-bottom:0.2rem;">Your Earnings</div>
+                    <div style="font-size:1.3rem;font-weight:800;color:#e8458b;">$1,950</div>
+                    <div style="font-size:0.65rem;color:#999;">your split (25%)</div>
+                  </div>
+                  <div style="background:#fff;border-radius:0.75rem;padding:0.75rem;border:1px solid #f0d6e4;text-align:center;">
+                    <div style="font-size:0.7rem;color:#999;margin-bottom:0.2rem;">Year To Date</div>
+                    <div style="font-size:1.3rem;font-weight:800;color:#1D9E75;">$9,960</div>
+                  </div>
+                </div>
+                <div style="margin-top:0.75rem;background:#fff;border-radius:0.75rem;padding:0.75rem;border:1px solid #f0d6e4;text-align:center;">
+                  <div style="font-size:0.7rem;color:#999;margin-bottom:0.2rem;">Next Payout</div>
+                  <div style="font-size:1.6rem;font-weight:800;color:#1D9E75;">$1,950</div>
+                  <div style="font-size:0.65rem;color:#999;">Jun 1 · 28 days</div>
+                </div>
+                <div style="margin-top:1rem;background:#fff;border-radius:0.75rem;padding:0.75rem 0.75rem 0.5rem;border:1px solid #f0d6e4;">
+                  <div style="font-size:0.8rem;font-weight:700;color:#000;margin-bottom:0.5rem;">Your earnings growth</div>
+                  <div style="display:flex;gap:0.75rem;margin-bottom:0.5rem;">
+                    <div style="font-size:0.65rem;color:#999;display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:#ccc;display:inline-block;"></span>Solo</div>
+                    <div style="font-size:0.65rem;color:#999;display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:#e8458b;display:inline-block;"></span>Inner Circle</div>
+                  </div>
+                  <div style="position:relative;width:100%;height:160px;">
+                    <canvas id="mobileGrowthChart"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Post Form -->
+              <div class="post-form">
+                <h3>New Post</h3>
+                <div class="upload-preview" id="mobile-upload-preview"></div>
+                <input type="text" id="mobile-post-title" placeholder="Post title" />
+                <textarea id="mobile-post-text" placeholder="Write something for your subscribers..." rows="3"></textarea>
+                <div class="form-actions">
+                  <label class="photo-btn">
+                    Add Content
+                    <input type="file" accept="image/*" hidden onchange="handleDemoUpload(this, 'mobile')" />
+                  </label>
+                  <button class="post-btn" onclick="demoPost('mobile')">Post</button>
+                </div>
+              </div>
+
+              <!-- Filters -->
+              <div class="mobile-filters">
+                <div class="filter-row" id="mobile-creator-filters"></div>
+                <div class="filter-row" id="mobile-sort-filters"></div>
+              </div>
+
+              <!-- Feed -->
+              <div class="mobile-feed" id="mobile-feed"></div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WHY IT WORKS -->
+<section class="wrap">
+  <div class="sec-eyebrow">WHY IT WORKS</div>
+  <h2 class="sec-title">Grow 4x faster with a crew</h2>
+  <div class="cards3">
+    <div class="feat"><div class="ic">👯‍♀️</div><h3>Team up</h3><p>Invite 2–4 models to your circle. Each one brings her own audience.</p></div>
+    <div class="feat"><div class="ic">📰</div><h3>One shared feed</h3><p>Post exclusive content to 3 subscriber tiers. Privacy controls built in.</p></div>
+    <div class="feat"><div class="ic">💸</div><h3>Split the earnings</h3><p>85% goes to the crew, split by post count. Referral tracking shows who brought who.</p></div>
+  </div>
+</section>
+
+<!-- TOOLKIT -->
+<section class="wrap">
+  <div class="sec-eyebrow">ALSO INCLUDED</div>
+  <h2 class="sec-title">The full ModelBid toolkit</h2>
+  <div class="chips">
+    <div class="chip"><div class="ic">📸</div><div><h4>BTS Feed</h4><p>Solo private feed</p></div></div>
+    <div class="chip"><div class="ic">📅</div><div><h4>Now Booking</h4><p>Real-time availability</p></div></div>
+    <div class="chip"><div class="ic">🍒</div><div><h4>Cherry Picker</h4><p>Premium casting</p></div></div>
+    <div class="chip"><div class="ic">💬</div><div><h4>Messaging</h4><p>Direct model chat</p></div></div>
+    <div class="chip"><div class="ic">📝</div><div><h4>Contracts</h4><p>Smart agreements</p></div></div>
+    <div class="chip"><div class="ic">🛡️</div><div><h4>Verified Models</h4><p>Creator identity verified</p></div></div>
+  </div>
+</section>
+
+<!-- AUDIENCE -->
+<section class="wrap">
+  <div class="cards2">
+    <div class="aud"><div class="ic">📸</div><h3>For Models</h3><p>Set your rates, build your audience, and get booked directly.</p></div>
+    <div class="aud"><div class="ic">🎯</div><h3>For Clients</h3><p>Browse verified models, view portfolios &amp; reviews, and book sessions.</p></div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="wrap">
+  <div class="final">
+    <h2>Ready to start your circle?</h2>
+    <p>Free to create. Invite your crew. Start earning together.</p>
+    <a href="/join" class="btn btn-grad btn-lg">Get started free</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap foot-inner">
+    <div class="brand">🎀 Model<span>Bid</span></div>
+    <div class="foot-links">
+      <a href="/app">Privacy</a>
+      <a href="/app">Terms</a>
+      <a href="/app">Support</a>
+    </div>
+  </div>
+</footer>
+
+<!-- Image modal + toast (used by the phone feed) -->
+<div class="image-modal" id="imageModal" onclick="this.classList.remove('open')">
+  <img id="modalImg" src="" alt="" />
+</div>
+<div class="toast-demo" id="toast">Posted!</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+/* ===== Phone data + rendering — ported from /demo (mobile view) ===== */
+const YOU = 'm1';
+
+const models = [
+  { id: 'm1', name: 'Jasmine Rivera', photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face', gradient: 'linear-gradient(135deg, #ff6b9d 0%, #c44dff 100%)' },
+  { id: 'm2', name: 'Aria Chen', photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face', gradient: 'linear-gradient(135deg, #64c8ff 0%, #6c5ce7 100%)' },
+  { id: 'm3', name: 'Lexi Monroe', photo: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop&crop=face', gradient: 'linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)' },
+  { id: 'm4', name: 'Sofia Morales', photo: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100&h=100&fit=crop&crop=face', gradient: 'linear-gradient(135deg, #00c864 0%, #00b4d8 100%)' },
+];
+
+const postImages = [
+  'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=500&h=350&fit=crop',
+  'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500&h=350&fit=crop',
+  'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=500&h=350&fit=crop',
+  'https://images.unsplash.com/photo-1496440737103-cd596325d314?w=500&h=350&fit=crop',
+  'https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=500&h=350&fit=crop',
+  'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=500&h=350&fit=crop',
+  'https://images.unsplash.com/photo-1492106087820-71f1a00d2b11?w=500&h=350&fit=crop',
+  'https://images.unsplash.com/photo-1504703395950-b89145a5425b?w=500&h=350&fit=crop',
+];
+
+const postTitles = [
+  ['Behind the scenes from my Vogue audition', 'New portfolio shots — what do you think?', 'My morning routine before a shoot', 'Exclusive: outfit reveal for next week', 'Travel diary — Miami edition', 'Just booked my first runway show!', 'Late night thoughts on this industry'],
+  ['Studio day with the team', 'Unfiltered: no makeup, no filter', 'My skincare routine breakdown', 'New collab announcement coming soon', 'BTS from the rooftop shoot', 'My agent just called — big news', 'Polaroid dump from last weekend'],
+  ['Weekend vibes in NYC', 'My workout routine for shoot prep', 'Hair transformation — before & after', 'Exclusive look at my new campaign', 'Day in my life as a model', 'Trying on 10 looks for you to pick', 'Most requested: my diet breakdown'],
+  ['Beach shoot wrap-up', 'My favorite looks from Fashion Week', 'Cooking vlog — my pre-shoot meals', 'First look at my jewelry collab', 'Q&A: your questions answered', 'Pack with me for my LA trip', 'Secret project reveal — finally!'],
+];
+const postContents = [
+  'This was such an incredible experience. I can\'t wait to share more with you all. The energy on set was unmatched.',
+  'Spent the whole day working on this and I\'m so happy with how it turned out. More exclusive content coming soon.',
+  'You guys have been asking for this forever so here it is. Drop a comment and let me know what you think!',
+  'One of my favorite shoots this year. The team was amazing and we got some stunning shots.',
+  'Real talk — this is the content I\'m most proud of. Unfiltered and authentic, just for you.',
+];
+
+const dayMs = 86400000;
+const now = Date.now();
+const postDayOffsets = [
+  [0, 3, 7, 14, 25, 1, 11],
+  [1, 5, 10, 18, 28, 2, 8],
+  [2, 6, 12, 20, 30, 0, 15],
+  [1, 4, 9, 16, 22, 3, 13],
+];
+const postViewCounts = [
+  [12400, 18700, 31200, 47800, 63500, 10800, 24600],
+  [14200, 19500, 28900, 35100, 58200, 11300, 26700],
+  [15800, 22400, 33600, 44200, 61800, 10200, 29300],
+  [13600, 17900, 27400, 39800, 52100, 11900, 21500],
+];
+
+let allPosts = [];
+let postId = 0;
+models.forEach((model, mi) => {
+  postTitles[mi].forEach((title, pi) => {
+    const daysAgo = postDayOffsets[mi][pi];
+    const hourOffset = Math.floor(Math.random() * 12);
+    allPosts.push({
+      id: 'p' + (postId++),
+      creator_id: model.id,
+      title: title,
+      content: postContents[(mi + pi) % postContents.length],
+      media_urls: pi % 3 === 0 ? [postImages[(mi * 3 + pi) % postImages.length]] : [],
+      view_count: postViewCounts[mi][pi],
+      created_at: new Date(now - daysAgo * dayMs - hourOffset * 3600000).toISOString(),
+    });
+  });
+});
+
+function avatarHTML(model) {
+  return model.photo
+    ? `<div class="avatar"><img src="${model.photo}" alt="${model.name}"></div>`
+    : `<div class="avatar" style="background:${model.gradient}">👤</div>`;
+}
+
+function postCardHTML(post, isCreatorView) {
+  const model = models.find(m => m.id === post.creator_id);
+  const isYours = post.creator_id === YOU;
+  const hideContent = isCreatorView && !isYours;
+  const mediaUrls = post.media_urls || [];
+  let mediaHTML = '';
+  if (!hideContent) {
+    if (mediaUrls.length === 1) {
+      mediaHTML = `<img src="${mediaUrls[0]}" class="post-image" onclick="openImage('${mediaUrls[0]}')" alt="">`;
+    } else if (mediaUrls.length > 1) {
+      mediaHTML = '<div class="post-images">' + mediaUrls.map(u => `<img src="${u}" onclick="openImage('${u}')" alt="">`).join('') + '</div>';
+    }
+  }
+  return `
+    <div class="post-card ${isYours ? 'my-post' : ''}">
+      <div class="post-header">
+        ${avatarHTML(model)}
+        <div>
+          <div class="post-author">${model.name}${isYours ? '<span class="you-tag">YOU</span>' : ''}</div>
+          <div class="post-date">${new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>
+        </div>
+        <div class="post-views">👁 ${post.view_count.toLocaleString()}</div>
+      </div>
+      <div class="post-title">${post.title}</div>
+      ${hideContent ? `
+        <div class="locked-content">🔒 Content hidden — creators can only see titles, dates, and views from other creators.</div>
+      ` : `
+        <div class="post-content">${post.content}</div>
+        ${mediaHTML}
+      `}
+    </div>
+  `;
+}
+
+function openImage(url) {
+  document.getElementById('modalImg').src = url;
+  document.getElementById('imageModal').classList.add('open');
+}
+
+function sortPosts(arr, filter) {
+  if (filter === 'views') return [...arr].sort((a, b) => b.view_count - a.view_count);
+  return [...arr].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+/* ----- post form ----- */
+let demoUploads = { mobile: [] };
+
+function handleDemoUpload(input, target) {
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = (e) => { demoUploads[target].push(e.target.result); renderUploadPreviews(target); };
+  reader.readAsDataURL(input.files[0]);
+  input.value = '';
+}
+function removeDemoUpload(target, idx) { demoUploads[target].splice(idx, 1); renderUploadPreviews(target); }
+function renderUploadPreviews(target) {
+  document.getElementById(target + '-upload-preview').innerHTML = demoUploads[target].map((url, i) => `
+    <div class="upload-thumb"><img src="${url}" alt=""><button class="upload-remove" onclick="removeDemoUpload('${target}', ${i})">✕</button></div>
+  `).join('');
+}
+function demoPost(target) {
+  const titleEl = document.getElementById(target + '-post-title');
+  const textEl = document.getElementById(target + '-post-text');
+  const title = titleEl.value.trim();
+  if (!title) return;
+  allPosts.unshift({
+    id: 'p' + (postId++), creator_id: YOU, title: title, content: textEl.value.trim(),
+    media_urls: [...demoUploads[target]], view_count: 0, created_at: new Date().toISOString(),
+  });
+  titleEl.value = ''; textEl.value = ''; demoUploads[target] = [];
+  renderUploadPreviews(target);
+  showToast('Posted! 🎉');
+  renderMobileFeed();
+}
+
+/* ----- mobile render ----- */
+let mobileCreator = 'all';
+let mobileSort = 'none';
+
+function renderMobileHeaderChips() {
+  document.getElementById('mobile-header-chips').innerHTML = models.map(m =>
+    `<div class="creator-chip ${m.id === YOU ? 'you' : ''}">${avatarHTML(m)}<span>${m.name}${m.id === YOU ? ' (You)' : ''}</span></div>`
+  ).join('');
+}
+function renderMobileCreatorFilters() {
+  const btns = [`<button class="filter-btn ${mobileCreator === 'all' ? 'active' : ''}" onclick="setMobileCreator('all')">All</button>`];
+  models.forEach(m => {
+    const label = m.id === YOU ? 'My Posts' : m.name.split(' ')[0];
+    btns.push(`<button class="filter-btn ${mobileCreator === m.id ? 'active' : ''}" onclick="setMobileCreator('${m.id}')">${label}</button>`);
+  });
+  document.getElementById('mobile-creator-filters').innerHTML = btns.join('');
+}
+function renderMobileSortFilters() {
+  document.getElementById('mobile-sort-filters').innerHTML = [
+    `<button class="filter-btn ${mobileSort === 'none' ? 'active' : ''}" onclick="setMobileSort('none')">No Filter</button>`,
+    `<button class="filter-btn ${mobileSort === 'recent' ? 'active' : ''}" onclick="setMobileSort('recent')">Most Recent</button>`,
+    `<button class="filter-btn ${mobileSort === 'views' ? 'active' : ''}" onclick="setMobileSort('views')">Most Viewed</button>`,
+  ].join('');
+}
+function renderMobileFeed() {
+  let filtered = allPosts;
+  if (mobileCreator !== 'all') filtered = filtered.filter(p => p.creator_id === mobileCreator);
+  filtered = sortPosts(filtered, mobileSort);
+  document.getElementById('mobile-feed').innerHTML = filtered.length === 0
+    ? '<div style="text-align:center;padding:2rem;color:#777;">No posts yet. Be the first to post!</div>'
+    : filtered.map(p => postCardHTML(p, true)).join('');
+}
+function setMobileCreator(id) { mobileCreator = id; renderMobileCreatorFilters(); renderMobileFeed(); }
+function setMobileSort(val) { mobileSort = val; renderMobileSortFilters(); renderMobileFeed(); }
+
+/* ----- init ----- */
+renderMobileHeaderChips();
+renderMobileCreatorFilters();
+renderMobileSortFilters();
+renderMobileFeed();
+
+/* ----- growth chart ----- */
+const growthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const soloData = [180, 210, 190, 220, 200, null, null, null, null, null, null, null];
+const circleData = [null, null, null, null, 200, 580, 890, 1240, 1520, 1720, 1860, 1950];
+
+const annotationPlugin = {
+  id: 'joinedLine',
+  afterDraw(chart) {
+    const xScale = chart.scales.x, yScale = chart.scales.y, ctx = chart.ctx;
+    const x = xScale.getPixelForValue(4);
+    ctx.save();
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = '#e8458b'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x, yScale.top); ctx.lineTo(x, yScale.bottom); ctx.stroke();
+    ctx.setLineDash([]); ctx.font = 'bold 9px -apple-system, sans-serif'; ctx.fillStyle = '#e8458b'; ctx.textAlign = 'center';
+    ctx.fillText('Joined Inner Circle', x, yScale.top - 6);
+    ctx.restore();
+  }
+};
+
+function buildGrowthChart(canvasId) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx || typeof Chart === 'undefined') return;
+  new Chart(ctx, {
+    type: 'line',
+    data: { labels: growthLabels, datasets: [
+      { label: 'Solo', data: soloData, borderColor: '#ccc', backgroundColor: 'rgba(200,200,200,0.08)', borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#ccc', fill: true, tension: 0.3, spanGaps: false },
+      { label: 'Inner Circle', data: circleData, borderColor: '#e8458b', backgroundColor: 'rgba(232,69,139,0.10)', borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#e8458b', fill: true, tension: 0.3, spanGaps: false }
+    ]},
+    options: {
+      responsive: true, maintainAspectRatio: false, layout: { padding: { top: 18 } },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.dataset.label + ': $' + c.parsed.y.toLocaleString() } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#999' } },
+        y: { beginAtZero: true, max: 2200, ticks: { font: { size: 10 }, color: '#999', callback: (v) => '$' + v.toLocaleString() }, grid: { color: 'rgba(0,0,0,0.04)' } }
+      }
+    },
+    plugins: [annotationPlugin]
+  });
+}
+buildGrowthChart('mobileGrowthChart');
+</script>
+
+</body>
+</html>
