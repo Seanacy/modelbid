@@ -1,4 +1,4 @@
-const CACHE_NAME = 'modelbid-v1';
+const CACHE_NAME = 'modelbid-v2';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
@@ -24,7 +24,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: network-first for API/dynamic, cache-first for static assets
+// Fetch: network-first for navigations/dynamic, cache-first for static assets
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
