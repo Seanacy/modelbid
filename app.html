@@ -10947,7 +10947,7 @@ REMEMBER:
         if (!newPassword.trim()) return;
         if (newPassword !== confirmNewPassword) { alert('Passwords do not match'); return; }
         try {
-          await adminMutate('admin_settings', { method: 'PATCH', filters: 'id=eq.1', body: { password: newPassword, updated_at: new Date().toISOString() } });
+          await adminApi('change_password', { newPassword });
           setShowChangePassword(false);
           setNewPassword('');
           setConfirmNewPassword('');
@@ -11324,11 +11324,7 @@ REMEMBER:
       const rejectScreenshot = async (sv) => {
         const notes = rejectNotes[sv.id] || '';
         try {
-          await fetch(`${SUPABASE_URL}/rest/v1/screenshot_verifications?id=eq.${sv.id}`, {
-            method: 'PATCH',
-            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-            body: JSON.stringify({ status: 'rejected', reviewed_at: new Date().toISOString(), admin_notes: notes || 'Rejected by admin' })
-          });
+          await adminApi('review_screenshot', { id: sv.id, status: 'rejected', notes: notes || 'Rejected by admin' });
           showAdminToast('Screenshot rejected');
           fetchScreenshotVerifications();
           setRejectNotes(prev => { const n = {...prev}; delete n[sv.id]; return n; });
