@@ -4613,7 +4613,6 @@
     // ===== SUPABASE INITIALIZATION =====
     const SUPABASE_URL = 'https://qjtanxqywpvqdpcxejlr.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqdGFueHF5d3B2cWRwY3hlamxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1MzQxNzUsImV4cCI6MjA5MjExMDE3NX0.73e_qRunECUFRpcvUNvDx9IyOLIKMvxCGsklgIBgF1I';
-    const SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqdGFueHF5d3B2cWRwY3hlamxyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjUzNDE3NSwiZXhwIjoyMDkyMTEwMTc1fQ.7r-PqjzBDt0tavGMD_bWjrV9cqtdRRdDjcWUhx2-oIk';
 
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: {
@@ -4766,29 +4765,8 @@
 
         initAuth();
 
-        // Auto-cleanup: delete unconfirmed auth users older than 1 minute (prevents ghost accounts)
-        const ghostCleanupInterval = setInterval(async () => {
-          try {
-            const authRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=100`, {
-              headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` }
-            });
-            if (!authRes.ok) return;
-            const authData = await authRes.json();
-            const now = Date.now();
-            const staleUsers = (authData.users || []).filter(u => {
-              if (u.email_confirmed_at) return false; // confirmed, keep
-              const age = now - new Date(u.created_at).getTime();
-              return age > 60000; // older than 1 minute and still unconfirmed
-            });
-            for (const ghost of staleUsers) {
-              await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${ghost.id}`, {
-                method: 'DELETE',
-                headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' }
-              });
-              console.log('Auto-purged ghost account:', ghost.email);
-            }
-          } catch(e) { /* silent */ }
-        }, 60000); // runs every 60 seconds
+        // Ghost cleanup moved server-side (no privileged keys in the browser). Use admin panel "Purge ghosts".
+        const ghostCleanupInterval = null;
 
         // Handle return from Stripe checkout
         const hash = window.location.hash;
@@ -10951,15 +10929,17 @@ REMEMBER:
         return text ? JSON.parse(text) : [];
       };
 
+      const ADMIN_API = 'https://qjtanxqywpvqdpcxejlr.supabase.co/functions/v1/admin-api';
+      const adminApi = async (action, params = {}) => {
+        const res = await fetch(ADMIN_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: passwordInput, action, ...params }) });
+        return res.json();
+      };
+
       const handleAdminLogin = async () => {
         setLoginError('');
         try {
-          const data = await adminFetch('admin_settings', { filters: '&id=eq.1', select: 'password' });
-          if (passwordInput === data.password) {
-            setAdminAuthed(true);
-          } else {
-            setLoginError('Wrong password');
-          }
+          const r = await adminApi('list_users');
+          if (Array.isArray(r.users)) { setAdminAuthed(true); } else { setLoginError('Wrong password'); }
         } catch(e) { setLoginError('System error: ' + e.message); console.error('Admin login error:', e); }
       };
 
@@ -11031,15 +11011,10 @@ REMEMBER:
           setUsers(data);
           // Also fetch auth users to find ghosts (in auth but not in profiles)
           try {
-            const authRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=100`, {
-              headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` }
-            });
-            if (authRes.ok) {
-              const authData = await authRes.json();
-              const profileIds = new Set(data.map(u => u.id));
-              const ghosts = (authData.users || []).filter(au => !profileIds.has(au.id));
-              setGhostUsers(ghosts);
-            }
+            const authData = await adminApi('list_users');
+            const profileIds = new Set(data.map(u => u.id));
+            const ghosts = (authData.users || []).filter(au => !profileIds.has(au.id));
+            setGhostUsers(ghosts);
           } catch(e2) { console.warn('Ghost user check failed:', e2); }
         } catch(e) { console.error('Users fetch error:', e); }
         setLoadingUsers(false);
@@ -11047,15 +11022,7 @@ REMEMBER:
 
       const purgeGhostUsers = async () => {
         let deleted = 0;
-        for (const ghost of ghostUsers) {
-          try {
-            const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${ghost.id}`, {
-              method: 'DELETE',
-              headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' }
-            });
-            if (res.ok) deleted++;
-          } catch(e) { console.warn('Failed to delete ghost:', ghost.email, e); }
-        }
+        try { const r = await adminApi('purge_ghosts'); deleted = r.deleted || 0; } catch(e) { console.warn('Purge ghosts failed:', e); }
         setGhostUsers([]);
         showAdminToast(`Purged ${deleted} ghost account${deleted !== 1 ? 's' : ''}`);
       };
@@ -11064,24 +11031,16 @@ REMEMBER:
       const fetchAuthUsers = async () => {
         setLoadingAuthUsers(true);
         try {
-          const authRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=100`, {
-            headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` }
-          });
-          if (authRes.ok) {
-            const authData = await authRes.json();
-            setAuthUsers((authData.users || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
-          }
+          const authData = await adminApi('list_users');
+          setAuthUsers((authData.users || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
         } catch(e) { console.error('Auth users fetch error:', e); }
         setLoadingAuthUsers(false);
       };
 
       const deleteAuthUser = async (userId, email) => {
         try {
-          // Delete from auth.users
-          const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
-            method: 'DELETE',
-            headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' }
-          });
+          // Delete via server-side admin API (also removes the profile)
+          const res = await adminApi('delete_user', { userId });
           if (res.ok) {
             // Also try to delete profile if exists
             try { await adminMutate('profiles', { method: 'DELETE', filters: `id=eq.${userId}` }); } catch(e) {}
@@ -11118,19 +11077,8 @@ REMEMBER:
       const fetchVerifications = async () => {
         setLoadingVerifications(true);
         try {
-          const res = await fetch(`${SUPABASE_URL}/rest/v1/verification_requests?select=*&order=submitted_at.desc`, {
-            headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` }
-          });
-          const data = await res.json();
-          // Enrich with profile data
-          const enriched = await Promise.all((data || []).map(async (vr) => {
-            const profRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${vr.user_id}&select=display_name,email`, {
-              headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` }
-            });
-            const profs = await profRes.json();
-            return { ...vr, profile: profs[0] || {} };
-          }));
-          setVerifications(enriched);
+          const r = await adminApi('list_verifications');
+          setVerifications(r.verifications || []);
         } catch(e) { console.error('Verifications fetch error:', e); }
         setLoadingVerifications(false);
       };
@@ -11138,16 +11086,7 @@ REMEMBER:
       // Approve verification — sets verified=true on profile
       const approveVerification = async (vr) => {
         try {
-          await fetch(`${SUPABASE_URL}/rest/v1/verification_requests?id=eq.${vr.id}`, {
-            method: 'PATCH',
-            headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-            body: JSON.stringify({ status: 'approved', reviewed_at: new Date().toISOString() })
-          });
-          await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${vr.user_id}`, {
-            method: 'PATCH',
-            headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-            body: JSON.stringify({ verified: true })
-          });
+          await adminApi('review_verification', { id: vr.id, status: 'approved', userId: vr.user_id, setVerified: true });
           showAdminToast('Verification approved — user now has the green checkmark ✓');
           fetchVerifications();
         } catch(e) { showAdminToast('Approve failed: ' + e.message); }
@@ -11157,11 +11096,7 @@ REMEMBER:
       const rejectVerification = async (vr) => {
         const notes = rejectNotes[vr.id] || '';
         try {
-          await fetch(`${SUPABASE_URL}/rest/v1/verification_requests?id=eq.${vr.id}`, {
-            method: 'PATCH',
-            headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-            body: JSON.stringify({ status: 'rejected', reviewed_at: new Date().toISOString(), admin_notes: notes || 'Rejected by admin' })
-          });
+          await adminApi('review_verification', { id: vr.id, status: 'rejected', notes: notes || 'Rejected by admin' });
           showAdminToast('Verification rejected');
           fetchVerifications();
           setRejectNotes(prev => { const n = {...prev}; delete n[vr.id]; return n; });
@@ -11370,18 +11305,8 @@ REMEMBER:
       const fetchScreenshotVerifications = async () => {
         setLoadingScreenshots(true);
         try {
-          const res = await fetch(`${SUPABASE_URL}/rest/v1/screenshot_verifications?select=*&order=submitted_at.desc`, {
-            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-          });
-          const data = await res.json();
-          const enriched = await Promise.all((data || []).map(async (sv) => {
-            const profRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${sv.user_id}&select=display_name,email,username`, {
-              headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` }
-            });
-            const profs = await profRes.json();
-            return { ...sv, profile: profs[0] || {} };
-          }));
-          setScreenshotVerifications(enriched);
+          const r = await adminApi('list_screenshots');
+          setScreenshotVerifications(r.screenshots || []);
         } catch(e) { console.error('Screenshot verifications fetch error:', e); }
         setLoadingScreenshots(false);
       };
@@ -11389,16 +11314,7 @@ REMEMBER:
       // Approve screenshot — waives subscription
       const approveScreenshot = async (sv) => {
         try {
-          await fetch(`${SUPABASE_URL}/rest/v1/screenshot_verifications?id=eq.${sv.id}`, {
-            method: 'PATCH',
-            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-            body: JSON.stringify({ status: 'approved', reviewed_at: new Date().toISOString() })
-          });
-          await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${sv.user_id}`, {
-            method: 'PATCH',
-            headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-            body: JSON.stringify({ promo_verified: true, subscription_waived: true, promo_social_url: sv.social_url || 'screenshot-verified' })
-          });
+          await adminApi('review_screenshot', { id: sv.id, status: 'approved', userId: sv.user_id, approve: true, social_url: sv.social_url });
           showAdminToast('Screenshot approved — subscription waived ✓');
           fetchScreenshotVerifications();
         } catch(e) { showAdminToast('Approve failed: ' + e.message); }
@@ -11459,21 +11375,8 @@ REMEMBER:
 
       const handleDeleteUser = async (userId) => {
         try {
-          // Step 1: Delete from profiles table
-          await adminMutate('profiles', { method: 'DELETE', filters: `id=eq.${userId}` });
-          // Step 2: Delete from Supabase auth.users using Admin API + service_role key
-          const authRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
-            method: 'DELETE',
-            headers: {
-              'apikey': SUPABASE_SERVICE_ROLE_KEY,
-              'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          if (!authRes.ok) {
-            const errData = await authRes.json().catch(() => ({}));
-            console.warn('Auth user delete response:', authRes.status, errData);
-          }
+          const r = await adminApi('delete_user', { userId });
+          if (!r.ok) { console.warn('Auth user delete returned not-ok', r); }
           setUsers(prev => prev.filter(u => u.id !== userId));
           setConfirmDelete(null);
           showAdminToast('User fully deleted (profile + auth)');
@@ -12010,14 +11913,14 @@ REMEMBER:
                           <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Government ID</div>
                           <img alt="ID"
                             style={{ width: '100%', maxHeight: '200px', objectFit: 'contain', borderRadius: '8px', background: '#000', cursor: 'pointer' }}
-                            ref={(el) => { if (el && !el.dataset.loaded) { el.dataset.loaded = '1'; fetch(vr.id_photo_url, { headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` } }).then(r => r.blob()).then(b => el.src = URL.createObjectURL(b)).catch(() => el.alt = 'Could not load ID image'); } }}
+                            ref={(el) => { if (el && !el.dataset.loaded) { el.dataset.loaded = '1'; adminApi('sign_images', { urls: [vr.id_photo_url] }).then(r => { el.src = (r.signed && r.signed[vr.id_photo_url]) || ''; }).catch(() => el.alt = 'Could not load ID image'); } }}
                           />
                         </div>
                         <div style={{ flex: 1, minWidth: '150px' }}>
                           <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Selfie</div>
                           <img alt="Selfie"
                             style={{ width: '100%', maxHeight: '200px', objectFit: 'contain', borderRadius: '8px', background: '#000', cursor: 'pointer' }}
-                            ref={(el) => { if (el && !el.dataset.loaded) { el.dataset.loaded = '1'; fetch(vr.selfie_url, { headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` } }).then(r => r.blob()).then(b => el.src = URL.createObjectURL(b)).catch(() => el.alt = 'Could not load selfie'); } }}
+                            ref={(el) => { if (el && !el.dataset.loaded) { el.dataset.loaded = '1'; adminApi('sign_images', { urls: [vr.selfie_url] }).then(r => { el.src = (r.signed && r.signed[vr.selfie_url]) || ''; }).catch(() => el.alt = 'Could not load selfie'); } }}
                           />
                         </div>
                       </div>
@@ -12095,7 +11998,7 @@ REMEMBER:
                         <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Screenshot</div>
                         <img alt="Screenshot"
                           style={{ width: '100%', maxHeight: '400px', objectFit: 'contain', borderRadius: '8px', background: '#000', cursor: 'pointer' }}
-                          ref={(el) => { if (el && !el.dataset.loaded) { el.dataset.loaded = '1'; fetch(sv.screenshot_url, { headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` } }).then(r => r.blob()).then(b => el.src = URL.createObjectURL(b)).catch(() => el.alt = 'Could not load screenshot'); } }}
+                          ref={(el) => { if (el && !el.dataset.loaded) { el.dataset.loaded = '1'; adminApi('sign_images', { urls: [sv.screenshot_url] }).then(r => { el.src = (r.signed && r.signed[sv.screenshot_url]) || ''; }).catch(() => el.alt = 'Could not load screenshot'); } }}
                           onClick={(e) => { if (e.target.src) window.open(e.target.src, '_blank'); }}
                         />
                       </div>
