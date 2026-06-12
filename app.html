@@ -21607,6 +21607,75 @@ RULES
       return <span style={{ background: '#ff4444', color: '#fff', borderRadius: '50%', fontSize: '0.65rem', fontWeight: 700, minWidth: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginLeft: 6, padding: '0 4px' }}>{count > 99 ? '99+' : count}</span>;
     }
 
+    function RedeemGreenlightPage() {
+      const auth = useContext(AuthContext);
+      const [code, setCode] = useState('');
+      const [status, setStatus] = useState('');
+      const [busy, setBusy] = useState(false);
+
+      const redeem = async () => {
+        const c = code.trim().toUpperCase();
+        if (!c) { setStatus('Enter your code.'); return; }
+        setBusy(true);
+        setStatus('');
+        try {
+          const res = await fetch('https://tklwlvjufxumkdeeygeq.supabase.co/functions/v1/redeem-greenlight-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: c }),
+          });
+          const data = await res.json();
+          if (!data.valid) {
+            const msg = data.reason === 'already-used' ? 'That code has already been used.'
+              : data.reason === 'not-found' ? "That code isn't valid. Double-check it."
+              : 'Could not redeem that code. Try again.';
+            setStatus(msg);
+            setBusy(false);
+            return;
+          }
+          const circleName = data.campaign_name ? (data.campaign_name + ' \u2014 BTS') : 'My BTS Circle';
+          const { data: newCrew, error } = await supabase.from('crews').insert({
+            name: circleName,
+            description: 'Behind-the-scenes circle, unlocked by a WeStackr Greenlight.',
+            admin_id: auth.currentUser.id,
+            bts: true,
+            source_campaign: data.campaign_name || null,
+          }).select().single();
+          if (error) throw error;
+          await supabase.from('crew_members').insert({
+            crew_id: newCrew.id,
+            user_id: auth.currentUser.id,
+            role: 'admin',
+          });
+          if (auth.showToast) auth.showToast('BTS Inner Circle unlocked!', 'success');
+          window.location.hash = 'crew/' + newCrew.id;
+        } catch (e) {
+          console.error('Greenlight redeem error:', e);
+          setStatus('Something went wrong creating your circle. Please contact support.');
+          setBusy(false);
+        }
+      };
+
+      return (
+        <div style={{ maxWidth: '440px', margin: '3rem auto' }}>
+          <div className="card">
+            <h2 style={{ marginBottom: '0.5rem' }}>Unlock your BTS Inner Circle</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+              Greenlit a shoot on WeStackr? Enter the code from your campaign to open your free behind-the-scenes circle and start inviting models.
+            </p>
+            <div className="form-group">
+              <label>Greenlight code</label>
+              <input type="text" value={code} onChange={(e) => setCode(e.target.value)} placeholder="GLXXXXXXXX" style={{ textTransform: 'uppercase', letterSpacing: '1px' }} />
+            </div>
+            {status && <div style={{ color: '#ff6b6b', fontSize: '0.85rem', marginBottom: '1rem' }}>{status}</div>}
+            <button className="btn glow-btn" style={{ width: '100%' }} disabled={busy} onClick={redeem}>
+              {busy ? 'Unlocking...' : 'Unlock my circle'}
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     function App() {
       const auth = useContext(AuthContext);
       const [currentPage, setCurrentPage] = useState('home');
@@ -21733,6 +21802,7 @@ RULES
         if (page === 'formodels') return auth.profile?.role === 'client' ? <FeedPage /> : <ForModelsPage />;
         if (page === 'westackr' && params[0]) return <CampaignDetailPage campaignId={params[0]} />;
         if (page === 'westackr') return <WeStackrPage />;
+        if (page === 'redeem-greenlight') return auth.currentUser ? <RedeemGreenlightPage /> : <LoginPage />;
         if (page === 'create-circle') return auth.currentUser ? <CreateCirclePage /> : <LoginPage />;
         if (page === 'my-circle' && params[0]) return auth.currentUser ? <MyCirclePage circleId={params[0]} /> : <LoginPage />;
         if (page === 'notifications') return auth.currentUser ? <NotificationsPage /> : <LoginPage />;
